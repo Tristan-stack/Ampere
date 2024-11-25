@@ -46,4 +46,4 @@ yarn-error.log*
 .idea
 
 # fichier bun.lockb
-bun.lock
+bun.lockb
