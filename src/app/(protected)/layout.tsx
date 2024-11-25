@@ -1,6 +1,5 @@
-import { SidebarProvider } from '@/components/ui/sidebar'
-import { UserButton } from '@clerk/nextjs'
-import AppSidebar from './dashboard/app-sidebar'
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from './dashboard/app-sidebar'
 
 import React from 'react'
 
@@ -13,6 +12,7 @@ const SidebarLayout = ({ children }: Props) => {
         <SidebarProvider>
             <AppSidebar />
             <main className='w-full m-2'>
+            <SidebarTrigger />
                 {/* Bento */}
                 <div className='border-sidebar-border bg-sidebar border shadow rounded-md overflow-y-auto h-[calc(100vh-6rem)] p-4'>
                     {children}
