@@ -1,13 +1,18 @@
+'use client'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from './dashboard/app-sidebar'
+import React, { useEffect } from "react";
 
-import React from 'react'
+
 
 type Props = {
     children: React.ReactNode
 }
 
 const SidebarLayout = ({ children }: Props) => {
+    useEffect(() => {
+        document.documentElement.classList.add("dark");
+      }, []);
     return (
         <SidebarProvider>
             <AppSidebar />
