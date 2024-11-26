@@ -16,10 +16,10 @@ const SidebarLayout = ({ children }: Props) => {
     return (
         <SidebarProvider>
             <AppSidebar />
-            <main className='w-full m-2'>
             <SidebarTrigger />
+            <main className='w-full flex justify-center items-center'>
                 {/* Bento */}
-                <div className='border-sidebar-border bg-sidebar border shadow rounded-md overflow-y-auto h-[calc(100vh-6rem)] p-4'>
+                <div className='w-[calc(100vw-20rem)] bg-sidebar border shadow rounded-md overflow-hidden h-[calc(100vh-6rem)] p-4 flex space-x-4'>
                     {children}
                 </div>
 
