@@ -34,7 +34,9 @@ const Dashboard = () => {
                     className="w-2/3 h-80 bg-neutral-800 rounded-md p-4"
                 >
                     <div data-swapy-item="item1" className="handle" data-swapy-handle>
-                        Item 1 (Drag Me)
+                        <div className="w-full h-32 bg-green-500">
+
+                        </div>
                     </div>
                 </div>
                 <div
@@ -42,7 +44,9 @@ const Dashboard = () => {
                     className="w-1/3 bg-neutral-800 rounded-md p-4"
                 >
                     <div data-swapy-item="item2" className="handle" data-swapy-handle>
-                        Item 2 (Drag Me)
+                        <div className="w-full h-32 bg-orange-500">
+
+                        </div>
                     </div>
                 </div>
             </div>
@@ -53,7 +57,9 @@ const Dashboard = () => {
                         className="bg-neutral-800 h-40 w-full rounded-md p-4"
                     >
                         <div data-swapy-item="item3" className="handle" data-swapy-handle>
-                            Item 3 (Drag Me)
+                            <div className="w-full h-32 bg-blue-500">
+
+                            </div>
                         </div>
                     </div>
                     <div
@@ -61,7 +67,9 @@ const Dashboard = () => {
                         className="bg-neutral-800 h-36 w-full rounded-md p-4"
                     >
                         <div data-swapy-item="item4" className="handle" data-swapy-handle>
-                            Item 4 (Drag Me)
+                            <div className="w-full h-28 bg-yellow-500">
+
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -70,7 +78,7 @@ const Dashboard = () => {
                     className="w-2/3 h-80 bg-neutral-800 rounded-md p-4"
                 >
                     <div data-swapy-item="item5" className="handle" data-swapy-handle>
-                        <div className="w-full h-32 bg-red-50">
+                        <div className="w-full h-32 bg-red-500">
                             
                         </div>
                     </div>
