@@ -1,12 +1,13 @@
 'use client'
 
 import * as React from "react"
-import { BadgeCheck, ChevronRight, LayoutGrid, Book, Settings2, Rainbow, Plus, PlugIcon as HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks } from 'lucide-react'
+import { BadgeCheck, ChevronRight, LayoutGrid, Book, Settings2, Plus, PlugIcon as HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible"
 import { useUser } from "@clerk/nextjs"
+import Rainbow from "@/components/ui/rainbow"
 import {
   Sidebar,
   SidebarContent,
@@ -76,15 +77,20 @@ const adminItems = [
 export function AppSidebar() {
   
   const { user } = useUser();
+  const [isHovered, setIsHovered] = React.useState(false);
 
   return (
-    <Sidebar className="dark:bg-[#18181b]">
+    <Sidebar
+    onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    
+    className="dark:bg-[#18181b]">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="hover:bg-zinc-600/10 transition-colors">
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-black ">
-                  <Rainbow className="rotate-90 size-5 text-white/80 stroke-[2.5px]" />
+                  <Rainbow hovered={isHovered} />
               </div>
               <span className="text-xl font-semibold mb-1">Ampere</span>
             </SidebarMenuButton>
