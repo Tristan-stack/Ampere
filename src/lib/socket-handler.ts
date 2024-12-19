@@ -1,4 +1,3 @@
-// lib/socket-handler.ts
 import { PrismaClient } from '@prisma/client';
 import { io } from "socket.io-client";
 
@@ -10,7 +9,6 @@ declare global {
     var __socketHandlerStarted: boolean | undefined;
 }
 
-// Vérifier si le socket handler a déjà démarré
 if (!global.__socketHandlerStarted) {
     global.__socketHandlerStarted = true;
 
@@ -21,47 +19,73 @@ if (!global.__socketHandlerStarted) {
         transports: ["websocket"],
     });
 
-    // Fonction pour insérer les données dans la base de données
-    const saveDeviceData = async (data: {
+    // Définir le type pour les données du device
+    type DeviceData = {
         Timestamp: string;
         'Data Key': string;
         Value: string;
         Unit: string;
         Quality: string;
-    }) => {
+    };
+
+    // Buffer pour stocker les données reçues
+    let dataBuffer: DeviceData[] = [];
+
+    // Fonction pour enregistrer les dernières données pour chaque Data Key toutes les 5 minutes
+    const saveLatestData = async () => {
+        if (dataBuffer.length === 0) {
+            // Pas de données à sauvegarder
+            return;
+        }
+
         try {
-            const timestamp = new Date(parseInt(data.Timestamp, 10) * 1000);
-    
-            await prisma.devices_values.create({
-                data: {
-                    device_key: data['Data Key'],
-                    value: data.Value,
-                    unit: data.Unit,
-                    quality: data.Quality,
-                    timestamp,
-                },
+            // Créer une map pour stocker la dernière donnée pour chaque Data Key
+            const latestDataMap: { [key: string]: DeviceData } = {};
+
+            // Parcourir le buffer pour trouver la dernière donnée pour chaque Data Key
+            dataBuffer.forEach(data => {
+                const dataKey = data['Data Key'];
+                const timestamp = parseInt(data.Timestamp, 10);
+
+                if (!latestDataMap[dataKey] || timestamp > parseInt(latestDataMap[dataKey].Timestamp, 10)) {
+                    latestDataMap[dataKey] = data;
+                }
             });
-    
-            console.log('Données insérées :', data);
+
+            // Préparer les données à insérer
+            const dataToInsert = Object.values(latestDataMap).map(data => ({
+                device_key: data['Data Key'],
+                value: data.Value,
+                unit: data.Unit,
+                quality: data.Quality,
+                timestamp: new Date(parseInt(data.Timestamp, 10) * 1000),
+            }));
+
+            // Insérer les données en une seule opération
+            await prisma.devices_values.createMany({
+                data: dataToInsert,
+                skipDuplicates: true, // Optionnel
+            });
+
+            console.log(`Inséré ${dataToInsert.length} enregistrements dans la base de données.`);
         } catch (error) {
             console.error('Erreur lors de l’insertion des données :', error);
         }
+
+        // Vider le buffer après l'insertion
+        dataBuffer = [];
     };
 
-    // Gestion des événements du socket
-    socket.on("data", async (data?: any) => { // Modifier any[] en any
+    // Définir un intervalle pour enregistrer les données toutes les 5 minutes (300000 millisecondes)
+    setInterval(saveLatestData, 300000);
+
+    // Gestion des données reçues du socket
+    socket.on("data", (data?: DeviceData) => {
         console.log("Données reçues :", data);
 
         if (data) {
-            // Vérifier si data est un tableau
-            if (Array.isArray(data)) {
-                for (const item of data) {
-                    await saveDeviceData(item);
-                }
-            } else {
-                // Si data est un objet unique
-                await saveDeviceData(data);
-            }
+            // Ajouter la donnée individuelle au buffer
+            dataBuffer.push(data);
         }
     });
 
