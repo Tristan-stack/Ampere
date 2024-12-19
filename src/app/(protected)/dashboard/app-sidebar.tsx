@@ -7,6 +7,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible"
 import { useUser } from "@clerk/nextjs"
+import { SearchBar } from "@/components/searchbar"
 import Rainbow from "@/components/ui/rainbow"
 import {
   Sidebar,
@@ -75,22 +76,21 @@ const adminItems = [
 ]
 
 export function AppSidebar() {
-  
+
   const { user } = useUser();
   const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <Sidebar
-    onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-    
-    className="dark:bg-[#18181b]">
+      className="dark:bg-[#18181b]">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="hover:bg-zinc-600/10 transition-colors">
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-black ">
-                  <Rainbow hovered={isHovered} />
+                <Rainbow hovered={isHovered} />
               </div>
               <span className="text-xl font-semibold mb-1">Ampere</span>
             </SidebarMenuButton>
@@ -157,6 +157,13 @@ export function AppSidebar() {
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SearchBar />
+              </SidebarMenu>
+          </SidebarGroupContent>
           </SidebarGroup>
         </ScrollArea>
       </SidebarContent>
