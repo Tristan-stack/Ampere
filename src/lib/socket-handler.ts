@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { io } from "socket.io-client";
+import path from 'path';
 
 // Initialiser Prisma
 const prisma = new PrismaClient();
@@ -52,22 +53,45 @@ if (!global.__socketHandlerStarted) {
                 }
             });
 
-            // Préparer les données à insérer
-            const dataToInsert = Object.values(latestDataMap).map(data => ({
-                device_key: data['Data Key'],
-                value: data.Value,
-                unit: data.Unit,
-                quality: data.Quality,
-                timestamp: new Date(parseInt(data.Timestamp, 10) * 1000),
-            }));
+            const dataToInsert: any[] = [];
 
-            // Insérer les données en une seule opération
-            await prisma.devices_values.createMany({
-                data: dataToInsert,
-                skipDuplicates: true, // Optionnel
-            });
+            // Vérifier l'existence de chaque device_key avant d'ajouter à l'insertion
+            for (const data of Object.values(latestDataMap)) {
+                const deviceExists = await prisma.devices.findUnique({
+                    where: { device_key: data['Data Key'] },
+                });
 
-            console.log(`Inséré ${dataToInsert.length} enregistrements dans la base de données.`);
+                if (deviceExists) {
+                    dataToInsert.push({
+                        device_key: data['Data Key'],
+                        value: data.Value,
+                        unit: data.Unit,
+                        quality: data.Quality,
+                        timestamp: new Date(parseInt(data.Timestamp, 10) * 1000),
+                    });
+                } else {
+                    console.warn(`device_key ${data['Data Key']} n'existe pas dans la table Devices. Ignoré.`);
+                }
+            }
+
+            if (dataToInsert.length > 0) {
+                for (const data of dataToInsert) {
+                    await prisma.devices_values.create({
+                        data: {
+                            value: data.value,
+                            unit: data.unit,
+                            quality: data.quality,
+                            timestamp: data.timestamp,
+                            device: {
+                                connect: { device_key: data.device_key }
+                            }
+                        }
+                    });
+                }
+                console.log(`Inséré ${dataToInsert.length} enregistrements dans la base de données.`);
+            } else {
+                console.log("Aucune donnée valide à insérer cette période.");
+            }
         } catch (error) {
             console.error('Erreur lors de l’insertion des données :', error);
         }
