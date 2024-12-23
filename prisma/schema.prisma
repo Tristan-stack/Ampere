@@ -19,8 +19,26 @@ model User {
     firstName String
     lastName  String
 
-    emailAddress     String   @unique
+    emailAddress String @unique
 
-    credits          Int      @default(350)
-    role             String @default("étudiant")
+    credits      Int    @default(350)
+    role         String @default("étudiant")
+}
+
+model Devices {
+    id          String   @id @default(cuid())
+    device_key  String   @unique
+    name        String
+    device_id   String?
+    device_name String?
+    address_ip  String
+}
+
+model Devices_values {
+    id          String   @id @default(cuid())
+    device_key  String
+    value       String
+    unit        String
+    quality     String
+    timestamp   DateTime @default(now())
 }

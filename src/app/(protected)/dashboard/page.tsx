@@ -1,6 +1,23 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { createSwapy } from 'swapy'
+import { io } from "socket.io-client";
+
+const socket = io('wss://socket.allegre.ens.mmi-unistra.fr', {
+    transports: ["websocket"]
+});
+
+// // Test de la connexion : le client envoie 'hello' au serveur,
+// // puis le serveur répond 'A user connected'
+// socket.on('hello', (msg?: String) => {
+//     console.log('ouiiii',msg);
+// });
+
+// // Réception des données toutes les minutes avec
+// // affichage dans la console
+// socket.on('data', (data?: any[]) => {
+//     console.log('dataaa',data);
+// });
 
 const Dashboard = () => {
     const swapy = useRef<ReturnType<typeof createSwapy> | null>(null)
