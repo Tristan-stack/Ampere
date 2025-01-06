@@ -34,6 +34,7 @@ if (!global.__socketHandlerStarted) {
 
     // Fonction pour enregistrer les dernières données pour chaque Data Key toutes les 5 minutes
     const saveLatestData = async () => {
+        console.log("5 minutes sont passées.");
         if (dataBuffer.length === 0) {
             // Pas de données à sauvegarder
             return;
