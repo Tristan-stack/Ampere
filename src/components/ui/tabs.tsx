@@ -108,7 +108,7 @@ export const FadeInDiv = ({
           style={{
             scale: 1 - idx * 0.1,
             top: hovering ? idx * -20 : 0,
-            zIndex: -idx,
+            zIndex: -idx+100,
             opacity: idx < 3 ? 1 - idx * 0.1 : 0,
           }}
           animate={{

@@ -1,4 +1,3 @@
-// layout.tsx
 'use client'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from './dashboard/app-sidebar'
@@ -12,17 +11,34 @@ type Props = {
 
 const SidebarLayout = ({ children }: Props) => {
     const [isContainerVisible, setIsContainerVisible] = useState(false);
+    const [isSidePanelVisible, setIsSidePanelVisible] = useState(false);
 
     useEffect(() => {
         document.documentElement.classList.add("dark");
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.ctrlKey && event.key === 'd') {
+                event.preventDefault();
+                handleToggleSidePanel();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
+
+    const handleToggleSidePanel = () => {
+        setIsSidePanelVisible(prev => !prev);
+    };
 
     const handleButtonClick = () => {
         setIsContainerVisible(true);
     };
 
     const handleClose = () => {
-        setIsContainerVisible(false);
+        setIsSidePanelVisible(false);
     };
 
     return (
@@ -37,7 +53,7 @@ const SidebarLayout = ({ children }: Props) => {
                         {children}
                     </div>
                 </div>
-                <SidePanel isVisible={isContainerVisible} onClose={handleClose} />
+                <SidePanel isVisible={isSidePanelVisible} onClose={handleClose} onToggle={handleToggleSidePanel} />
             </main>
         </SidebarProvider>
     )
