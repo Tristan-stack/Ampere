@@ -2,58 +2,63 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Fonction pour récupérer un device par son device_key
-export const getDeviceByKey = async (deviceKey: string) => {
-    try {
-        const device = await prisma.devices.findUnique({
-            where: { device_key: deviceKey },
-        });
-        return device;
-    } catch (error) {
-        console.error('Erreur lors de la récupération du device :', error);
-        throw error;
-    }
-};
+// FONCTION EXEMPLES
 
-// Fonction pour récupérer les dernières valeurs d'un device par son device_key
-export const getLatestDeviceValues = async (deviceKey: string) => {
-    try {
-        const deviceValues = await prisma.devices_values.findMany({
-            where: { device_key: deviceKey },
-            orderBy: { timestamp: 'desc' },
-            take: 1,
-        });
-        return deviceValues;
-    } catch (error) {
-        console.error('Erreur lors de la récupération des valeurs du device :', error);
-        throw error;
-    }
-};
+// // Fonction pour récupérer un device par son device_key
+// export const getDeviceByKey = async (deviceKey: string) => {
+//     try {
+//         const device = await prisma.devices.findUnique({
+//             where: { device_key: deviceKey },
+//         });
+//         return device;
+//     } catch (error) {
+//         console.error('Erreur lors de la récupération du device :', error);
+//         throw error;
+//     }
+// };
 
-// Fonction pour récupérer tous les devices
-export const getAllDevices = async () => {
-    try {
-        const devices = await prisma.devices.findMany();
-        return devices;
-    } catch (error) {
-        console.error('Erreur lors de la récupération des devices :', error);
-        throw error;
-    }
-};
+// // Fonction pour récupérer les dernières valeurs d'un device par son device_key
+// export const getLatestDeviceValues = async (deviceKey: string) => {
+//     try {
+//         const deviceValues = await prisma.devices_values.findMany({
+//             where: { device_key: deviceKey },
+//             orderBy: { timestamp: 'desc' },
+//             take: 1,
+//         });
+//         return deviceValues;
+//     } catch (error) {
+//         console.error('Erreur lors de la récupération des valeurs du device :', error);
+//         throw error;
+//     }
+// };
 
-// Fonction pour récupérer toutes les valeurs d'un device par son device_key
-export const getAllDeviceValues = async (deviceKey: string) => {
-    try {
-        const deviceValues = await prisma.devices_values.findMany({
-            where: { device_key: deviceKey },
-            orderBy: { timestamp: 'desc' },
-        });
-        return deviceValues;
-    } catch (error) {
-        console.error('Erreur lors de la récupération des valeurs du device :', error);
-        throw error;
-    }
-};
+// // Fonction pour récupérer tous les devices
+// export const getAllDevices = async () => {
+//     try {
+//         const devices = await prisma.devices.findMany();
+//         return devices;
+//     } catch (error) {
+//         console.error('Erreur lors de la récupération des devices :', error);
+//         throw error;
+//     }
+// };
+
+// // Fonction pour récupérer toutes les valeurs d'un device par son device_key
+// export const getAllDeviceValues = async (deviceKey: string) => {
+//     try {
+//         const deviceValues = await prisma.devices_values.findMany({
+//             where: { device_key: deviceKey },
+//             orderBy: { timestamp: 'desc' },
+//         });
+//         return deviceValues;
+//     } catch (error) {
+//         console.error('Erreur lors de la récupération des valeurs du device :', error);
+//         throw error;
+//     }
+// };
+
+
+// FONCTION UTILISÉE
 
 // Fonction pour récupérer les données d'un device par son device_key
 export const getDeviceDataByKey = async (deviceKey: string) => {
