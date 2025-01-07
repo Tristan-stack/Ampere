@@ -93,7 +93,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                     onClick={onClose}
                 >
                     <motion.div
-                        className="my-4 p-6 mr-4 rounded-lg shadow-lg relative overflow-y-auto bg-neutral-950"
+                        className="my-4 p-6 mr-4 rounded-lg shadow-lg relative overflow-y-auto bg-[#18181b]"
                         style={{ width, minWidth: 350, maxWidth: 1000 }}
                         variants={containerVariants}
                         initial="hidden"
@@ -106,7 +106,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                             className="absolute top-0 left-0 h-full w-2 cursor-ew-resize"
                             onMouseDown={handleMouseDown}
                         />
-                        <ScrollArea className="h-[90vh] w-full">
+                        <ScrollArea className="h-[99%] w-full">
                             <motion.div
                                 className="relative flex flex-col space-y-6 h-full"
                                 initial="hidden"
@@ -162,7 +162,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                             </p>
                                         </div>
                                     </div>
-                                    <EnergyPerformanceBar value={45} />
+                                    <EnergyPerformanceBar value={80} />
                                 </motion.div>
                                 <motion.div className='h-full overflow-hidden' variants={itemVariants}>
                                     <DateSelector width={width} />
