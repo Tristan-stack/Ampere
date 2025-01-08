@@ -175,14 +175,14 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
           numberOfMonths={numberOfMonths}
         />
         <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleSelect(undefined)}
-            className="h-8 w-8 text-white hover:bg-neutral-700 transition-colors absolute top-4 right-4"
-            title="Réinitialiser"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
+          variant="ghost"
+          size="icon"
+          onClick={() => handleSelect(undefined)}
+          className="h-8 w-8 text-white hover:bg-neutral-700 transition-colors absolute top-4 right-4"
+          title="Réinitialiser"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Displayed range */}
