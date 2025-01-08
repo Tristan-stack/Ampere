@@ -10,9 +10,9 @@ const GradientButton: React.FC<GradientButtonProps> = ({ onClick }) => {
   return (
     <button
       onClick={onClick}
-      className="w-12 h-12 shadow-xl rounded-lg bg-neutral-800 ml-auto flex justify-center items-center hover:shadow-white/20 duration-300"
+      className="w-8 h-8 shadow-xl rounded-lg bg-neutral-800 ml-auto flex justify-center items-center hover:shadow-white/20 duration-300"
     >
-      <Calendar />
+      <Calendar className='h-4' />
     </button>
   );
 };

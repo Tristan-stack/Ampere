@@ -11,6 +11,7 @@ import EnergyPerformanceBar from './energy-bar';
 import TrendComparison from './trend-comparison';
 import DateSelector from './date-selector';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import { BounceLoader } from 'react-spinners';
 
 type SidePanelProps = {
     isVisible: boolean;
@@ -36,7 +37,7 @@ const itemVariants = {
 };
 
 const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) => {
-    const [width, setWidth] = useState(300); // Initial width of the side panel
+    const [width, setWidth] = useState(400); // Initial width of the side panel
     const [isResizing, setIsResizing] = useState(false);
     const [consumption, setConsumption] = useState<number | null>(null);
 
@@ -92,23 +93,48 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        device_key: '9b97f5da-0328-42ac-94c4-d9f0b673e5e0',
+                        device_key: 'a869af7d-fb50-4754-b3a2-097035a1dc33'
                     }),
                 });
+    
                 const data = await response.json();
-                setConsumption(data.values);
+                const values = data.values;
+                const timestamps = data.timestamps;
+    console.log(data);
+                if (values.length < 2 || timestamps.length < 2) {
+                    console.warn("Pas assez de données pour calculer la consommation.");
+                    setConsumption(0);
+                    return;
+                }
+    
+                let totalConsumption = 0;
+    
+                for (let i = 0; i < values.length - 1; i++) {
+                    const currentPowerKw = values[i] / 1000; // Conversion W -> kW
+                    const startTime = new Date(timestamps[i]).getTime(); // Timestamp en ms
+                    const endTime = new Date(timestamps[i + 1]).getTime();
+    
+                    const durationInHours = (endTime - startTime) / (1000 * 3600); // Durée en heures
+                    totalConsumption += currentPowerKw * durationInHours; // Ajout à la consommation totale
+                }
+    
+                setConsumption(totalConsumption);
             } catch (error) {
-                console.error('Erreur lors de la récupération des données du device :', error);
+                console.error('Erreur lors de la récupération des données :', error);
             }
         };
+    
         fetchConsumption();
     }, []);
+        
+    console.log(consumption);
+    
 
     return (
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50"
+                    className="fixed inset-0 bg-black bg-opacity-40 flex justify-end z-50"
                     variants={backdropVariants}
                     initial="hidden"
                     animate="visible"
@@ -116,8 +142,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                     onClick={onClose}
                 >
                     <motion.div
-                        className="my-4 p-5 mr-4 rounded-lg shadow-lg relative overflow-y-auto bg-[#18181b]"
-                        style={{ width, minWidth: 350, maxWidth: 1000 }}
+                        className=" p-5 rounded-md shadow-lg relative overflow-y-auto bg-[#18181b]"
+                        style={{ width, minWidth: 400, maxWidth: 1000 }}
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
@@ -168,10 +194,11 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                         </p>
                                         <div className="flex items-end space-x-1">
                                             <div className="flex items-center space-x-1">
-                                                <PlugZap size={40} />
-                                                <p className="text-4xl font-extralight">{consumption !== null ? `${consumption} kWh` : 'Chargement...'}</p>
+                                                <PlugZap size={40} className='stroke-1' />
+                                                <p className="text-4xl font-extralight">{consumption !== null ? `${consumption.toFixed(1)} kWh` : 
+                                                    <BounceLoader color='#2fad79' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}</p>
                                             </div>
-                                            <TrendComparison current={consumption || 0} previous={18} type={'value'} unit='kWh' />
+                                            <TrendComparison current={consumption !== null ? parseFloat(consumption.toFixed(1)) : 0} previous={18} type={'value'} unit='kWh' />
                                         </div>
                                     </div>
                                     <div>
@@ -179,9 +206,10 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                             Émissions de carbone (approx.)
                                         </p>
                                         <div className="flex items-center space-x-1">
-                                            <Wind size={30} />
+                                            <Wind size={30} className='stroke-1' />
                                             <p className="text-2xl font-extralight">
-                                                {consumption !== null ? `${(consumption * 50).toLocaleString()} gCO₂` : 'Chargement...'}
+                                                {consumption !== null ? `${(consumption * 50).toFixed(1).toLocaleString()} gCO₂` : 
+                                                <BounceLoader color='#2fad79' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}
                                             </p>
                                         </div>
                                     </div>

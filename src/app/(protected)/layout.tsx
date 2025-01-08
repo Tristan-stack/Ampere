@@ -43,7 +43,9 @@ const SidebarLayout = ({ children }: Props) => {
             <main className='w-full flex flex-col justify-center items-center'>
                 {/* Bento */}
                 <div className="w-auto space-y-4">
+                    <div className="absolute top-2 right-2">
                     <GradientButton onClick={handleToggleSidePanel}/>
+                    </div>
                     <div className='w-[calc(100vw-20rem)] bg-sidebar border shadow rounded-md overflow-hidden h-[calc(100vh-6rem)] p-4 flex space-x-4'>
                         {children}
                     </div>
