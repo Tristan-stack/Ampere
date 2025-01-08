@@ -100,7 +100,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                 const data = await response.json();
                 const values = data.values;
                 const timestamps = data.timestamps;
-    console.log(data);
+
                 if (values.length < 2 || timestamps.length < 2) {
                     console.warn("Pas assez de données pour calculer la consommation.");
                     setConsumption(0);
@@ -126,9 +126,6 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
     
         fetchConsumption();
     }, []);
-        
-    console.log(consumption);
-    
 
     return (
         <AnimatePresence>
@@ -196,7 +193,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                             <div className="flex items-center space-x-1">
                                                 <PlugZap size={40} className='stroke-1' />
                                                 <p className="text-4xl font-extralight">{consumption !== null ? `${consumption.toFixed(1)} kWh` : 
-                                                    <BounceLoader color='#2fad79' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}</p>
+                                                    <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}</p>
                                             </div>
                                             <TrendComparison current={consumption !== null ? parseFloat(consumption.toFixed(1)) : 0} previous={18} type={'value'} unit='kWh' />
                                         </div>
@@ -209,7 +206,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                             <Wind size={30} className='stroke-1' />
                                             <p className="text-2xl font-extralight">
                                                 {consumption !== null ? `${(consumption * 50).toFixed(1).toLocaleString()} gCO₂` : 
-                                                <BounceLoader color='#2fad79' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}
+                                                <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}
                                             </p>
                                         </div>
                                     </div>
