@@ -128,7 +128,7 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
   return (
     <div className="relative flex flex-col w-full gap-4">
       {/* Quick ranges buttons */}
-      <ScrollArea className="w-[99%] h-12 overflow-hidden">
+      <ScrollArea className="w-[99.5%] h-12 overflow-hidden">
         <div className='flex w-72 gap-2 items-center">'>
           {quickRanges.map((item, index) => (
             <Button

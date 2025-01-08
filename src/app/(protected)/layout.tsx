@@ -10,7 +10,6 @@ type Props = {
 }
 
 const SidebarLayout = ({ children }: Props) => {
-    const [isContainerVisible, setIsContainerVisible] = useState(true);
     const [isSidePanelVisible, setIsSidePanelVisible] = useState(true);
 
     useEffect(() => {
@@ -33,10 +32,6 @@ const SidebarLayout = ({ children }: Props) => {
         setIsSidePanelVisible(prev => !prev);
     };
 
-    const handleButtonClick = () => {
-        setIsContainerVisible(true);
-    };
-
     const handleClose = () => {
         setIsSidePanelVisible(false);
     };
@@ -48,7 +43,7 @@ const SidebarLayout = ({ children }: Props) => {
             <main className='w-full flex flex-col justify-center items-center'>
                 {/* Bento */}
                 <div className="w-auto space-y-4">
-                    {/* <GradientButton onClick={handleButtonClick}/> */}
+                    <GradientButton onClick={handleToggleSidePanel}/>
                     <div className='w-[calc(100vw-20rem)] bg-sidebar border shadow rounded-md overflow-hidden h-[calc(100vh-6rem)] p-4 flex space-x-4'>
                         {children}
                     </div>
