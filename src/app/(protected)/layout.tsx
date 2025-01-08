@@ -10,7 +10,7 @@ type Props = {
 }
 
 const SidebarLayout = ({ children }: Props) => {
-    const [isSidePanelVisible, setIsSidePanelVisible] = useState(true);
+    const [isSidePanelVisible, setIsSidePanelVisible] = useState(false);
 
     useEffect(() => {
         document.documentElement.classList.add("dark");
