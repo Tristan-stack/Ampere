@@ -1,9 +1,11 @@
+"use client"
+
 import NetworkGraph from "@/components/network-graph";
 import { useEffect, useState } from "react";
 import { BarLoader
 } from "react-spinners";
 
-const NetworkGraphPage = () => {
+const CarteInterractive = () => {
   interface Node {
     id: string;
     group: number;
@@ -143,5 +145,5 @@ const NetworkGraphPage = () => {
   );
 };
 
-export default NetworkGraphPage;
+export default CarteInterractive;
 

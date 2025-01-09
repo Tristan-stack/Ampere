@@ -139,7 +139,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                     onClick={onClose}
                 >
                     <motion.div
-                        className=" p-5 rounded-md shadow-lg relative overflow-y-auto bg-[#18181b]"
+                        className=" p-5 shadow-lg relative overflow-y-auto border-0 border-l bg-[#18181b]"
                         style={{ width, minWidth: 400, maxWidth: 1000 }}
                         variants={containerVariants}
                         initial="hidden"

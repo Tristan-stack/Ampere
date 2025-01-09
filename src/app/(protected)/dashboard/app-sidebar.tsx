@@ -60,10 +60,10 @@ const mainItems = [
   },
   {
     title: "Carte interactive",
-    url: "",
+    url: "/carte-interractive",
     icon: MapPin,
     hasChildren: false
-  },
+  }
 ]
 
 const adminItems = [
