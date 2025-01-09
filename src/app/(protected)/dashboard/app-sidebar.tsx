@@ -32,7 +32,7 @@ import { useSidebar } from "@/components/ui/sidebar"
 const mainItems = [
   {
     title: "Tableau de bord",
-    url: "",
+    url: "/dashboard",
     icon: LayoutGrid,
     hasChildren: false
   },
@@ -42,9 +42,9 @@ const mainItems = [
     icon: BarChart,
     hasChildren: true,
     children: [
-      { title: "Puissance active", url: "" },
-      { title: "Consomation", url: "" },
-      { title: "Production", url: "" },
+      { title: "Puissance active", url: "/analyse/puissance" },
+      { title: "Consomation", url: "/analyse/consomation" },
+      { title: "Production", url: "/analyse/production" },
     ]
   },
   {
@@ -53,9 +53,9 @@ const mainItems = [
     icon: HousePlug,
     hasChildren: true,
     children: [
-      { title: "Bâtiment A", url: "" },
-      { title: "Bâtiment B", url: "" },
-      { title: "Bâtiment C", url: "" },
+      { title: "Bâtiment A", url: "/batiment/batA" },
+      { title: "Bâtiment B", url: "/batiment/batB" },
+      { title: "Bâtiment C", url: "/batiment/batC" },
     ]
   },
   {
