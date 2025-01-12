@@ -102,7 +102,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div ref={container} className="w-5/6 space-y-4 flex flex-col justify-center mx-auto">
+        <div ref={container} className="w-full space-y-4 flex flex-col justify-center mx-auto">
             <div className="w-full flex space-x-4">
                 <div className="w-2/3 h-80 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">

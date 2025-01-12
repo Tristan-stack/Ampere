@@ -7,23 +7,34 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { RotateCcw, CalendarCheck2 } from 'lucide-react';
 
-const DateSelector: React.FC<{ width: number }> = ({ width }) => {
+interface DateSelectorProps {
+  width: number;
+  onDateRangeChange?: () => void; // Nouvelle prop pour rappeler le parent
+}
+
+const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange }) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [numberOfMonths, setNumberOfMonths] = useState(1);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
   useEffect(() => {
-    if (width >= 900) {
-      setNumberOfMonths(3);
-    } else if (width >= 600) {
-      setNumberOfMonths(2);
-    } else {
-      setNumberOfMonths(1);
-    }
+    if (width >= 900) setNumberOfMonths(3);
+    else if (width >= 600) setNumberOfMonths(2);
+    else setNumberOfMonths(1);
   }, [width]);
 
   useEffect(() => {
+    const getCookie = (name: string) => {
+      const nameEQ = name + '=';
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i]?.trim();
+        if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    };
+
     const savedRange = getCookie('dateRange');
     if (savedRange) {
       const parsedRange = JSON.parse(savedRange);
@@ -34,61 +45,47 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
     }
   }, []);
 
-  // -----------------------------------------
-  // Cookie handlers
-  // -----------------------------------------
   const setCookie = (name: string, value: string, days: number) => {
     const expires = new Date();
     expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
     document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
   };
 
-  const getCookie = (name: string) => {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-      let c = ca[i]?.trim();
-      if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-  };
-
-  const deleteCookie = (name: string) => {
-    document.cookie = `${name}=; Max-Age=-99999999;`;
-  };
-
-  // -----------------------------------------
-  // Range selection handlers
-  // -----------------------------------------
   const handleSelect = (range: DateRange | undefined) => {
-    setDateRange(range);
     if (range) {
+      setDateRange(range);
       setCookie('dateRange', JSON.stringify(range), 7);
     } else {
-      deleteCookie('dateRange');
+      const currentDate = new Date();
+      const day = currentDate.getDay() || 7;
+      const monday = new Date(currentDate);
+      monday.setDate(monday.getDate() - (day - 1));
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      const newRange = { from: monday, to: sunday };
+      setDateRange(newRange);
+      setCookie('dateRange', JSON.stringify(newRange), 7);
     }
+    // Rappeler le parent pour recharger la consommation
+    onDateRangeChange?.();
   };
 
   const selectPeriod = (days: number) => {
     const to = new Date();
     const from = new Date();
     from.setDate(from.getDate() - days);
-    const newRange = { from, to };
-    handleSelect(newRange);
+    handleSelect({ from, to });
   };
 
   const selectThisMonth = () => {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
-    const to = new Date();
-    handleSelect({ from, to });
+    handleSelect({ from, to: new Date() });
   };
 
   const selectLastMonth = () => {
     const now = new Date();
-    // from: first day of previous month
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    // to: last day of previous month
     const to = new Date(now.getFullYear(), now.getMonth(), 0);
     handleSelect({ from, to });
   };
@@ -96,13 +93,9 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
   const selectThisYear = () => {
     const now = new Date();
     const from = new Date(now.getFullYear(), 0, 1);
-    const to = new Date();
-    handleSelect({ from, to });
+    handleSelect({ from, to: new Date() });
   };
 
-  // -----------------------------------------
-  // Quick ranges configuration
-  // -----------------------------------------
   const quickRanges = [
     { label: '7 derniers jours', action: () => selectPeriod(7) },
     { label: '30 derniers jours', action: () => selectPeriod(30) },
@@ -127,9 +120,8 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
 
   return (
     <div className="relative flex flex-col w-full gap-4">
-      {/* Quick ranges buttons */}
       <ScrollArea className="w-[99.5%] h-12 overflow-hidden">
-        <div className='flex w-72 gap-2 items-center">'>
+        <div className="flex w-72 gap-2 items-center">
           {quickRanges.map((item, index) => (
             <Button
               key={index}
@@ -161,11 +153,14 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
             className="rounded border px-1 py-1 text-white bg-neutral-800"
           />
         </div>
-        <button title='Appliquer' onClick={applyCustomRange} className='bg-neutral-800 p-2 rounded-sm'>
-          <CalendarCheck2 className='h-4' />
+        <button
+          title="Appliquer"
+          onClick={applyCustomRange}
+          className="bg-neutral-800 p-2 rounded-sm"
+        >
+          <CalendarCheck2 className="h-4" />
         </button>
       </div>
-      {/* Calendar */}
       <div className="w-full h-full overflow-hidden relative rounded-2xl flex justify-center items-center py-2 text-white bg-neutral-800 border border-gray-300/50">
         <Calendar
           mode="range"
@@ -184,8 +179,6 @@ const DateSelector: React.FC<{ width: number }> = ({ width }) => {
           <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
-
-      {/* Displayed range */}
       {dateRange && (
         <div className="mt-4 text-lg">
           <p>Période sélectionnée :</p>

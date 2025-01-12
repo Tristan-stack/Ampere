@@ -12,6 +12,7 @@ import TrendComparison from './trend-comparison';
 import DateSelector from './date-selector';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { BounceLoader } from 'react-spinners';
+import { doc } from 'prettier';
 
 type SidePanelProps = {
     isVisible: boolean;
@@ -40,6 +41,94 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
     const [width, setWidth] = useState(400); // Initial width of the side panel
     const [isResizing, setIsResizing] = useState(false);
     const [consumption, setConsumption] = useState<number | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const getCookie = (name: string) => {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i]?.trim();
+            if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    };
+
+    const fetchConsumption = async () => {
+        setLoading(true);
+        try {
+            const savedRange = getCookie('dateRange');
+            if (!savedRange) {
+                console.warn('Pas de dateRange dans les cookies.');
+                setConsumption(0);
+                setLoading(false);
+                return;
+            }
+            const parsedRange = JSON.parse(savedRange);
+            const fromTime = new Date(parsedRange.from).getTime();
+            const toTime = new Date(parsedRange.to).getTime();
+
+            const response = await fetch('/api/getDeviceDataByKey', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    device_key: 'a869af7d-fb50-4754-b3a2-097035a1dc33'
+                }),
+            });
+
+            const data = await response.json();
+            console.log('API response:', data);
+
+            const { values = [], timestamps = [] } = data;
+            if (!Array.isArray(values) || !Array.isArray(timestamps)) {
+                console.warn("Les tableaux values/timestamps sont manquants ou invalides.");
+                setConsumption(0);
+                setLoading(false);
+                return;
+            }
+
+            // Combiner values et timestamps en un tableau exploitable
+            const allRecords = timestamps.map((ts, i) => ({
+                timestamp: ts,
+                value: values[i]
+            }));
+
+            // Filtrer selon la plage de temps
+            const filtered = allRecords.filter((rec) => {
+                const recordTime = new Date(rec.timestamp).getTime();
+                return recordTime >= fromTime && recordTime <= toTime;
+            });
+
+            console.log('filtered:', filtered);
+
+            if (filtered.length < 2) {
+                console.warn("Pas assez de données pour calculer.");
+                setConsumption(0);
+                setLoading(false);
+                return;
+            }
+
+            // Calcul de la consommation
+            let totalConsumption = 0;
+            for (let i = 0; i < filtered.length - 1; i++) {
+                const currentPowerKw = filtered[i]?.value ?? 0 / 1000;
+                const startTime = new Date(filtered[i]?.timestamp).getTime();
+                const endTime = new Date(filtered[i + 1]?.timestamp).getTime();
+                const durationInHours = (endTime - startTime) / (1000 * 3600);
+                totalConsumption += currentPowerKw * durationInHours;
+            }
+
+            setConsumption(totalConsumption);
+        } catch (error) {
+            console.error('Erreur lors de la récupération des données:', error);
+            setConsumption(0);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchConsumption();
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -83,49 +172,6 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
             window.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isResizing]);
-
-    useEffect(() => {
-        const fetchConsumption = async () => {
-            try {
-                const response = await fetch('/api/getDeviceDataByKey', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        device_key: 'a869af7d-fb50-4754-b3a2-097035a1dc33'
-                    }),
-                });
-    
-                const data = await response.json();
-                const values = data.values;
-                const timestamps = data.timestamps;
-
-                if (values.length < 2 || timestamps.length < 2) {
-                    console.warn("Pas assez de données pour calculer la consommation.");
-                    setConsumption(0);
-                    return;
-                }
-    
-                let totalConsumption = 0;
-    
-                for (let i = 0; i < values.length - 1; i++) {
-                    const currentPowerKw = values[i] / 1000; // Conversion W -> kW
-                    const startTime = new Date(timestamps[i]).getTime(); // Timestamp en ms
-                    const endTime = new Date(timestamps[i + 1]).getTime();
-    
-                    const durationInHours = (endTime - startTime) / (1000 * 3600); // Durée en heures
-                    totalConsumption += currentPowerKw * durationInHours; // Ajout à la consommation totale
-                }
-    
-                setConsumption(totalConsumption);
-            } catch (error) {
-                console.error('Erreur lors de la récupération des données :', error);
-            }
-        };
-    
-        fetchConsumption();
-    }, []);
 
     return (
         <AnimatePresence>
@@ -192,8 +238,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                         <div className="flex items-end space-x-1">
                                             <div className="flex items-center space-x-1">
                                                 <PlugZap size={40} className='stroke-1' />
-                                                <p className="text-4xl font-extralight">{consumption !== null ? `${consumption.toFixed(1)} kWh` : 
-                                                    <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}</p>
+                                                <p className="text-4xl font-extralight">{loading ? <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' /> : `${consumption?.toFixed(1)} kWh`}</p>
                                             </div>
                                             <TrendComparison current={consumption !== null ? parseFloat(consumption.toFixed(1)) : 0} previous={18} type={'value'} unit='kWh' />
                                         </div>
@@ -205,15 +250,14 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                         <div className="flex items-center space-x-1">
                                             <Wind size={30} className='stroke-1' />
                                             <p className="text-2xl font-extralight">
-                                                {consumption !== null ? `${(consumption * 50).toFixed(1).toLocaleString()} gCO₂` : 
-                                                <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />}
+                                                {loading ? <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' /> : `${(consumption! * 50).toFixed(1).toLocaleString()} gCO₂`}
                                             </p>
                                         </div>
                                     </div>
                                     <EnergyPerformanceBar value={80} />
                                 </motion.div>
                                 <motion.div className='h-full overflow-hidden' variants={itemVariants}>
-                                    <DateSelector width={width} />
+                                    <DateSelector width={width} onDateRangeChange={fetchConsumption} />
                                 </motion.div>
                             </motion.div>
                         </ScrollArea>
