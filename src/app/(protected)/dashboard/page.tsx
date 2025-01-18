@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createSwapy } from "swapy";
 import { Line } from "react-chartjs-2";
@@ -15,6 +15,9 @@ import {
     Tooltip,
     Legend,
 } from "chart.js";
+import { BarLoader } from 'react-spinners'; // Ajout de l'import
+import { ToastContainer, toast, Bounce } from 'react-toastify'; // Ajout de Bounce
+import 'react-toastify/dist/ReactToastify.css'; // Import des styles de react-toastify
 
 ChartJS.register(
     CategoryScale,
@@ -25,6 +28,8 @@ ChartJS.register(
     Tooltip,
     Legend
 );
+
+const CONFIG_STORAGE_KEY_PREFIX = "dashboardConfig_";
 
 const Dashboard: React.FC = () => {
     const { user } = useUser();
@@ -37,6 +42,7 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [configLoading, setConfigLoading] = useState(true); // Indicateur de chargement de la configuration
+    const [config, setConfig] = useState<string[] | null>(null); // Nouvel état pour la configuration
 
     // Fonction pour récupérer la configuration actuelle des éléments
     const getSwapyConfig = (): string[] => {
@@ -76,6 +82,33 @@ const Dashboard: React.FC = () => {
         });
     };
 
+    // Fonction pour sauvegarder la configuration dans le localStorage
+    const saveConfigToLocal = (config: string[]) => {
+        if (user?.primaryEmailAddress?.emailAddress) {
+            const key = `${CONFIG_STORAGE_KEY_PREFIX}${user.primaryEmailAddress.emailAddress}`;
+            localStorage.setItem(key, JSON.stringify(config));
+        }
+    };
+
+    // Fonction pour charger la configuration depuis le localStorage
+    const loadConfigFromLocal = (): string[] | null => {
+        if (user?.primaryEmailAddress?.emailAddress) {
+            const key = `${CONFIG_STORAGE_KEY_PREFIX}${user.primaryEmailAddress.emailAddress}`;
+            const configString = localStorage.getItem(key);
+            if (configString) {
+                try {
+                    const config = JSON.parse(configString);
+                    if (Array.isArray(config)) {
+                        return config;
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de la lecture du localStorage :", error);
+                }
+            }
+        }
+        return null;
+    };
+
     // Fetch device data
     useEffect(() => {
         const fetchDeviceData = async () => {
@@ -111,7 +144,7 @@ const Dashboard: React.FC = () => {
     // Save configuration
     const handleSaveConfig = async () => {
         if (user?.primaryEmailAddress?.emailAddress) {
-            const config = getSwapyConfig();
+            const currentConfig = getSwapyConfig();
             try {
                 await fetch("/api/saveDashboardConfig", {
                     method: "POST",
@@ -119,11 +152,22 @@ const Dashboard: React.FC = () => {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        config,
+                        config: currentConfig,
                         userEmail: user.primaryEmailAddress.emailAddress,
                     }),
                 });
-                alert("Configuration sauvegardée !");
+                saveConfigToLocal(currentConfig); // Sauvegarder dans le localStorage
+                toast('Configuration sauvgardé avec succé!', { // Utilisation du toast personnalisé
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: true,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                    transition: Bounce,
+                });
                 setIsEditing(false);
             } catch (error) {
                 console.error("Erreur lors de la sauvegarde :", error);
@@ -137,6 +181,12 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const fetchDashboardConfig = async () => {
             if (user?.primaryEmailAddress?.emailAddress) {
+                // Charger la configuration depuis le localStorage
+                const localConfig = loadConfigFromLocal();
+                if (localConfig) {
+                    setConfig(localConfig);
+                }
+
                 try {
                     const response = await fetch("/api/getDashboardConfig", {
                         method: "POST",
@@ -147,7 +197,8 @@ const Dashboard: React.FC = () => {
                     });
                     const data = await response.json();
                     if (data.config) {
-                        setSwapyConfig(data.config);
+                        setConfig(data.config);
+                        saveConfigToLocal(data.config); // Mettre à jour le localStorage avec la configuration récupérée
                     }
                 } catch (error) {
                     console.error("Erreur lors de la récupération de la configuration :", error);
@@ -160,7 +211,15 @@ const Dashboard: React.FC = () => {
         };
 
         fetchDashboardConfig();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
+
+    // Appliquer la configuration lorsque disponible et le conteneur est prêt
+    useLayoutEffect(() => {
+        if (config && container.current) {
+            setSwapyConfig(config);
+        }
+    }, [config]);
 
     // Initialize Swapy after configuration is loaded
     useEffect(() => {
@@ -169,6 +228,9 @@ const Dashboard: React.FC = () => {
 
             swapy.current.onSwap((event) => {
                 console.log("Swapped items", event);
+                // Optionnel : sauvegarder la nouvelle configuration après un swap
+                const newConfig = getSwapyConfig();
+                saveConfigToLocal(newConfig);
             });
 
             if (isEditing) {
@@ -209,16 +271,28 @@ const Dashboard: React.FC = () => {
         },
     };
 
-    if (configLoading) {
-        // Afficher un indicateur de chargement pendant que la configuration est récupérée
-        return <p>Chargement de votre configuration...</p>;
-    }
-
-    return (
+    return configLoading ? (
+        <div className="flex justify-center items-center h-full w-full">
+            <BarLoader color='#f3f3f3' height={4} width={200} className='drop-shadow-[0_0_10px_rgba(243,243,243,1)]' />
+        </div>
+    ) : (
         <div
             ref={container}
             className="w-full space-y-4 flex flex-col justify-center mx-auto"
         >
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar
+                newestOnTop={false}
+                closeOnClick={false}
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+                transition={Bounce}
+            /> {/* ToastContainer personnalisé */}
             <div className="flex justify-between items-center">
                 <button
                     className={`px-4 py-2 rounded ${
@@ -240,7 +314,7 @@ const Dashboard: React.FC = () => {
             <div className="w-full h-1/2 flex space-x-4">
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">
-                        <div className="w-full h-full bg-purple-900 rounded-md flex items-center justify-center">
+                        <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
                             {loading ? (
                                 <p className="text-white">Chargement...</p>
                             ) : (
