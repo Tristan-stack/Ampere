@@ -23,6 +23,18 @@ model User {
 
   credits      Int      @default(350)
   role         String   @default("étudiant")
+
+  dashboardConfig DashboardConfig?
+}
+
+model DashboardConfig {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  config       Json
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Devices {
