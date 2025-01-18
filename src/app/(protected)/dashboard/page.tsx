@@ -15,9 +15,11 @@ import {
     Tooltip,
     Legend,
 } from "chart.js";
-import { BarLoader } from 'react-spinners'; // Ajout de l'import
-import { ToastContainer, toast, Bounce } from 'react-toastify'; // Ajout de Bounce
-import 'react-toastify/dist/ReactToastify.css'; // Import des styles de react-toastify
+import { BarLoader } from 'react-spinners';
+import { toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Blocks } from 'lucide-react';
+import { AnimatePresence, motion } from "framer-motion";
 
 ChartJS.register(
     CategoryScale,
@@ -41,10 +43,9 @@ const Dashboard: React.FC = () => {
     const [deviceName, setDeviceName] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [configLoading, setConfigLoading] = useState(true); // Indicateur de chargement de la configuration
-    const [config, setConfig] = useState<string[] | null>(null); // Nouvel état pour la configuration
+    const [configLoading, setConfigLoading] = useState(true);
+    const [config, setConfig] = useState<string[] | null>(null);
 
-    // Fonction pour récupérer la configuration actuelle des éléments
     const getSwapyConfig = (): string[] => {
         if (!container.current) return [];
         const items = Array.from(
@@ -53,10 +54,8 @@ const Dashboard: React.FC = () => {
         return items.map((item) => item.getAttribute("data-swapy-item") || "");
     };
 
-    // Fonction pour appliquer une configuration existante
     const setSwapyConfig = (config: string[]) => {
         const currentContainer = container.current;
-
         if (!currentContainer) {
             console.error("Le conteneur n'est pas initialisé.");
             return;
@@ -75,14 +74,11 @@ const Dashboard: React.FC = () => {
             if (item && slot) {
                 slot.appendChild(item);
             } else {
-                console.warn(
-                    `Impossible de trouver l'élément ou le slot pour l'id : ${itemId}`
-                );
+                console.warn(`Impossible de trouver l'élément ou le slot pour l'id : ${itemId}`);
             }
         });
     };
 
-    // Fonction pour sauvegarder la configuration dans le localStorage
     const saveConfigToLocal = (config: string[]) => {
         if (user?.primaryEmailAddress?.emailAddress) {
             const key = `${CONFIG_STORAGE_KEY_PREFIX}${user.primaryEmailAddress.emailAddress}`;
@@ -90,7 +86,6 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    // Fonction pour charger la configuration depuis le localStorage
     const loadConfigFromLocal = (): string[] | null => {
         if (user?.primaryEmailAddress?.emailAddress) {
             const key = `${CONFIG_STORAGE_KEY_PREFIX}${user.primaryEmailAddress.emailAddress}`;
@@ -109,7 +104,6 @@ const Dashboard: React.FC = () => {
         return null;
     };
 
-    // Fetch device data
     useEffect(() => {
         const fetchDeviceData = async () => {
             try {
@@ -141,7 +135,6 @@ const Dashboard: React.FC = () => {
         fetchDeviceData();
     }, []);
 
-    // Save configuration
     const handleSaveConfig = async () => {
         if (user?.primaryEmailAddress?.emailAddress) {
             const currentConfig = getSwapyConfig();
@@ -156,11 +149,11 @@ const Dashboard: React.FC = () => {
                         userEmail: user.primaryEmailAddress.emailAddress,
                     }),
                 });
-                saveConfigToLocal(currentConfig); // Sauvegarder dans le localStorage
-                toast('Configuration sauvgardé avec succé!', { // Utilisation du toast personnalisé
+                saveConfigToLocal(currentConfig);
+                toast('Configuration sauvegardée avec succès!', {
                     position: "top-right",
                     autoClose: 5000,
-                    hideProgressBar: true,
+                    hideProgressBar: false, // Affiche la barre de progression
                     closeOnClick: false,
                     pauseOnHover: true,
                     draggable: true,
@@ -177,11 +170,9 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    // Fetch existing configuration
     useEffect(() => {
         const fetchDashboardConfig = async () => {
             if (user?.primaryEmailAddress?.emailAddress) {
-                // Charger la configuration depuis le localStorage
                 const localConfig = loadConfigFromLocal();
                 if (localConfig) {
                     setConfig(localConfig);
@@ -198,46 +189,38 @@ const Dashboard: React.FC = () => {
                     const data = await response.json();
                     if (data.config) {
                         setConfig(data.config);
-                        saveConfigToLocal(data.config); // Mettre à jour le localStorage avec la configuration récupérée
+                        saveConfigToLocal(data.config);
                     }
                 } catch (error) {
                     console.error("Erreur lors de la récupération de la configuration :", error);
                 } finally {
-                    setConfigLoading(false); // Fin du chargement
+                    setConfigLoading(false);
                 }
             } else {
-                setConfigLoading(false); // Fin du chargement même si l'utilisateur n'est pas authentifié
+                setConfigLoading(false);
             }
         };
 
         fetchDashboardConfig();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    // Appliquer la configuration lorsque disponible et le conteneur est prêt
     useLayoutEffect(() => {
         if (config && container.current) {
             setSwapyConfig(config);
         }
     }, [config]);
 
-    // Initialize Swapy after configuration is loaded
     useEffect(() => {
         if (!configLoading && container.current) {
             swapy.current = createSwapy(container.current, {});
 
             swapy.current.onSwap((event) => {
                 console.log("Swapped items", event);
-                // Optionnel : sauvegarder la nouvelle configuration après un swap
                 const newConfig = getSwapyConfig();
                 saveConfigToLocal(newConfig);
             });
 
-            if (isEditing) {
-                swapy.current.enable(true); // Activer Swapy
-            } else {
-                swapy.current.enable(false); // Désactiver Swapy
-            }
+            swapy.current.enable(isEditing);
         }
 
         return () => {
@@ -280,37 +263,33 @@ const Dashboard: React.FC = () => {
             ref={container}
             className="w-full space-y-4 flex flex-col justify-center mx-auto"
         >
-            <ToastContainer
-                position="top-right"
-                autoClose={5000}
-                hideProgressBar
-                newestOnTop={false}
-                closeOnClick={false}
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="dark"
-                transition={Bounce}
-            /> {/* ToastContainer personnalisé */}
-            <div className="flex justify-between items-center">
-                <button
-                    className={`px-4 py-2 rounded ${
-                        isEditing ? "bg-red-500" : "bg-green-500"
-                    } text-white`}
-                    onClick={() => setIsEditing(!isEditing)}
-                >
-                    {isEditing ? "Quitter le mode édition" : "Configurer mon dashboard"}
-                </button>
-                {isEditing && (
-                    <button
-                        className="px-4 py-2 rounded bg-blue-500 text-white"
-                        onClick={handleSaveConfig}
+            {/* ToastContainer supprimé */}
+                <div className="flex justify-between items-center">
+                    <motion.button
+                        initial={{ backgroundColor: "#171717", color: "#fff" }}
+                        whileHover={{ backgroundColor: "#fff", color: "#000" }}
+                        transition={{ duration: 0.2 }}
+                        className="px-4 py-2 rounded"
+                        onClick={() => setIsEditing(!isEditing)}
                     >
-                        Sauvegarder
-                    </button>
-                )}
-            </div>
+                        {isEditing ? "Quitter le mode édition" : <Blocks className="h-4 w-4 stroke-[2.25px]" />}
+                    </motion.button>
+                    <AnimatePresence>
+                        {isEditing && (
+                            <motion.button
+                                key="save-btn"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="px-4 py-2 rounded bg-white text-black hover:shadow-[0_0_15px_#858585] transition-shadow duration-300"
+                                onClick={handleSaveConfig}
+                            >
+                                Sauvegarder
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
+                </div>
             <div className="w-full h-1/2 flex space-x-4">
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">
@@ -325,7 +304,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="w-1/3 bg-neutral-800 rounded-md" data-swapy-slot="b">
                     <div className="h-full" data-swapy-item="b">
-                        <div className="w-full h-full bg-red-900 rounded-md">
+                        <div className="w-full h-full bg-neutral-900 rounded-md">
                             {/* Contenu supplémentaire */}
                         </div>
                     </div>
@@ -335,14 +314,14 @@ const Dashboard: React.FC = () => {
                 <div className="w-1/3 h-full flex flex-col space-y-4">
                     <div className="bg-neutral-800 h-1/2 w-full rounded-md" data-swapy-slot="c">
                         <div className="h-full" data-swapy-item="c">
-                            <div className="w-full h-full bg-green-900 rounded-md">
+                                <div className="w-full h-full bg-neutral-900 rounded-md">
                                 {/* Contenu supplémentaire */}
                             </div>
                         </div>
                     </div>
                     <div className="bg-neutral-800 h-1/2 w-full rounded-md" data-swapy-slot="d">
                         <div className="h-full" data-swapy-item="d">
-                            <div className="w-full h-full bg-yellow-900 rounded-md">
+                                <div className="w-full h-full bg-neutral-900 rounded-md">
                                 {/* Contenu supplémentaire */}
                             </div>
                         </div>
@@ -350,7 +329,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="e">
                     <div className="h-full" data-swapy-item="e">
-                        <div className="w-full h-full bg-blue-900 rounded-md">
+                            <div className="w-full h-full bg-neutral-900 rounded-md">
                             <GraphConso />
                         </div>
                     </div>
