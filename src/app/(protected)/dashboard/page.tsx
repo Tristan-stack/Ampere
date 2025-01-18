@@ -49,15 +49,20 @@ const Dashboard: React.FC = () => {
 
     // Fonction pour appliquer une configuration existante
     const setSwapyConfig = (config: string[]) => {
-        if (!container.current) return;
+        const currentContainer = container.current;
+
+        if (!currentContainer) {
+            console.error("Le conteneur n'est pas initialisé.");
+            return;
+        }
 
         const slots = Array.from(
-            container.current.querySelectorAll<HTMLDivElement>("[data-swapy-slot]")
+            currentContainer.querySelectorAll<HTMLDivElement>("[data-swapy-slot]")
         );
 
         slots.forEach((slot, index) => {
             const itemId = config[index];
-            const item = container.current?.querySelector<HTMLDivElement>(
+            const item = currentContainer.querySelector<HTMLDivElement>(
                 `[data-swapy-item="${itemId}"]`
             );
 
@@ -71,6 +76,7 @@ const Dashboard: React.FC = () => {
         });
     };
 
+    // Fetch device data
     useEffect(() => {
         const fetchDeviceData = async () => {
             try {
@@ -102,6 +108,7 @@ const Dashboard: React.FC = () => {
         fetchDeviceData();
     }, []);
 
+    // Save configuration
     const handleSaveConfig = async () => {
         if (user?.primaryEmailAddress?.emailAddress) {
             const config = getSwapyConfig();
@@ -126,6 +133,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    // Fetch existing configuration
     useEffect(() => {
         const fetchDashboardConfig = async () => {
             if (user?.primaryEmailAddress?.emailAddress) {
@@ -139,7 +147,7 @@ const Dashboard: React.FC = () => {
                     });
                     const data = await response.json();
                     if (data.config) {
-                        setSwapyConfig(data.config); // Appliquer la configuration récupérée
+                        setSwapyConfig(data.config);
                     }
                 } catch (error) {
                     console.error("Erreur lors de la récupération de la configuration :", error);
@@ -154,12 +162,15 @@ const Dashboard: React.FC = () => {
         fetchDashboardConfig();
     }, [user]);
 
+    // Initialize Swapy after configuration is loaded
     useEffect(() => {
-        if (container.current) {
+        if (!configLoading && container.current) {
             swapy.current = createSwapy(container.current, {});
-        }
 
-        if (swapy.current) {
+            swapy.current.onSwap((event) => {
+                console.log("Swapped items", event);
+            });
+
             if (isEditing) {
                 swapy.current.enable(true); // Activer Swapy
             } else {
@@ -171,7 +182,7 @@ const Dashboard: React.FC = () => {
             swapy.current?.destroy();
             swapy.current = null;
         };
-    }, [isEditing]);
+    }, [configLoading, isEditing]);
 
     const chartData = {
         labels: labels,
@@ -210,8 +221,9 @@ const Dashboard: React.FC = () => {
         >
             <div className="flex justify-between items-center">
                 <button
-                    className={`px-4 py-2 rounded ${isEditing ? "bg-red-500" : "bg-green-500"
-                        } text-white`}
+                    className={`px-4 py-2 rounded ${
+                        isEditing ? "bg-red-500" : "bg-green-500"
+                    } text-white`}
                     onClick={() => setIsEditing(!isEditing)}
                 >
                     {isEditing ? "Quitter le mode édition" : "Configurer mon dashboard"}
