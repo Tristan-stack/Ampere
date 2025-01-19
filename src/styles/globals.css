@@ -83,3 +83,11 @@
   box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.75);
   
 }
+
+.bar-glow {
+  filter: drop-shadow(0 0 7px rgba(3, 254, 161, 0.35));
+}
+
+.bar-glow[data-key="mobile"] {
+  filter: drop-shadow(0 0 10px rgba(240, 122, 2, 0.7));
+}

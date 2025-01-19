@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createSwapy } from "swapy";
 import { Line } from "react-chartjs-2";
-import { GraphConso } from "./graph-conso";
+import { GraphConso } from "./graph/graph-conso";
+import { BigChart } from "@/app/(protected)/dashboard/graph/big-chart"
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -20,6 +21,9 @@ import { toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Blocks } from 'lucide-react';
 import { AnimatePresence, motion } from "framer-motion";
+import { Batimentgraph3 } from "./graph/batiment-graph-3";
+import { Linechartsm } from "./graph/line-chart-sm";
+import { RadialChart } from "./graph/radial-chart";
 
 ChartJS.register(
     CategoryScale,
@@ -261,9 +265,8 @@ const Dashboard: React.FC = () => {
     ) : (
         <div
             ref={container}
-            className="w-full space-y-4 flex flex-col justify-center mx-auto"
+            className="w-full space-y-3 flex flex-col justify-center mx-auto"
         >
-            {/* ToastContainer supprimé */}
                 <div className="flex justify-between items-center">
                     <motion.button
                         initial={{ backgroundColor: "#171717", color: "#fff" }}
@@ -290,39 +293,40 @@ const Dashboard: React.FC = () => {
                         )}
                     </AnimatePresence>
                 </div>
-            <div className="w-full h-1/2 flex space-x-4">
+            <div className="w-full h-1/2 flex space-x-3">
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">
                         <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
-                            {loading ? (
+                            {/* {loading ? (
                                 <p className="text-white">Chargement...</p>
                             ) : (
                                 <Line data={chartData} options={options} />
-                            )}
+                            )} */}
+                            <RadialChart /> 
                         </div>
                     </div>
                 </div>
                 <div className="w-1/3 bg-neutral-800 rounded-md" data-swapy-slot="b">
                     <div className="h-full" data-swapy-item="b">
                         <div className="w-full h-full bg-neutral-900 rounded-md">
-                            {/* Contenu supplémentaire */}
+                            <BigChart />
                         </div>
                     </div>
                 </div>
             </div>
-            <div className="h-1/2 flex space-x-4">
-                <div className="w-1/3 h-full flex flex-col space-y-4">
+            <div className="h-1/2 flex space-x-3">
+                <div className="w-1/3 h-full flex flex-col space-y-3">
                     <div className="bg-neutral-800 h-1/2 w-full rounded-md" data-swapy-slot="c">
                         <div className="h-full" data-swapy-item="c">
                                 <div className="w-full h-full bg-neutral-900 rounded-md">
-                                {/* Contenu supplémentaire */}
+                                <Batimentgraph3 />
                             </div>
                         </div>
                     </div>
                     <div className="bg-neutral-800 h-1/2 w-full rounded-md" data-swapy-slot="d">
                         <div className="h-full" data-swapy-item="d">
                                 <div className="w-full h-full bg-neutral-900 rounded-md">
-                                {/* Contenu supplémentaire */}
+                                <Linechartsm />
                             </div>
                         </div>
                     </div>

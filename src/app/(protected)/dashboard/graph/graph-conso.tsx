@@ -172,7 +172,7 @@ const chartData = [
             className="h-1/2 w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
+                            <BarChart
                 data={chartData}
                 margin={{
                   top: 20,
@@ -211,7 +211,14 @@ const chartData = [
                     />
                   }
                 />
-                <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} />
+                <Bar
+                  dataKey={activeChart}
+                  fill={activeChart === "desktop" ? "#03FEA1" : "#F07A02"}
+                  fillOpacity={0.5}
+                  stroke={activeChart === "desktop" ? "#03FEA1" : "#F07A02"}
+                  radius={[2, 2, 0, 0]} // Arrondir les coins supérieurs
+                  className="bar-glow"
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
