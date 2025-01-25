@@ -17,7 +17,7 @@ const TransunionScore: React.FC<TransunionScoreProps> = ({ score }) => {
 
     return (
         <div className="flex flex-col items-start -mb-4 3xl:mb-2">
-            <Badge className="text-xs bg-neutral-800 border border-neutral-700"><ShinyText text="Score d'efficacité énergétique" disabled={false} speed={3} /></Badge>
+            <Badge className="text-xs bg-neutral-800 border border-neutral-700 hover:bg-neutral-800"><ShinyText text="Score d'efficacité énergétique" disabled={false} speed={3} /></Badge>
             <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
