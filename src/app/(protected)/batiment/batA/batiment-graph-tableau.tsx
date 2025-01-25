@@ -54,18 +54,21 @@ export const columns: ColumnDef<ConsumptionData>[] = [
     ),
     cell: ({ row }) => {
       const building = row.getValue("building")
-      const bgColor =
-        building === "A"
-          ? "bg-[#00ff9d]/80"
-          : building === "B"
-          ? "bg-orange-500"
-          : building === "C"
-          ? "bg-blue-500"
-          : "bg-gray-200"
+      const bgColor = {
+        'A': 'hsl(var(--chart-1))',
+        'B': 'hsl(var(--chart-2))',
+        'C': 'hsl(var(--chart-3))'
+      } as const;
 
       return (
         <div className={`text-xs text-center flex items-center gap-1`}>
-          <div className={`${bgColor} w-3 h-3 rounded-full`}></div>
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{
+            backgroundColor: bgColor[building as keyof typeof bgColor],
+            boxShadow: `0 0 10px ${bgColor[building as keyof typeof bgColor]}`
+          }}
+        />
           {building as string}
         </div>
       )
@@ -203,11 +206,11 @@ export function BatimentgraphTable({ filteredData, loading }: BatimentgraphTable
                         {header.isPlaceholder
                           ? null
                           : header.column.columnDef.header
-                          ? flexRender(
+                            ? flexRender(
                               header.column.columnDef.header ?? (() => null),
                               header.getContext()
                             )
-                          : null}
+                            : null}
                       </TableHead>
                     )
                   })}

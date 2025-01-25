@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Batimentgraph2 } from "./batiment-graph-2";
 import Batimentgraph4 from "./batiment-graph-4";
 import { BatimentgraphTable } from "./batiment-graph-tableau";
-import BuildingCarousel from "./batiment-carousel";
+import { BatimentCarousel } from "./batiment-carousel";
 import Squares from "@/components/squares";
 import Score from "@/components/score";
 import { cn } from "@/lib/utils"
@@ -181,7 +181,9 @@ const BatA = () => {
       if (!result[item.building]) {
         result[item.building] = [];
       }
+    });
 
+    data.forEach(item => {
       const existingDateEntry = result[item.building]?.find(entry => entry.date === item.date);
       if (existingDateEntry) {
         existingDateEntry.totalConsumption += item.totalConsumption;
@@ -207,32 +209,44 @@ const BatA = () => {
     });
   };
 
-  console.log(efficiencyScore);
+  const buildingColors = {
+    'A': 'hsl(var(--chart-1))',
+    'B': 'hsl(var(--chart-2))',
+    'C': 'hsl(var(--chart-3))'
+  } as const;
+  
 
   return (
     <div className="w-full space-y-4 flex flex-col justify-center mx-auto">
       <div className="w-full h-1/2 flex space-x-4">
         <div className="w-1/3 bg-neutral-800 rounded-md border">
           <div className="h-full">
-            <div className="w-full h-full bg-neutral-900 rounded-md p-4">
+            <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden">
               <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
-              <Score score={efficiencyScore} />
-              <h3 className="text-neutral-500 text-lg font-bold mt-2">Sélection des bâtiments</h3>
-              <div className="flex items-start justify-start gap-2">
+              <Score score={efficiencyScore+500} />
+              <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold mt-2">Sélection des bâtiments</h3>
+              <div className="flex items-start mt-1 justify-start gap-2">
                 {["A", "B", "C"].map(building => (
                   <button
-                    key={building}
-                    onClick={() => handleBuildingSelection(building)}
-                    className={cn(
-                      "px-4 py-2 rounded-md transition-all duration-200 font-medium text-xs",
-                      "border border-neutral-700 hover:border-neutral-600",
-                      selectedBuildings.includes(building)
-                        ? "bg-neutral-800 text-white shadow-lg shadow-neutral-900/50"
-                        : "bg-neutral-900 text-neutral-400 hover:text-neutral-300"
-                    )}
-                  >
-                    Bâtiment {building}
-                  </button>
+                  key={building}
+                  onClick={() => handleBuildingSelection(building)}
+                  className={cn(
+                    "px-2 py-2 3xl:px-4 3xl:py-2 rounded-md transition-all duration-200 font-medium text-xs",
+                    "border hover:bg-zinc-800 flex items-center gap-2",
+                    selectedBuildings.includes(building)
+                      ? "bg-neutral-950 text-white shadow-lg shadow-neutral-900/50"
+                      : "bg-neutral-900 text-neutral-400 hover:text-neutral-300"
+                  )}
+                >
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ 
+                      backgroundColor: buildingColors[building as keyof typeof buildingColors],
+                      boxShadow: `0 0 10px ${buildingColors[building as keyof typeof buildingColors]}`
+                    }} 
+                  />
+                  Bâtiment {building}
+                </button>
                 ))}
               </div>
             </div>
@@ -247,9 +261,9 @@ const BatA = () => {
         </div>
       </div>
       <div className="w-full h-1/2 flex space-x-4">
-        <div className="w-1/3 bg-neutral-800 rounded-md">
+        <div className="w-1/3 rounded-md">
           <div className="h-full">
-            <div className="w-full h-full bg-neutral-900 rounded-md border relative">
+            <div className="w-full h-full rounded-md relative">
               <Squares
                 speed={0.15}
                 squareSize={40}
@@ -257,8 +271,8 @@ const BatA = () => {
                 borderColor='#1f1f1f'
                 hoverFillColor='#222'
               />
-              <div className="absolute inset-0 z-10 pointer-events-none">
-                <BuildingCarousel />
+              <div className="absolute inset-0 z-[1] pointer-events-none">
+                <BatimentCarousel />
               </div>
             </div>
           </div>
@@ -266,7 +280,7 @@ const BatA = () => {
         <div className="w-2/3 h-full flex space-x-4">
           <div className="w-1/2 bg-neutral-800 rounded-md">
             <div className="h-full">
-              <div className="w-full h-full bg-neutral-900 rounded-md">
+              <div className="w-full h-full bg-neutral-900 rounded-md relative">
                 <BatimentgraphTable filteredData={filteredData} loading={loading} />
               </div>
             </div>

@@ -40,8 +40,14 @@ const TransunionScore: React.FC<TransunionScoreProps> = ({ score }) => {
                     <div className="w-1 h-10 bg-white rounded-xl"></div>
                 </motion.div>
 
+                <div className="w-full absolute top-0 h-8 rounded-xl mt-2 z-0 blur-2xl opacity-45"
+                    style={{
+                        background: 'linear-gradient(to right, #ff908f, #ffdd5b, #61baf8, #8cf470)'
+                    }}
+                ></div>
+
                 {/* Score bars */}
-                <div className="w-full flex justify-center items-center">
+                <div className="w-full flex justify-center items-center z-10">
                     <div className="w-1/2 h-8 bg-gradient-to-r from-[#ff908f] to-[#ffdd5b] rounded-xl mt-2 relative"></div>
                     <div className="w-1/2 flex justify-center items-center">
                         <div className="w-full h-8 bg-gradient-to-r from-[#ffdd5b] to-[#61baf8] rounded-xl -ml-2 mt-2 relative"></div>

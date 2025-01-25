@@ -1,54 +1,71 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-
-interface CarouselProps {
-  autoScrollInterval?: number
-}
-
-function BuildingCarousel({ 
-  autoScrollInterval = 3000 
-}: CarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const items = [
-    <div className="w-full h-full bg-background rounded-lg">A</div>,
-    <div className="w-full h-full bg-background rounded-lg">B</div>,
-    <div className="w-full h-full bg-background rounded-lg">C</div>,
-  ]
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === items.length - 1 ? 0 : prevIndex + 1
-      )
-    }, autoScrollInterval)
-
-    return () => clearInterval(interval)
-  }, [items.length, autoScrollInterval])
-
+"use client";
+import { CardStack } from "@/components/card-stack";
+import { cn } from "@/lib/utils";
+export function BatimentCarousel() {
   return (
-    <div className="relative w-full h-full overflow-hidden z-10 pointer-events-none">
-      <div className="absolute inset-0 z-20 pointer-events-none rounded-md" style={{
-        background: 'radial-gradient(circle at center, transparent 80%, rgba(0,0,0,0.8) 100%)'
-      }} />
-      {/* <AnimatePresence mode="wait">
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, x: 300 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -300 }}
-          transition={{ 
-            type: "tween",
-            duration: 0.5
-          }}
-          className="absolute w-full h-full p-16 flex items-center justify-center z-30"
-        >
-          {items[currentIndex]}
-        </motion.div>
-      </AnimatePresence> */}
+    <div className="h-full flex items-center justify-center w-full p-8 mt-2 3xl:p-16">
+      <CardStack items={CARDS} />
     </div>
-  )
+  );
 }
 
-export default BuildingCarousel
+// Small utility to highlight the content of specific section of a testimonial content
+export const Highlight = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  return (
+    <span
+      className={cn(
+        "font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-700/[0.2] dark:text-emerald-500 px-1 py-0.5",
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+};
+
+const CARDS = [
+  {
+    id: 0,
+    name: "Manu Arora",
+    designation: "Senior Software Engineer",
+    content: (
+      <p>
+        These cards are amazing, <Highlight>I want to use them</Highlight> in my
+        project. Framer motion is a godsend ngl tbh fam 🙏
+      </p>
+    ),
+  },
+  {
+    id: 1,
+    name: "Elon Musk",
+    designation: "Senior Shitposter",
+    content: (
+      <p>
+        I dont like this Twitter thing,{" "}
+        <Highlight>deleting it right away</Highlight> because yolo. Instead, I
+        would like to call it <Highlight>X.com</Highlight> so that it can easily
+        be confused with adult sites.
+      </p>
+    ),
+  },
+  {
+    id: 2,
+    name: "Tyler Durden",
+    designation: "Manager Project Mayhem",
+    content: (
+      <p>
+        The first rule of
+        <Highlight>Fight Club</Highlight> is that you do not talk about fight
+        club. The second rule of
+        <Highlight>Fight club</Highlight> is that you DO NOT TALK about fight
+        club.
+      </p>
+    ),
+  },
+];
