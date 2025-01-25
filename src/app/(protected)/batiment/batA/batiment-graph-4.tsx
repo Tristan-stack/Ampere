@@ -1,6 +1,6 @@
 "use client"
 
-import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts"
+import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid } from "recharts"
 import { motion } from "framer-motion"
 
 const chartData = [
@@ -73,7 +73,7 @@ const CustomDot = ({ cx, cy, payload }: CustomDotProps) => {
 
 export default function Batimentgraph4() {
   return (
-    <div className="relative h-full w-full rounded-md bg-black border">
+    <div className="relative h-full w-full rounded-md bg- border">
       {/* SVG Filters for glow effects */}
       <svg width="0" height="0">
         <defs>
@@ -98,10 +98,11 @@ export default function Batimentgraph4() {
           >
             <defs>
               <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00ff9d" stopOpacity={0.4} />
-                <stop offset="90%" stopColor="#00ff9d" stopOpacity={0.05} />
+                <stop offset="5%" stopColor="#00ff9d" stopOpacity={0.2} />
+                <stop offset="90%" stopColor="#00ff9d" stopOpacity={0.5} />
               </linearGradient>
             </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" />
             <XAxis 
               dataKey="date" 
               axisLine={false}

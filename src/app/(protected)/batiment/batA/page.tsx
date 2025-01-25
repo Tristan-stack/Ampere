@@ -3,6 +3,10 @@ import React, { useState, useEffect } from "react";
 import { Batimentgraph2 } from "./batiment-graph-2";
 import Batimentgraph4 from "./batiment-graph-4";
 import { BatimentgraphTable } from "./batiment-graph-tableau";
+import BuildingCarousel from "./batiment-carousel";
+import Squares from "@/components/squares";
+import Score from "@/components/score";
+import { cn } from "@/lib/utils"
 
 type ConsumptionData = {
   id: string;
@@ -13,12 +17,41 @@ type ConsumptionData = {
   emissions: number;
 };
 
+const calculateEfficiencyScore = (data: ConsumptionData[]) => {
+  if (!data.length) return 300;
+
+  // Calculer les métriques clés
+  const avgConsumption = data.reduce((acc, curr) => acc + curr.totalConsumption, 0) / data.length;
+  const maxConsumption = Math.max(...data.map(d => d.totalConsumption));
+  const variability = data.reduce((acc, curr) => 
+    acc + Math.pow(curr.totalConsumption - avgConsumption, 2), 0) / data.length;
+
+  // Normaliser les métriques (0-100)
+  const avgScore = Math.max(0, 100 - (avgConsumption / 1000) * 100);
+  const peakScore = Math.max(0, 100 - (maxConsumption / 2000) * 100);
+  const variabilityScore = Math.max(0, 100 - (variability / 10000) * 100);
+
+  // Pondérer les différents facteurs
+  const weightedScore = (
+    avgScore * 0.5 +      // Consommation moyenne (50%)
+    peakScore * 0.3 +     // Pics de consommation (30%)
+    variabilityScore * 0.2 // Stabilité de la consommation (20%)
+  );
+
+  // Mapper le score sur l'échelle 300-810
+  const finalScore = 300 + Math.round((weightedScore / 100) * 510);
+  
+  // Limiter le score entre 300 et 810
+  return Math.min(810, Math.max(300, finalScore));
+};
+
 const BatA = () => {
   const [filteredData, setFilteredData] = useState<ConsumptionData[]>([]);
   const [chartData, setChartData] = useState<ConsumptionData[]>([]);
   const [aggregatedData, setAggregatedData] = useState<{ [key: string]: { date: string; totalConsumption: number; emissions: number }[] }>({});
   const [loading, setLoading] = useState(true);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>(["A", "B", "C"]);
+  const items = ["A", "B", "C"];
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -75,15 +108,15 @@ const BatA = () => {
               device_key: device.key,
             }),
           });
-          
+
           const data = await response.json();
-          
+
           const filteredTimestamps = data.timestamps.filter((timestamp: string) => {
             const recordTime = new Date(timestamp).getTime();
             return recordTime >= fromTime && recordTime <= toTime;
           });
 
-          const filteredIndices = filteredTimestamps.map((timestamp: string) => 
+          const filteredIndices = filteredTimestamps.map((timestamp: string) =>
             data.timestamps.indexOf(timestamp)
           );
 
@@ -100,7 +133,7 @@ const BatA = () => {
         }
 
         setChartData(allData);
-        updateFilteredAndAggregatedData(allData);
+        updateFilteredAndAggregatedData(allData, selectedBuildings);
       } catch (error) {
         console.error('Erreur lors de la récupération des données du device :', error);
       } finally {
@@ -108,11 +141,24 @@ const BatA = () => {
       }
     };
 
-    fetchData();
+     fetchData();
   }, []);
 
-  const updateFilteredAndAggregatedData = (data: ConsumptionData[]) => {
-    const filtered = data.filter(item => selectedBuildings.includes(item.building));
+  useEffect(() => {
+    updateFilteredAndAggregatedData(chartData, selectedBuildings);
+  }, [selectedBuildings, chartData]);
+
+  const [efficiencyScore, setEfficiencyScore] = useState(300);
+
+  useEffect(() => {
+    // Calculer le score uniquement pour les bâtiments sélectionnés
+    const filteredData = chartData.filter(item => selectedBuildings.includes(item.building));
+    const score = calculateEfficiencyScore(filteredData);
+    setEfficiencyScore(score);
+  }, [chartData, selectedBuildings]);
+
+  const updateFilteredAndAggregatedData = (data: ConsumptionData[], buildings: string[]) => {
+    const filtered = data.filter(item => buildings.includes(item.building));
 
     const aggregated: { [key: string]: ConsumptionData } = {};
     filtered.forEach(item => {
@@ -148,36 +194,45 @@ const BatA = () => {
         });
       }
     });
-    
+
     return result;
   };
 
   const handleBuildingSelection = (building: string) => {
-    const updatedSelection = selectedBuildings.includes(building)
-      ? selectedBuildings.filter(b => b !== building)
-      : [...selectedBuildings, building];
-
-    setSelectedBuildings(updatedSelection);
-    updateFilteredAndAggregatedData(chartData);
+    setSelectedBuildings(prev => {
+      if (prev.includes(building)) {
+        return prev.filter(b => b !== building);
+      }
+      return [...prev, building];
+    });
   };
+
+  console.log(efficiencyScore);
 
   return (
     <div className="w-full space-y-4 flex flex-col justify-center mx-auto">
       <div className="w-full h-1/2 flex space-x-4">
-        <div className="w-1/3 bg-neutral-800 rounded-md p-4">
+        <div className="w-1/3 bg-neutral-800 rounded-md border">
           <div className="h-full">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
-              <h3 className="text-white text-lg mb-4">Sélection des bâtiments</h3>
-              <div className="flex flex-col space-y-2">
+              <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
+              <Score score={efficiencyScore} />
+              <h3 className="text-neutral-500 text-lg font-bold mt-2">Sélection des bâtiments</h3>
+              <div className="flex items-start justify-start gap-2">
                 {["A", "B", "C"].map(building => (
-                  <label key={building} className="flex items-center space-x-2 text-white">
-                    <input
-                      type="checkbox"
-                      checked={selectedBuildings.includes(building)}
-                      onChange={() => handleBuildingSelection(building)}
-                    />
-                    <span>Bâtiment {building}</span>
-                  </label>
+                  <button
+                    key={building}
+                    onClick={() => handleBuildingSelection(building)}
+                    className={cn(
+                      "px-4 py-2 rounded-md transition-all duration-200 font-medium text-xs",
+                      "border border-neutral-700 hover:border-neutral-600",
+                      selectedBuildings.includes(building)
+                        ? "bg-neutral-800 text-white shadow-lg shadow-neutral-900/50"
+                        : "bg-neutral-900 text-neutral-400 hover:text-neutral-300"
+                    )}
+                  >
+                    Bâtiment {building}
+                  </button>
                 ))}
               </div>
             </div>
@@ -194,8 +249,17 @@ const BatA = () => {
       <div className="w-full h-1/2 flex space-x-4">
         <div className="w-1/3 bg-neutral-800 rounded-md">
           <div className="h-full">
-            <div className="w-full h-full bg-neutral-900 rounded-md">
-              {/* Vous pouvez ajouter d'autres composants ou informations ici */}
+            <div className="w-full h-full bg-neutral-900 rounded-md border relative">
+              <Squares
+                speed={0.15}
+                squareSize={40}
+                direction='diagonal'
+                borderColor='#1f1f1f'
+                hoverFillColor='#222'
+              />
+              <div className="absolute inset-0 z-10 pointer-events-none">
+                <BuildingCarousel />
+              </div>
             </div>
           </div>
         </div>
