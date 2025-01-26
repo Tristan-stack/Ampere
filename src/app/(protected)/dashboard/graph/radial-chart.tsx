@@ -19,11 +19,11 @@ import {
 } from "@/components/ui/chart"
 
 const chartData = [
-    { browser: "chrome", visitors: 275, fill: "#06DE8F" },
-    { browser: "safari", visitors: 200, fill: "#265DCB" },
-    { browser: "firefox", visitors: 187, fill: "#DF7B0A" },
-    { browser: "edge", visitors: 173, fill: "#C70039" },
-    { browser: "other", visitors: 90, fill: "#900C3F" },
+    { browser: "chrome", visitors: 275, fill: "#00ff9d" },    // Vert néon
+    { browser: "safari", visitors: 200, fill: "#4deeea" },    // Bleu néon
+    { browser: "firefox", visitors: 187, fill: "#f87c00" },   // Orange néon
+    { browser: "edge", visitors: 173, fill: "#ff00ff" },      // Rose néon
+    { browser: "other", visitors: 90, fill: "#7b61ff" },      // Violet néon
 ]
 
 const chartConfig = {
@@ -32,50 +32,85 @@ const chartConfig = {
     },
     chrome: {
         label: "Chrome",
-        color: "#06DE8F",
+        color: "#00ff9d",
     },
     safari: {
         label: "Safari",
-        color: "#265DCB",
+        color: "#4deeea",
     },
     firefox: {
         label: "Firefox",
-        color: "#DF7B0A",
+        color: "#f87c00",
     },
     edge: {
         label: "Edge",
-        color: "#C70039",
+        color: "#ff00ff",
     },
     other: {
         label: "Other",
-        color: "#900C3F",
+        color: "#7b61ff",
     },
 } satisfies ChartConfig
 
+// ... existing code ...
+
 export function RadialChart() {
     return (
-        <Card className="flex flex-col bg-transparent border-none h-32 w-full">
-            <CardHeader className="items-center pb-0">
-                <CardTitle>Radial Chart - Grid</CardTitle>
-                <CardDescription>January - June 2024</CardDescription>
+        <Card className="flex flex-col bg-transparent border-none h-full">
+            {/* SVG Filters pour les effets de lueur */}
+            <svg width="0" height="0">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+            </svg>
+
+            <CardHeader className="items-center py-2">
+                <CardTitle className="text-lg text-left ">
+                    Statistiques des Navigateurs
+                </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 pb-0">
+            <CardContent className="flex-1 w-full min-h-0 pt-0">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto h-26 w-full"
+                    className="h-full w-full"
                 >
                     <ResponsiveContainer width="100%" height="100%">
-                        <RadialBarChart data={chartData} innerRadius={30} outerRadius={100}>
+                        <RadialBarChart
+                            data={chartData}
+                            innerRadius={30}
+                            outerRadius={90}
+                            barSize={15}
+                            cx="50%"
+                            cy="50%"
+                            startAngle={0}
+                            endAngle={360}
+                        >
                             <ChartTooltip
                                 cursor={false}
                                 content={<ChartTooltipContent hideLabel nameKey="browser" />}
                             />
-                            <PolarGrid gridType="circle" />
+                            <PolarGrid
+                                gridType="circle"
+                                stroke="#4deeea"
+                                strokeOpacity={0.15}
+                                className="filter drop-shadow-[0_0_2px_rgba(77,238,234,0.3)]"
+                            />
                             <RadialBar
                                 dataKey="visitors"
                                 background
                                 cornerRadius={10}
-                                className="radial-bar-glow"
+                                label={{
+                                    position: 'insideStart',
+                                    fill: '#fff',
+                                    className: "filter drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]"
+                                }}
+                                className="filter drop-shadow-[0_0_8px_rgba(0,255,157,0.3)]"
                             />
                         </RadialBarChart>
                     </ResponsiveContainer>

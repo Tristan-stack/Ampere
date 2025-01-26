@@ -28,7 +28,7 @@ const chartData = [
 const chartConfig = {
     visitors: {
         label: "Visitors",
-        color: "hsl(var(--chart-2))",
+        color: "#03FEA0",
     },
     chrome: {
         label: "Chrome",
@@ -84,13 +84,18 @@ export function Linechartsm() {
                             <Line
                                 dataKey="visitors"
                                 type="natural"
-                                stroke="var(--color-visitors)"
+                                stroke="#03FEA0"
                                 strokeWidth={2}
                                 dot={{
-                                    fill: "var(--color-visitors)",
+                                    fill: "#03FEA0",
+                                    filter: "drop-shadow(0 0 4px rgba(3, 254, 160, 0.5))",
                                 }}
                                 activeDot={{
                                     r: 6,
+                                    filter: "drop-shadow(0 0 8px rgba(3, 254, 160, 0.6))",
+                                }}
+                                style={{
+                                    filter: "drop-shadow(0 0 3px rgba(3, 254, 160, 0.4))",
                                 }}
                             >
                                 <LabelList
@@ -99,6 +104,10 @@ export function Linechartsm() {
                                     className="fill-foreground"
                                     fontSize={12}
                                     dataKey="browser"
+                                    style={{
+                                        fill: "#03FEA0",
+                                        filter: "drop-shadow(0 0 2px rgba(3, 254, 160, 0.3))",
+                                    }}
                                     formatter={(value: keyof typeof chartConfig) =>
                                         chartConfig[value]?.label
                                     }

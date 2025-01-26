@@ -267,42 +267,37 @@ const Dashboard: React.FC = () => {
             ref={container}
             className="w-full space-y-3 flex flex-col justify-center mx-auto"
         >
-                <div className="flex justify-between items-center">
-                    <motion.button
-                        initial={{ backgroundColor: "#171717", color: "#fff" }}
-                        whileHover={{ backgroundColor: "#fff", color: "#000" }}
-                        transition={{ duration: 0.2 }}
-                        className="px-4 py-2 rounded"
-                        onClick={() => setIsEditing(!isEditing)}
-                    >
-                        {isEditing ? "Quitter le mode édition" : <Blocks className="h-4 w-4 stroke-[2.25px]" />}
-                    </motion.button>
-                    <AnimatePresence>
-                        {isEditing && (
-                            <motion.button
-                                key="save-btn"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="px-4 py-2 rounded bg-white text-black hover:shadow-[0_0_15px_#858585] transition-shadow duration-300"
-                                onClick={handleSaveConfig}
-                            >
-                                Sauvegarder
-                            </motion.button>
-                        )}
-                    </AnimatePresence>
-                </div>
+            <div className="flex justify-between items-center">
+                <motion.button
+                    initial={{ backgroundColor: "#171717", color: "#fff" }}
+                    whileHover={{ backgroundColor: "#fff", color: "#000" }}
+                    transition={{ duration: 0.2 }}
+                    className="px-4 py-2 rounded"
+                    onClick={() => setIsEditing(!isEditing)}
+                >
+                    {isEditing ? "Quitter le mode édition" : <Blocks className="h-4 w-4 stroke-[2.25px]" />}
+                </motion.button>
+                <AnimatePresence>
+                    {isEditing && (
+                        <motion.button
+                            key="save-btn"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="px-4 py-2 rounded bg-white text-black hover:shadow-[0_0_15px_#858585] transition-shadow duration-300"
+                            onClick={handleSaveConfig}
+                        >
+                            Sauvegarder
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+            </div>
             <div className="w-full h-1/2 flex space-x-3">
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">
-                        <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
-                            {/* {loading ? (
-                                <p className="text-white">Chargement...</p>
-                            ) : (
-                                <Line data={chartData} options={options} />
-                            )} */}
-                            <RadialChart /> 
+                        <div className="w-full h-full bg-neutral-900 rounded-md">
+                            <RadialChart />
                         </div>
                     </div>
                 </div>
@@ -318,14 +313,14 @@ const Dashboard: React.FC = () => {
                 <div className="w-1/3 h-full flex flex-col space-y-3">
                     <div className="bg-neutral-800 h-1/2 w-full rounded-md" data-swapy-slot="c">
                         <div className="h-full" data-swapy-item="c">
-                                <div className="w-full h-full bg-neutral-900 rounded-md">
+                            <div className="w-full h-full bg-neutral-900 rounded-md">
                                 <Batimentgraph3 />
                             </div>
                         </div>
                     </div>
                     <div className="bg-neutral-800 h-1/2 w-full rounded-md" data-swapy-slot="d">
                         <div className="h-full" data-swapy-item="d">
-                                <div className="w-full h-full bg-neutral-900 rounded-md">
+                            <div className="w-full h-full bg-neutral-900 rounded-md">
                                 <Linechartsm />
                             </div>
                         </div>
@@ -333,7 +328,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="e">
                     <div className="h-full" data-swapy-item="e">
-                            <div className="w-full h-full bg-neutral-900 rounded-md">
+                        <div className="w-full h-full bg-neutral-900 rounded-md">
                             <GraphConso />
                         </div>
                     </div>
