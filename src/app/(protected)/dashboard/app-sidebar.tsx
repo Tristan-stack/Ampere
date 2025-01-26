@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { BadgeCheck, ChevronRight, LayoutGrid, Book, Settings2, Plus, PlugIcon as HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks } from 'lucide-react'
+import { BadgeCheck, ChevronRight, LayoutGrid, Book, Settings2, Plus, PlugIcon as HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks, Building2 } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -49,14 +49,9 @@ const mainItems = [
   },
   {
     title: "Bâtiments",
-    url: "",
-    icon: HousePlug,
-    hasChildren: true,
-    children: [
-      { title: "Bâtiment A", url: "/batiment/batA" },
-      { title: "Bâtiment B", url: "/batiment/batB" },
-      { title: "Bâtiment C", url: "/batiment/batC" },
-    ]
+    url: "/batiment",
+    icon: Building2,
+    hasChildren: false,
   },
   {
     title: "Carte interactive",

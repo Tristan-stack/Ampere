@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import BounceLoader from "react-spinners/BounceLoader"
 
 const chartConfig = {
   total: {
@@ -406,104 +407,110 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
           config={chartConfig}
           className="h-full w-full"
         >
-          <div className="h-full w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartData}
-                margin={{ top: 20, right: 50, left: -10, bottom: 90 }}
-              >
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke={chartColors.grid}
-                  opacity={0.5}
-                />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  minTickGap={32}
-                  tick={{ fill: chartColors.text }}
-                  tickFormatter={getDateFormatter(chartOptions.timeInterval)}
-                />
-                <YAxis 
-                  tick={{ fill: chartColors.text }}
-                  axisLine={{ stroke: chartColors.axis }}
-                  tickLine={{ stroke: chartColors.axis }}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      className="w-fit transition-all duration-300"
-                      nameKey="views"
-                      labelFormatter={(value) => {
-                        return new Date(value).toLocaleDateString("fr-FR", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })
-                      }}
-                    />
-                  }
-                />
-                {Object.keys(aggregatedData).map((building) => (
-                  <Line
-                    key={building}
-                    type={chartOptions.curveType}
-                    dataKey={`consumption${building}`}
-                    stroke={buildingColors[building as keyof typeof buildingColors]}
-                    strokeWidth={2}
-                    dot={(props) => {
-                      const isMinPoint = selectedPoints.includes('min') && 
-                        props.payload.date === findMinMaxPoints.minPoint.date && 
-                        `consumption${findMinMaxPoints.minPoint.building}` === props.dataKey;
-                      const isMaxPoint = selectedPoints.includes('max') && 
-                        props.payload.date === findMinMaxPoints.maxPoint.date && 
-                        `consumption${findMinMaxPoints.maxPoint.building}` === props.dataKey;
-                      
-                      if (!chartOptions.showDots && !isMinPoint && !isMaxPoint) return false;
-
-                      const pointType = isMinPoint ? 'min' : isMaxPoint ? 'max' : 'normal';
-                      const uniqueKey = `${building}-${props.payload.date}-${pointType}`;
-
-                      return (
-                        <g key={uniqueKey}>
-                          <circle
-                            cx={props.cx}
-                            cy={props.cy}
-                            r={isMinPoint || isMaxPoint ? 6 : 4}
-                            fill="white"
-                            stroke={buildingColors[building as keyof typeof buildingColors]}
-                            strokeWidth={isMinPoint || isMaxPoint ? 3 : 2}
-                          />
-                          {(isMinPoint || isMaxPoint) && (
-                            <text
-                              x={props.cx + 15}
-                              y={props.cy + 4}
-                              textAnchor="start"
-                              fill="white"
-                              fontSize="12"
-                              fontWeight="normal"
-                              stroke={buildingColors[building as keyof typeof buildingColors]}
-                              strokeWidth={3}
-                              paintOrder="stroke"
-                            >
-                              {isMinPoint ? 'MIN' : 'MAX'}
-                            </text>
-                          )}
-                        </g>
-                      ) as any;
-                    }}
-                    name={`Bâtiment ${building}`}
-                    animationDuration={750}
-                    connectNulls
+          {loading ? (
+            <div className="flex justify-center items-center -mt-8 h-full">
+              <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />
+            </div>
+          ) : (
+            <div className="h-full w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 20, right: 50, left: -10, bottom: 90 }}
+                >
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke={chartColors.grid}
+                    opacity={0.5}
                   />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    minTickGap={32}
+                    tick={{ fill: chartColors.text }}
+                    tickFormatter={getDateFormatter(chartOptions.timeInterval)}
+                  />
+                  <YAxis 
+                    tick={{ fill: chartColors.text }}
+                    axisLine={{ stroke: chartColors.axis }}
+                    tickLine={{ stroke: chartColors.axis }}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        className="w-fit transition-all duration-300"
+                        nameKey="views"
+                        labelFormatter={(value) => {
+                          return new Date(value).toLocaleDateString("fr-FR", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })
+                        }}
+                      />
+                    }
+                  />
+                  {Object.keys(aggregatedData).map((building) => (
+                    <Line
+                      key={building}
+                      type={chartOptions.curveType}
+                      dataKey={`consumption${building}`}
+                      stroke={buildingColors[building as keyof typeof buildingColors]}
+                      strokeWidth={2}
+                      dot={(props) => {
+                        const isMinPoint = selectedPoints.includes('min') && 
+                          props.payload.date === findMinMaxPoints.minPoint.date && 
+                          `consumption${findMinMaxPoints.minPoint.building}` === props.dataKey;
+                        const isMaxPoint = selectedPoints.includes('max') && 
+                          props.payload.date === findMinMaxPoints.maxPoint.date && 
+                          `consumption${findMinMaxPoints.maxPoint.building}` === props.dataKey;
+                        
+                        if (!chartOptions.showDots && !isMinPoint && !isMaxPoint) return false;
+
+                        const pointType = isMinPoint ? 'min' : isMaxPoint ? 'max' : 'normal';
+                        const uniqueKey = `${building}-${props.payload.date}-${pointType}`;
+
+                        return (
+                          <g key={uniqueKey}>
+                            <circle
+                              cx={props.cx}
+                              cy={props.cy}
+                              r={isMinPoint || isMaxPoint ? 6 : 4}
+                              fill="white"
+                              stroke={buildingColors[building as keyof typeof buildingColors]}
+                              strokeWidth={isMinPoint || isMaxPoint ? 3 : 2}
+                            />
+                            {(isMinPoint || isMaxPoint) && (
+                              <text
+                                x={props.cx + 15}
+                                y={props.cy + 4}
+                                textAnchor="start"
+                                fill="white"
+                                fontSize="12"
+                                fontWeight="normal"
+                                stroke={buildingColors[building as keyof typeof buildingColors]}
+                                strokeWidth={3}
+                                paintOrder="stroke"
+                              >
+                                {isMinPoint ? 'MIN' : 'MAX'}
+                              </text>
+                            )}
+                          </g>
+                        ) as any;
+                      }}
+                      name={`Bâtiment ${building}`}
+                      animationDuration={750}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </ChartContainer>
       </div>
     </div>

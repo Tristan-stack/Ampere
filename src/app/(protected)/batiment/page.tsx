@@ -7,6 +7,8 @@ import { BatimentCarousel } from "./batiment-carousel";
 import Squares from "@/components/squares";
 import Score from "@/components/score";
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Info } from "lucide-react"
 
 type ConsumptionData = {
   id: string;
@@ -45,7 +47,7 @@ const calculateEfficiencyScore = (data: ConsumptionData[]) => {
   return Math.min(810, Math.max(300, finalScore));
 };
 
-const BatA = () => {
+const Batiments = () => {
   const [filteredData, setFilteredData] = useState<ConsumptionData[]>([]);
   const [chartData, setChartData] = useState<ConsumptionData[]>([]);
   const [aggregatedData, setAggregatedData] = useState<{ [key: string]: { date: string; totalConsumption: number; emissions: number }[] }>({});
@@ -66,6 +68,9 @@ const BatA = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      // Ajouter un délai artificiel pour tester le loader
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const deviceKeys = [
         { key: '4f887d23-3cf2-4d1c-8ae8-0f0bea45cf09', building: 'A', floor: 'Rez-de-chaussée' },
         { key: '510478e8-ddfe-40d1-8d2f-f8562e4fb128', building: 'A', floor: '1er étage' },
@@ -223,7 +228,28 @@ const BatA = () => {
           <div className="h-full">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden">
               <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
-              <Score score={efficiencyScore+500} />
+              <div className="relative">
+                <Score score={efficiencyScore+500} />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="absolute top-0 right-0 p-2 text-neutral-400 hover:text-neutral-300 transition-colors">
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="text-sm">
+                        Le score est calculé en fonction de 3 critères :
+                        <br />• Consommation moyenne (50%)
+                        <br />• Pics de consommation (30%)
+                        <br />• Stabilité de la consommation (20%)
+                        <br /><br />
+                        Plus le score est élevé, plus la consommation est optimisée.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold mt-2">Sélection des bâtiments</h3>
               <div className="flex items-start mt-1 justify-start gap-2">
                 {["A", "B", "C"].map(building => (
@@ -298,4 +324,4 @@ const BatA = () => {
   );
 };
 
-export default BatA;
+export default Batiments;
