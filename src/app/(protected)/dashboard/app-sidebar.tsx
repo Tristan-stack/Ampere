@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useSidebar } from "@/components/ui/sidebar"
+import { ChatInterface } from "@/components/chat/chat-interface"
 
 
 const mainItems = [
@@ -164,7 +165,15 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SearchBar />
               </SidebarMenu>
-          </SidebarGroupContent>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-neutral-400">Assistant IA</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <div className="p-2 h-[400px]">
+                <ChatInterface />
+              </div>
+            </SidebarGroupContent>
           </SidebarGroup>
         </ScrollArea>
       </SidebarContent>
