@@ -52,7 +52,6 @@ const chartColors = {
 } as const;
 
 interface ChartOptions {
-  showDots: boolean
   curveType: "linear" | "monotone"
   timeInterval: "5min" | "15min" | "30min" | "1h" | "1d"
 }
@@ -119,7 +118,6 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
   const [prevMax, setPrevMax] = useState(0);
   const [prevMin, setPrevMin] = useState(0);
   const [chartOptions, setChartOptions] = useState<ChartOptions>({
-    showDots: false,
     curveType: "monotone",
     timeInterval: "5min"
   });
@@ -331,18 +329,6 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                     {chartOptions.timeInterval === "1d" && <Check className="h-4 w-4" />}
                   </div>
                 </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Options</DropdownMenuLabel>
-                
-                <DropdownMenuItem
-                  onClick={() => setChartOptions(prev => ({ ...prev, showDots: !prev.showDots }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    Afficher les points
-                    {chartOptions.showDots && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -469,9 +455,9 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                           props.payload.date === findMinMaxPoints.maxPoint.date && 
                           `consumption${findMinMaxPoints.maxPoint.building}` === props.dataKey;
                         
-                        if (!chartOptions.showDots && !isMinPoint && !isMaxPoint) return false;
+                        if (!isMinPoint && !isMaxPoint) return false;
 
-                        const pointType = isMinPoint ? 'min' : isMaxPoint ? 'max' : 'normal';
+                        const pointType = isMinPoint ? 'min' : 'max';
                         const uniqueKey = `${building}-${props.payload.date}-${pointType}`;
 
                         return (
