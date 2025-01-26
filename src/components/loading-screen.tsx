@@ -1,9 +1,10 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '@/app/(protected)/context/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Rainbow from "@/components/ui/rainbow";
 import CountUp from './countup';
+import ShinyText from './shiny';
 
 export const LoadingScreen = () => {
     const { isLoading, loadingProgress } = useData();
@@ -23,9 +24,7 @@ export const LoadingScreen = () => {
             {isLoading && !shouldExit && (
                 <motion.div
                     className="fixed inset-0 bg-neutral-950 z-50 flex items-center justify-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ 
+                    exit={{
                         y: '-100%',
                         transition: {
                             duration: 0.8,
@@ -46,18 +45,19 @@ export const LoadingScreen = () => {
                             Ampere
                         </span>
                     </motion.div>
-                    <motion.div 
-                        className="flex items-center justify-center"
-                        exit={{ 
-                            scale: 0.8, 
+                    <motion.div
+                        className="flex flex-col items-center justify-center"
+                        exit={{
+                            scale: 0.8,
                             opacity: 0,
-                            transition: { 
+                            transition: {
                                 duration: 0.4,
                                 ease: [0.76, 0, 0.24, 1]
                             }
                         }}
                     >
-                        <CountUp 
+                        <div className='flex items-end justify-center'>
+                        <CountUp
                             to={loadingProgress}
                             from={0}
                             duration={0.5}
@@ -70,6 +70,9 @@ export const LoadingScreen = () => {
                                 }
                             }}
                         />
+                        <p className='text-xl font-bold text-white'>%</p>
+                        </div>
+                        <ShinyText text="Chargement des données en cours" disabled={false} speed={1.5} className='text-xs' />
                     </motion.div>
                 </motion.div>
             )}

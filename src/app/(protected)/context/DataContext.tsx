@@ -116,7 +116,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const savedRange = getCookie('dateRange');
     if (!savedRange) {
       console.warn('Pas de dateRange dans les cookies.');
-      setIsLoading(false);
+      setIsLoading(true);
       setIsInitialLoad(false);
       return;
     }
@@ -177,7 +177,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoadingProgress(100);
       setTimeout(() => {
-        setIsLoading(false);
+        setIsLoading(true);
       }, 1500);
       setIsInitialLoad(false);
     }
