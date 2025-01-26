@@ -1,11 +1,11 @@
-import "@/styles/globals.css";
 
+import "@/styles/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-
-import { ClerkProvider } from '@clerk/nextjs'
-
+import { ClerkProvider } from '@clerk/nextjs';
 import { TRPCReactProvider } from "@/trpc/react";
+import { ToastContainer, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export const metadata: Metadata = {
   title: "EcoTrack",
@@ -21,6 +21,20 @@ export default function RootLayout({
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body>
           <TRPCReactProvider>{children}</TRPCReactProvider>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick={false}
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+            transition={Bounce}
+            progressClassName="toast-progress"
+          />
         </body>
       </html>
     </ClerkProvider>
