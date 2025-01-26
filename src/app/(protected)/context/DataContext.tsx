@@ -15,6 +15,7 @@ type DataContextType = {
   filteredData: ConsumptionData[];
   aggregatedData: { [key: string]: { date: string; totalConsumption: number; emissions: number }[] };
   isLoading: boolean;
+  loadingProgress: number;
   selectedBuildings: string[];
   setSelectedBuildings: React.Dispatch<React.SetStateAction<string[]>>;
   deviceData: number[];
@@ -33,6 +34,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>(["A", "B", "C"]);
   const [isTestMode, setIsTestMode] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -90,6 +92,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchData = async () => {
     if (isInitialLoad) {
       setIsLoading(true);
+      setLoadingProgress(0);
     }
 
     const deviceKeys = [
@@ -124,6 +127,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       const allData: ConsumptionData[] = [];
+      const totalDevices = deviceKeys.length;
+      let loadedDevices = 0;
 
       for (const device of deviceKeys) {
         const response = await fetch('/api/getDeviceDataByKey', {
@@ -161,6 +166,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         }));
 
         allData.push(...deviceData);
+        loadedDevices++;
+        setLoadingProgress(Math.floor((loadedDevices / totalDevices) * 100));
       }
 
       setChartData(allData);
@@ -168,7 +175,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Erreur lors de la récupération des données:', error);
     } finally {
-      setIsLoading(false);
+      setLoadingProgress(100);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
       setIsInitialLoad(false);
     }
   };
@@ -201,6 +211,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       filteredData, 
       aggregatedData, 
       isLoading,
+      loadingProgress,
       selectedBuildings, 
       setSelectedBuildings,
       deviceData: [],
