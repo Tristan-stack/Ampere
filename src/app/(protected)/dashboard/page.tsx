@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { createSwapy } from "swapy";
 import { Line } from "react-chartjs-2";
 import { GraphConso } from "./graph-conso";
+import { useData } from '../context/DataContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -294,7 +295,7 @@ const Dashboard: React.FC = () => {
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">
                         <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
-                            {loading ? (
+                            {isLoading ? (
                                 <p className="text-white">Chargement...</p>
                             ) : (
                                 <Line data={chartData} options={options} />
