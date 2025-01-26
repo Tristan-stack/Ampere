@@ -62,7 +62,7 @@ export function RadialChart() {
             <CardContent className="flex-1 pb-0">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto h-full w-full"
+                    className="mx-auto h-26 w-full"
                 >
                     <ResponsiveContainer width="100%" height="100%">
                         <RadialBarChart data={chartData} innerRadius={30} outerRadius={100}>
