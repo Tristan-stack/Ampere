@@ -57,44 +57,6 @@ const Etages = () => {
     return null;
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const deviceKeys = [
-        { key: '4f887d23-3cf2-4d1c-8ae8-0f0bea45cf09', building: 'A', floor: 'Rez-de-chaussée' },
-        { key: '510478e8-ddfe-40d1-8d2f-f8562e4fb128', building: 'A', floor: '1er étage' },
-        { key: 'ca8bf525-9259-4cfa-9ebe-856b4356895e', building: 'A', floor: '2e étage' },
-        { key: '3b36f6d7-8abd-4e79-8154-72ccb92b9273', building: 'A', floor: '3e étage' },
-        // ... autres clés de device
-      ];
-
-      const savedRange = getCookie('dateRange');
-      if (!savedRange) {
-        console.warn('Pas de dateRange dans les cookies.');
-        setLoading(false);
-        return;
-      }
-
-      const { from, to } = JSON.parse(savedRange);
-      const fromTime = new Date(from).getTime();
-      const toTime = new Date(to).getTime();
-
-      try {
-        const allData: ConsumptionData[] = [];
-        // Logique de fetch similaire à la page bâtiment
-        setFloorData(allData);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des données :', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
   const buildingColors = {
     'A': 'hsl(var(--chart-1))',
     'B': 'hsl(var(--chart-2))',

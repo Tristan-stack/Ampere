@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { createSwapy } from 'swapy';
 import { Line } from 'react-chartjs-2';
 import { GraphConso } from "./graph-conso";
+import { useData } from '../context/DataContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -27,11 +28,8 @@ ChartJS.register(
 const Dashboard = () => {
     const swapy = useRef<ReturnType<typeof createSwapy> | null>(null);
     const container = useRef(null);
-    const [deviceData, setDeviceData] = useState<number[]>([]);
-    const [labels, setLabels] = useState<string[]>([]);
-    const [unit, setUnit] = useState<string>('');
-    const [deviceName, setDeviceName] = useState<string>(''); // État pour le nom de l'appareil
-    const [loading, setLoading] = useState(true);
+    const { deviceData, labels, unit, deviceName, isLoading } = useData();
+
     useEffect(() => {
         const socket = new WebSocket('wss://socket.allegre.ens.mmi-unistra.fr');
 
@@ -72,34 +70,6 @@ const Dashboard = () => {
         };
     }, []);
 
-    useEffect(() => {
-        const fetchDeviceData = async () => {
-            try {
-                const response = await fetch('/api/getDeviceDataByKey', { // Assurez-vous que le chemin est correct
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        device_key: '14375bc7-eb4f-4cac-88f8-ae6be2dde5cd',
-                    }),
-                });
-                const data = await response.json();
-                console.log('Données du device :', data);
-                setDeviceData(data.values);
-                setLabels(data.timestamps.map((timestamp: string) => new Date(timestamp).toLocaleTimeString()));
-                setUnit(data.unit);
-                setDeviceName(data.name); // Stocker le nom de l'appareil
-                setLoading(false);
-            } catch (error) {
-                console.error('Erreur lors de la récupération des données du device :', error);
-                setLoading(false);
-            }
-        };
-
-        fetchDeviceData();
-    }, []);
-
     const chartData = {
         labels: labels,
         datasets: [
@@ -131,7 +101,7 @@ const Dashboard = () => {
                 <div className="w-2/3 bg-neutral-800 rounded-md" data-swapy-slot="a">
                     <div className="h-full" data-swapy-item="a">
                         <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
-                            {loading ? (
+                            {isLoading ? (
                                 <p className="text-white">Chargement...</p>
                             ) : (
                                 <Line data={chartData} options={options} />
