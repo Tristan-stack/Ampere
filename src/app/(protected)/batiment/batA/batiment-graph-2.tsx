@@ -10,7 +10,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { useState, useEffect } from "react"
-import { Settings2 } from "lucide-react"
+import { Settings2, Check } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,6 +122,15 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
     curveType: "monotone",
     timeInterval: "5min"
   });
+  const [selectedPoints, setSelectedPoints] = useState<('min' | 'max')[]>([]);
+
+  const togglePoint = (type: 'min' | 'max') => {
+    setSelectedPoints(prev => 
+      prev.includes(type) 
+        ? prev.filter(p => p !== type)
+        : [...prev, type]
+    );
+  };
 
   // Trouver les points min et max
   const findMinMaxPoints = React.useMemo(() => {
@@ -145,8 +154,18 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
         point.value < (min?.value ?? 0) ? point : min
       , allValues[0]);
 
-      maxPoint = { ...maxValue, type: 'max' };
-      minPoint = { ...minValue, type: 'min' };
+      maxPoint = { 
+        date: maxValue?.date || '',
+        value: maxValue?.value || 0,
+        building: maxValue?.building || '',
+        type: 'max'
+      };
+      minPoint = { 
+        date: minValue?.date || '',
+        value: minValue?.value || 0,
+        building: minValue?.building || '',
+        type: 'min'
+      };
     }
 
     return { maxPoint, minPoint };
@@ -250,16 +269,18 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, curveType: "monotone" }))}
                 >
-                  <span className={chartOptions.curveType === "monotone" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     Courbe lisse
-                  </span>
+                    {chartOptions.curveType === "monotone" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, curveType: "linear" }))}
                 >
-                  <span className={chartOptions.curveType === "linear" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     Ligne droite
-                  </span>
+                    {chartOptions.curveType === "linear" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -268,41 +289,46 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "5min" }))}
                 >
-                  <span className={chartOptions.timeInterval === "5min" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     5 minutes
-                  </span>
+                    {chartOptions.timeInterval === "5min" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "15min" }))}
                 >
-                  <span className={chartOptions.timeInterval === "15min" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     15 minutes
-                  </span>
+                    {chartOptions.timeInterval === "15min" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "30min" }))}
                 >
-                  <span className={chartOptions.timeInterval === "30min" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     30 minutes
-                  </span>
+                    {chartOptions.timeInterval === "30min" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "1h" }))}
                 >
-                  <span className={chartOptions.timeInterval === "1h" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     1 heure
-                  </span>
+                    {chartOptions.timeInterval === "1h" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "1d" }))}
                 >
-                  <span className={chartOptions.timeInterval === "1d" ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     1 jour
-                  </span>
+                    {chartOptions.timeInterval === "1d" && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -311,9 +337,10 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 <DropdownMenuItem
                   onClick={() => setChartOptions(prev => ({ ...prev, showDots: !prev.showDots }))}
                 >
-                  <span className={chartOptions.showDots ? "font-bold" : ""}>
+                  <div className="flex items-center justify-between w-full">
                     Afficher les points
-                  </span>
+                    {chartOptions.showDots && <Check className="h-4 w-4" />}
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -336,7 +363,12 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               />
             </span>
           </div>
-          <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2">
+          <div 
+            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+              selectedPoints.includes('max') ? 'bg-accent/50' : ''
+            }`}
+            onClick={() => togglePoint('max')}
+          >
             <span className="text-xs text-muted-foreground">Maximum</span>
             <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
               <CountUp
@@ -349,7 +381,12 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               />
             </span>
           </div>
-          <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2">
+          <div 
+            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+              selectedPoints.includes('min') ? 'bg-accent/50' : ''
+            }`}
+            onClick={() => togglePoint('min')}
+          >
             <span className="text-xs text-muted-foreground">Minimum</span>
             <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
               <CountUp
@@ -418,12 +455,47 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                     dataKey={`consumption${building}`}
                     stroke={buildingColors[building as keyof typeof buildingColors]}
                     strokeWidth={2}
-                    dot={chartOptions.showDots ? {
-                      r: 4,
-                      fill: "white",
-                      stroke: buildingColors[building as keyof typeof buildingColors],
-                      strokeWidth: 2
-                    } : false}
+                    dot={(props) => {
+                      const isMinPoint = selectedPoints.includes('min') && 
+                        props.payload.date === findMinMaxPoints.minPoint.date && 
+                        `consumption${findMinMaxPoints.minPoint.building}` === props.dataKey;
+                      const isMaxPoint = selectedPoints.includes('max') && 
+                        props.payload.date === findMinMaxPoints.maxPoint.date && 
+                        `consumption${findMinMaxPoints.maxPoint.building}` === props.dataKey;
+                      
+                      if (!chartOptions.showDots && !isMinPoint && !isMaxPoint) return false;
+
+                      const pointType = isMinPoint ? 'min' : isMaxPoint ? 'max' : 'normal';
+                      const uniqueKey = `${building}-${props.payload.date}-${pointType}`;
+
+                      return (
+                        <g key={uniqueKey}>
+                          <circle
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={isMinPoint || isMaxPoint ? 6 : 4}
+                            fill="white"
+                            stroke={buildingColors[building as keyof typeof buildingColors]}
+                            strokeWidth={isMinPoint || isMaxPoint ? 3 : 2}
+                          />
+                          {(isMinPoint || isMaxPoint) && (
+                            <text
+                              x={props.cx + 15}
+                              y={props.cy + 4}
+                              textAnchor="start"
+                              fill="white"
+                              fontSize="12"
+                              fontWeight="normal"
+                              stroke={buildingColors[building as keyof typeof buildingColors]}
+                              strokeWidth={3}
+                              paintOrder="stroke"
+                            >
+                              {isMinPoint ? 'MIN' : 'MAX'}
+                            </text>
+                          )}
+                        </g>
+                      ) as any;
+                    }}
                     name={`Bâtiment ${building}`}
                     animationDuration={750}
                     connectNulls
