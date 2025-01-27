@@ -36,6 +36,16 @@ const SUGGESTED_QUESTIONS = [
     "Quels sont les appareils qui consomment le plus ?",
 ]
 
+// Ajout d'un message d'erreur personnalisé pour le quota dépassé
+const QUOTA_ERROR_MESSAGE = `Désolé, j'ai atteint ma limite de requêtes pour aujourd'hui 😅
+
+Je ne peux plus accéder à mon cerveau pour le moment, mais je serai de retour demain avec de nouvelles réponses ! En attendant, vous pouvez :
+- Consulter les données directement dans le tableau de bord
+- Revenir me voir demain pour plus d'analyses
+- Noter vos questions pour notre prochaine discussion
+
+À très vite ! 🔌✨`
+
 // Ajout du composant pour l'icône de chat
 const ChatIcon = () => (
     <svg
@@ -124,7 +134,14 @@ export function ChatInterface() {
             if (!response.ok) {
                 console.error('Erreur détaillée:', data)
                 if (response.status === 429) {
-                    throw new Error('Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.')
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: QUOTA_ERROR_MESSAGE,
+                        timestamp: Date.now()
+                    }])
+                    setIsLoading(false)
+                    setIsTyping(true)
+                    return
                 }
                 throw new Error(data.error || 'Une erreur est survenue')
             }
@@ -176,8 +193,23 @@ export function ChatInterface() {
                 chatId
             })
         })
-            .then(response => response.json())
-            .then(data => {
+            .then(async response => {
+                const data = await response.json()
+
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        setMessages(prev => [...prev, {
+                            role: 'assistant',
+                            content: QUOTA_ERROR_MESSAGE,
+                            timestamp: Date.now()
+                        }])
+                        setIsLoading(false)
+                        setIsTyping(true)
+                        return
+                    }
+                    throw new Error(data.error || 'Une erreur est survenue')
+                }
+
                 if (!chatId) setChatId(data.chatId)
                 setIsLoading(false)
                 setTimeout(() => {

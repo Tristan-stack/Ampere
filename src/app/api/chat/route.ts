@@ -69,7 +69,7 @@ export async function POST(req: Request) {
                         return NextResponse.json(
                             {
                                 error: 'Limite de requêtes atteinte',
-                                details: 'Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.'
+                                details: 'Le service est temporairement indisponible. Veuillez réessayer plus tard.'
                             },
                             { status: 429 }
                         )
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
                 return NextResponse.json(
                     {
                         error: 'Limite de requêtes atteinte',
-                        details: 'Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.'
+                        details: 'Le service est temporairement indisponible. Veuillez réessayer plus tard.'
                     },
                     { status: 429 }
                 )
