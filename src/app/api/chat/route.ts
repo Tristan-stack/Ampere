@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
-const SYSTEM_PROMPT = `Tu es un assistant intelligent spécialisé dans les sujets liés à l'énergie et à l'électricité. Ton rôle est de répondre aux questions des utilisateurs de manière pédagogique, précise et utile. Les utilisateurs peuvent te poser des questions sur la production d'énergie, la consommation, les économies d'énergie, les sources renouvelables, ou tout autre sujet lié à l'électricité dans sa globalité.
+const SYSTEM_PROMPT = `Tu es un assistant intelligent spécialisé dans les sujets liés à l'énergie et à l'électricité et ton nom est Ampy. Ton rôle est de répondre aux questions des utilisateurs de manière pédagogique, précise et utile. Les utilisateurs peuvent te poser des questions sur la production d'énergie, la consommation, les économies d'énergie, les sources renouvelables, ou tout autre sujet lié à l'électricité dans sa globalité.
 
 Tu es aussi chaleureux et amical. Si un utilisateur te pose une question personnelle ou générale, tu peux répondre brièvement de manière sympathique avant de rediriger la conversation vers ton domaine d'expertise.
 
@@ -17,11 +17,14 @@ Règles importantes:
 
 Si une question est complètement hors sujet, rappelle poliment que tu es spécialisé dans l'énergie et l'électricité.`
 
+// Stocker les chats actifs
+const activeChats = new Map()
+
 export async function POST(req: Request) {
     try {
-        const { message, context } = await req.json()
+        const { message, context, chatId } = await req.json()
+        let newChatId = chatId
 
-        // Utilisation de Gemini 1.5 Flash
         const model = genAI.getGenerativeModel({
             model: 'gemini-1.5-pro',
             generationConfig: {
@@ -32,33 +35,50 @@ export async function POST(req: Request) {
             },
         })
 
-        const chat = model.startChat({
-            history: [
-                {
-                    role: 'user',
-                    parts: [{ text: SYSTEM_PROMPT }],
+        let chat
+        if (chatId && activeChats.has(chatId)) {
+            chat = activeChats.get(chatId)
+            // Envoyer directement le message sans le prompt système
+            const result = await chat.sendMessage(message)
+            const response = await result.response.text()
+            return NextResponse.json({ response, chatId })
+        } else {
+            chat = model.startChat({
+                history: [
+                    {
+                        role: 'user',
+                        parts: [{ text: SYSTEM_PROMPT }],
+                    },
+                    {
+                        role: 'model',
+                        parts: [{ text: "Je suis prêt à t'aider avec tes questions sur l'énergie." }],
+                    },
+                ],
+                generationConfig: {
+                    maxOutputTokens: 2048,
                 },
-                {
-                    role: 'model',
-                    parts: [{ text: "Compris ! Je suis prêt à discuter d'énergie et d'électricité de manière amicale et informative 😊" }],
-                },
-            ],
-            generationConfig: {
-                maxOutputTokens: 2048,
-            },
-        })
+            })
 
-        const prompt = `
-        Contexte des données actuelles:
-        ${JSON.stringify(context)}
-        
-        Question de l'utilisateur: ${message}
-        `
+            // Pour le premier message, inclure le contexte
+            const prompt = `
+            Contexte des données actuelles:
+            ${JSON.stringify(context)}
+            
+            Question de l'utilisateur: ${message}
+            `
+            const result = await chat.sendMessage(prompt)
+            const response = await result.response.text()
 
-        const result = await chat.sendMessage(prompt)
-        const response = await result.response.text()
+            if (!chatId) {
+                newChatId = Date.now().toString()
+                activeChats.set(newChatId, chat)
+            }
 
-        return NextResponse.json({ response })
+            return NextResponse.json({ 
+                response,
+                chatId: newChatId
+            })
+        }
     } catch (error) {
         console.error('Erreur API Chat:', error)
         return NextResponse.json(

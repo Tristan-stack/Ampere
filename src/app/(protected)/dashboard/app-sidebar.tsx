@@ -100,7 +100,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <ScrollArea className="h-[37rem] w-full">
+        <div className="flex flex-col h-full">
           <SidebarGroup>
             <SidebarGroupLabel className="text-neutral-400">Suivi énergétique</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -167,15 +167,15 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarGroup>
+          <SidebarGroup className="flex-1 overflow-hidden">
             <SidebarGroupLabel className="text-neutral-400">Assistant IA</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <div className="p-2 h-[400px]">
+            <SidebarGroupContent className="h-full overflow-hidden">
+              <div className="h-full">
                 <ChatInterface />
               </div>
             </SidebarGroupContent>
           </SidebarGroup>
-        </ScrollArea>
+        </div>
       </SidebarContent>
       <SidebarFooter>
         <div className="flex justify-between gap-2 group-data-[state=collapsed]:flex-col-reverse">
