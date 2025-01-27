@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Building2, ArrowRight } from "lucide-react";
@@ -9,6 +9,9 @@ import Squares from "@/components/squares";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EtageCarousel } from "./etage-carousel";
+import { EtageGraph2 } from "./etage-graph-2";
+import { useData } from "../context/DataContext";
+import { EtageTools } from "./etage-tools";
 
 type ConsumptionData = {
   id: string;
@@ -37,15 +40,100 @@ type SelectedFloor = {
 };
 
 const Etages = () => {
+  const { chartData, isLoading } = useData();
   const [selectedFloors, setSelectedFloors] = useState<SelectedFloor[]>([
     { building: 'A', floor: 'Rez-de-chaussée' }
   ]);
-  const [floorData, setFloorData] = useState<ConsumptionData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastClickTime, setLastClickTime] = useState<number>(0);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
   const [showSelected, setShowSelected] = useState(false);
   const [expandedGraph, setExpandedGraph] = useState<number | null>(null);
+  const [savingsPercentage, setSavingsPercentage] = useState(0);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+
+  // Modifier la préparation des données agrégées
+  const aggregatedData = React.useMemo(() => {
+    if (!chartData) return {};
+
+    const buildingGroups = selectedFloors.reduce((acc, { building }) => {
+      if (!acc[building]) {
+        acc[building] = [];
+      }
+      return acc;
+    }, {} as { [key: string]: any[] });
+
+    // Agréger les données par bâtiment
+    selectedFloors.forEach(({ building, floor }) => {
+      const floorData = chartData.filter(
+        item => item.building === building && item.floor === floor
+      );
+      buildingGroups[building]?.push(...floorData);
+    });
+
+    // Appliquer la réduction aux données agrégées
+    Object.keys(buildingGroups).forEach(building => {
+      if (buildingGroups[building]) {
+        buildingGroups[building] = buildingGroups[building].map(data => ({
+          ...data,
+          totalConsumption: data.totalConsumption * (1 - savingsPercentage / 100),
+          emissions: data.emissions * (1 - savingsPercentage / 100)
+        }));
+      }
+    });
+
+    // Créer l'objet final avec les données agrégées et interpolées
+    const aggregated: { [key: string]: any[] } = {};
+    Object.entries(buildingGroups).forEach(([building, data]) => {
+      if (data.length > 0) {
+        // Trier les données par date
+        const sortedData = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // Créer un tableau de toutes les dates uniques
+        const allDates = [...new Set(data.map(item => item.date))].sort();
+
+        // Initialiser l'objet pour stocker les valeurs interpolées
+        const interpolatedData: { [key: string]: { totalConsumption: number, emissions: number } } = {};
+
+        // Pour chaque date, calculer la valeur interpolée
+        allDates.forEach((date, index) => {
+          const timestamp = new Date(date).getTime();
+          const values = data.filter(item => new Date(item.date).getTime() === timestamp);
+
+          if (values.length > 0) {
+            // Si on a des valeurs pour cette date, on fait la moyenne
+            interpolatedData[date] = {
+              totalConsumption: values.reduce((sum, v) => sum + v.totalConsumption, 0) / values.length,
+              emissions: values.reduce((sum, v) => sum + v.emissions, 0) / values.length
+            };
+          } else {
+            // Sinon on interpole entre les deux points les plus proches
+            const prevDate = allDates[Math.max(0, index - 1)];
+            const nextDate = allDates[Math.min(allDates.length - 1, index + 1)];
+
+            const prevValue = interpolatedData[prevDate];
+            const nextValue = data.find(item => item.date === nextDate);
+
+            if (prevValue && nextValue) {
+              const prevTime = new Date(prevDate).getTime();
+              const nextTime = new Date(nextDate).getTime();
+              const ratio = (timestamp - prevTime) / (nextTime - prevTime);
+
+              interpolatedData[date] = {
+                totalConsumption: prevValue.totalConsumption + (nextValue.totalConsumption - prevValue.totalConsumption) * ratio,
+                emissions: prevValue.emissions + (nextValue.emissions - prevValue.emissions) * ratio
+              };
+            }
+          }
+        });
+
+        aggregated[building] = Object.entries(interpolatedData).map(([date, values]) => ({
+          date,
+          ...values
+        }));
+      }
+    });
+
+    return aggregated;
+  }, [chartData, selectedFloors, savingsPercentage]);
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -88,6 +176,12 @@ const Etages = () => {
     } else {
       setExpandedGraph(index);
     }
+  };
+
+  const handleToolsClick = (event: React.MouseEvent) => {
+    // Empêcher la propagation du clic pour éviter le déclenchement du onClick parent
+    event.stopPropagation();
+    handleGraphClick(0);
   };
 
   return (
@@ -245,29 +339,41 @@ const Etages = () => {
         {/* Graphique principal */}
         <div
           className={cn(
-            "bg-neutral-800 rounded-md border transition-all cursor-pointer",
-            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-1/4" : "h-full"
+            "bg-neutral-800 rounded-md border transition-all",
+            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-1/4  cursor-pointer" : "h-3/4"
           )}
           onClick={() => handleGraphClick(2)}
         >
           <div className="h-full">
             <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
-              {/* TODO: Ajouter le composant EtageConsommationGraph */}
+              <EtageGraph2
+                aggregatedData={aggregatedData}
+                isExpanded={expandedGraph === 2 || expandedGraph === null}
+              />
             </div>
           </div>
         </div>
 
         {/* Graphiques secondaires */}
-                <div className={cn("flex space-x-4 transition-all", expandedGraph !== null ? "h-3/4" : "h-1/4")}>
+        <div className={cn("flex space-x-4 transition-all", expandedGraph !== null ? "h-3/4" : "h-1/4")}>
           <div
             className={cn(
-              "bg-neutral-900 border rounded-md transition-all cursor-pointer",
+              "bg-neutral-900 border rounded-md transition-all",
               expandedGraph === 0 ? "w-full h-full" : expandedGraph === null ? "w-1/2" : "w-1/4"
             )}
-            onClick={() => handleGraphClick(0)}
+ 
           >
             <div className="h-full">
-              {/* TODO: Premier graphique secondaire */}
+              <EtageTools 
+                onSavingsChange={(savings) => {
+                  setSavingsPercentage(savings);
+                }}
+                isExpanded={expandedGraph === 0}
+                onToggleExpand={(event) => {
+                  event.stopPropagation();
+                  handleGraphClick(expandedGraph === 0 ? 1 : 0);
+                }}
+              />
             </div>
           </div>
           <div
