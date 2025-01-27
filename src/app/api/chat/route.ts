@@ -23,66 +23,130 @@ const activeChats = new Map()
 export async function POST(req: Request) {
     try {
         const { message, context, chatId } = await req.json()
+
+        if (!process.env.GEMINI_API_KEY) {
+            console.error('Clé API Gemini manquante')
+            return NextResponse.json(
+                { error: 'Configuration incorrecte du serveur' },
+                { status: 500 }
+            )
+        }
+
+        // Vérification de la validité de la clé API
+        if (process.env.GEMINI_API_KEY.length < 10) {
+            console.error('Clé API Gemini invalide')
+            return NextResponse.json(
+                { error: 'Configuration incorrecte du serveur' },
+                { status: 500 }
+            )
+        }
+
         let newChatId = chatId
 
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-pro',
-            generationConfig: {
-                temperature: 0.7,
-                topK: 1,
-                topP: 0.8,
-                maxOutputTokens: 2048,
-            },
-        })
-
-        let chat
-        if (chatId && activeChats.has(chatId)) {
-            chat = activeChats.get(chatId)
-            // Envoyer directement le message sans le prompt système
-            const result = await chat.sendMessage(message)
-            const response = await result.response.text()
-            return NextResponse.json({ response, chatId })
-        } else {
-            chat = model.startChat({
-                history: [
-                    {
-                        role: 'user',
-                        parts: [{ text: SYSTEM_PROMPT }],
-                    },
-                    {
-                        role: 'model',
-                        parts: [{ text: "Je suis prêt à t'aider avec tes questions sur l'énergie." }],
-                    },
-                ],
+        try {
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-1.5-pro',
                 generationConfig: {
+                    temperature: 0.7,
+                    topK: 1,
+                    topP: 0.8,
                     maxOutputTokens: 2048,
                 },
             })
 
-            // Pour le premier message, inclure le contexte
-            const prompt = `
-            Contexte des données actuelles:
-            ${JSON.stringify(context)}
-            
-            Question de l'utilisateur: ${message}
-            `
-            const result = await chat.sendMessage(prompt)
-            const response = await result.response.text()
+            let chat
+            if (chatId && activeChats.has(chatId)) {
+                chat = activeChats.get(chatId)
+                try {
+                    const result = await chat.sendMessage(message)
+                    const response = await result.response.text()
+                    return NextResponse.json({ response, chatId })
+                } catch (error: any) {
+                    console.error('Erreur Gemini (chat existant):', error.message)
 
-            if (!chatId) {
-                newChatId = Date.now().toString()
-                activeChats.set(newChatId, chat)
+                    // Gestion spécifique de l'erreur de quota
+                    if (error.message?.includes('429') || error.message?.includes('quota')) {
+                        return NextResponse.json(
+                            {
+                                error: 'Limite de requêtes atteinte',
+                                details: 'Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.'
+                            },
+                            { status: 429 }
+                        )
+                    }
+
+                    throw error
+                }
+            } else {
+                chat = model.startChat({
+                    history: [
+                        {
+                            role: 'user',
+                            parts: [{ text: SYSTEM_PROMPT }],
+                        },
+                        {
+                            role: 'model',
+                            parts: [{ text: "Je suis prêt à t'aider avec tes questions sur l'énergie." }],
+                        },
+                    ],
+                    generationConfig: {
+                        maxOutputTokens: 2048,
+                    },
+                })
+
+                try {
+                    const prompt = `
+                    Contexte des données actuelles:
+                    ${JSON.stringify(context)}
+                    
+                    Question de l'utilisateur: ${message}
+                    `
+                    const result = await chat.sendMessage(prompt)
+                    const response = await result.response.text()
+
+                    if (!chatId) {
+                        newChatId = Date.now().toString()
+                        activeChats.set(newChatId, chat)
+                    }
+
+                    return NextResponse.json({
+                        response,
+                        chatId: newChatId
+                    })
+                } catch (error: any) {
+                    console.error('Erreur Gemini (nouveau chat):', error.message)
+                    throw error
+                }
+            }
+        } catch (error: any) {
+            console.error('Erreur détaillée Gemini:', error)
+
+            // Gestion globale de l'erreur de quota
+            if (error.message?.includes('429') || error.message?.includes('quota')) {
+                return NextResponse.json(
+                    {
+                        error: 'Limite de requêtes atteinte',
+                        details: 'Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.'
+                    },
+                    { status: 429 }
+                )
             }
 
-            return NextResponse.json({ 
-                response,
-                chatId: newChatId
-            })
+            return NextResponse.json(
+                {
+                    error: 'Erreur lors de la communication avec l\'assistant',
+                    details: error.message
+                },
+                { status: 500 }
+            )
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Erreur API Chat:', error)
         return NextResponse.json(
-            { error: 'Erreur lors du traitement de la demande' },
+            {
+                error: 'Erreur lors du traitement de la requête',
+                details: error.message
+            },
             { status: 500 }
         )
     }
