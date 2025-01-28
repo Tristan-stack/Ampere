@@ -184,6 +184,8 @@ const Etages = () => {
     handleGraphClick(0);
   };
 
+  console.log('data', aggregatedData)
+
   return (
     <div className="w-full h-full flex gap-4">
       {/* Colonne de gauche - Contrôles */}

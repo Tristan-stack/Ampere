@@ -68,7 +68,7 @@ export function ChatInterface() {
     const [currentLoadingMessage, setCurrentLoadingMessage] = useState(loadingMessages[0])
     const [lastLoadingMessage, setLastLoadingMessage] = useState(loadingMessages[0])
     const scrollRef = useRef<HTMLDivElement>(null)
-    const { filteredData, aggregatedData } = useData()
+    const { chartData, filteredData, aggregatedData, selectedBuildings } = useData()
     const [chatId, setChatId] = useState<string | null>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -116,20 +116,63 @@ export function ChatInterface() {
         setIsLoading(true)
 
         try {
+            // Forcer la mise à jour des données pour chaque nouvelle question
+            const buildingTotals = filteredData.reduce((acc, item) => {
+                const building = item.building
+                if (!acc[building]) {
+                    acc[building] = {
+                        building,
+                        consumption: 0,
+                        emissions: 0
+                    }
+                }
+                acc[building].consumption += item.totalConsumption
+                acc[building].emissions += item.emissions
+                return acc
+            }, {} as Record<string, any>)
+
+            const contextData = {
+                buildings: {
+                    aggregatedData,
+                    selectedBuildings,
+                    currentConsumption: Object.values(buildingTotals),
+                    floors: filteredData.reduce((acc, item) => {
+                        const key = `${item.building}-${item.floor}`
+                        acc[key] = {
+                            building: item.building,
+                            floor: item.floor,
+                            consumption: item.totalConsumption,
+                            emissions: item.emissions,
+                            lastUpdate: item.date
+                        }
+                        return acc
+                    }, {} as Record<string, any>)
+                }
+            }
+
+            // Forcer un nouveau chat pour chaque question sur les bâtiments
+            if (input.toLowerCase().includes('batiment') ||
+                input.toLowerCase().includes('bâtiment') ||
+                input.toLowerCase().includes('consommation')) {
+                setChatId(null)
+            }
+
             const response = await fetch('./api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: input,
-                    context: {
-                        filteredData,
-                        aggregatedData
-                    },
+                    context: contextData,
                     chatId
                 })
             })
 
             const data = await response.json()
+            console.log('📊 Réponse de l\'IA avec contexte:', {
+                question: input,
+                réponse: data.response,
+                contextUtilisé: contextData.buildings.currentConsumption
+            })
 
             if (!response.ok) {
                 console.error('Erreur détaillée:', data)
