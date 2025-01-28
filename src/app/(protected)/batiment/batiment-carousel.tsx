@@ -49,8 +49,7 @@ const CARDS = [
       <p>
         I dont like this Twitter thing,{" "}
         <Highlight>deleting it right away</Highlight> because yolo. Instead, I
-        would like to call it <Highlight>X.com</Highlight> so that it can easily
-        be confused with adult sites.
+        would like to call it <Highlight>X.com</Highlight>
       </p>
     ),
   },
