@@ -15,36 +15,36 @@ const SidebarLayout = ({ children }: Props) => {
     const [isSidePanelVisible, setIsSidePanelVisible] = useState(false);
     useEffect(() => {
         const setCookie = (name: string, value: string, days: number) => {
-          const expires = new Date();
-          expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-          document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+            const expires = new Date();
+            expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
         };
-    
+
         const getCookie = (name: string) => {
-          const nameEQ = name + "=";
-          const ca = document.cookie.split(';');
-          for (let i = 0; i < ca.length; i++) {
-            let c = ca[i]?.trim();
-            if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-          }
-          return null;
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i]?.trim();
+                if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
         };
-    
+
         const initializeDateRangeCookie = () => {
-          const savedRange = getCookie('dateRange');
-          if (!savedRange) {
-            const currentDate = new Date();
-            const day = currentDate.getDay() || 7;
-            const monday = new Date(currentDate);
-            monday.setDate(monday.getDate() - (day - 1));
-            const sunday = new Date(monday);
-            sunday.setDate(sunday.getDate() + 6);
-            setCookie('dateRange', JSON.stringify({ from: monday, to: sunday }), 7);
-          }
+            const savedRange = getCookie('dateRange');
+            if (!savedRange) {
+                const currentDate = new Date();
+                const day = currentDate.getDay() || 7;
+                const monday = new Date(currentDate);
+                monday.setDate(monday.getDate() - (day - 1));
+                const sunday = new Date(monday);
+                sunday.setDate(sunday.getDate() + 6);
+                setCookie('dateRange', JSON.stringify({ from: monday, to: sunday }), 7);
+            }
         };
-    
+
         initializeDateRangeCookie();
-      }, []);
+    }, []);
     useEffect(() => {
         document.documentElement.classList.add("dark");
 
@@ -79,7 +79,7 @@ const SidebarLayout = ({ children }: Props) => {
                     {/* Bento */}
                     <div className="w-full space-y- pr-12">
                         <div className="absolute top-2 right-2">
-                            <GradientButton onClick={handleToggleSidePanel}/>
+                            <GradientButton onClick={handleToggleSidePanel} />
                         </div>
                         <div className='w-full bg-sidebar shadow rounded-md overflow-hidden h-[calc(100vh-6rem)] pl-4 py-2 flex space-x-4'>
                             {children}
@@ -91,5 +91,4 @@ const SidebarLayout = ({ children }: Props) => {
         </SidebarProvider>
     )
 }
-
 export default SidebarLayout

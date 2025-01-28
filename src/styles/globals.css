@@ -61,10 +61,12 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
@@ -81,7 +83,7 @@
 .toast-progress {
   background-color: white !important;
   box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.75);
-  
+
 }
 
 .bar-glow {

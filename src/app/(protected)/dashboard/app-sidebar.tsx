@@ -71,7 +71,7 @@ const mainItems = [
 const adminItems = [
   {
     title: "Gestion des utilisateurs",
-    url: "/admin/users",
+    url: "/admin-panel",
     icon: Users,
     hasChildren: false
   },
