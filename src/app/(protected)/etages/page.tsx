@@ -371,7 +371,7 @@ const Etages = () => {
                 isExpanded={expandedGraph === 0}
                 onToggleExpand={(event) => {
                   event.stopPropagation();
-                  handleGraphClick(expandedGraph === 0 ? 1 : 0);
+                  handleGraphClick(expandedGraph === 0 ? 2 : 0);
                 }}
               />
             </div>

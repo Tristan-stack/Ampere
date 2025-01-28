@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -146,6 +144,10 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                                 onValueChange={(value) => {
                                                     if (value[0] !== undefined) {
                                                         setSavings(value[0]);
+                                                    }
+                                                }}
+                                                onValueCommit={(value) => {
+                                                    if (value[0] !== undefined) {
                                                         onSavingsChange(value[0]);
                                                     }
                                                 }}
@@ -222,6 +224,10 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                                 onValueChange={(value) => {
                                                     if (value[0] !== undefined) {
                                                         setSavings(value[0]);
+                                                    }
+                                                }}
+                                                onValueCommit={(value) => {
+                                                    if (value[0] !== undefined) {
                                                         onSavingsChange(value[0]);
                                                     }
                                                 }}
@@ -258,8 +264,8 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                     onClick={() => toggleFavorite(tool.id)}
                                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-neutral-700 p-1 h-auto"
                                 >
-                                    {tool.isFavorite ?
-                                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /> :
+                                    {tool.isFavorite ? 
+                                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /> : 
                                         <StarOff className="h-3 w-3" />
                                     }
                                 </Button>
