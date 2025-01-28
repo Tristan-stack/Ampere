@@ -17,7 +17,10 @@ export function TypewriterText({ text = '', className = '', onComplete }: Typewr
 
         if (displayedChars.length < text.length) {
             const timeout = setTimeout(() => {
-                setDisplayedChars(prev => [...prev, text[prev.length]])
+                setDisplayedChars((prev) => {
+                    const nextChar = text[prev.length];
+                    return nextChar !== undefined ? [...prev, nextChar] : prev;
+                });
             }, 30)
             return () => clearTimeout(timeout)
         }

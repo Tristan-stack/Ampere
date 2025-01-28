@@ -36,6 +36,16 @@ const SUGGESTED_QUESTIONS = [
     "Quels sont les appareils qui consomment le plus ?",
 ]
 
+// Ajout d'un message d'erreur personnalisé pour le quota dépassé
+const QUOTA_ERROR_MESSAGE = `Désolé, j'ai atteint ma limite de requêtes pour aujourd'hui 😅
+
+Je ne peux plus accéder à mon cerveau pour le moment, mais je serai de retour demain avec de nouvelles réponses ! En attendant, vous pouvez :
+- Consulter les données directement dans le tableau de bord
+- Revenir me voir demain pour plus d'analyses
+- Noter vos questions pour notre prochaine discussion
+
+À très vite ! 🔌✨`
+
 // Ajout du composant pour l'icône de chat
 const ChatIcon = () => (
     <svg
@@ -58,7 +68,7 @@ export function ChatInterface() {
     const [currentLoadingMessage, setCurrentLoadingMessage] = useState(loadingMessages[0])
     const [lastLoadingMessage, setLastLoadingMessage] = useState(loadingMessages[0])
     const scrollRef = useRef<HTMLDivElement>(null)
-    const { filteredData, aggregatedData } = useData()
+    const { chartData, filteredData, aggregatedData, selectedBuildings } = useData()
     const [chatId, setChatId] = useState<string | null>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -106,25 +116,75 @@ export function ChatInterface() {
         setIsLoading(true)
 
         try {
+            // Forcer la mise à jour des données pour chaque nouvelle question
+            const buildingTotals = filteredData.reduce((acc, item) => {
+                const building = item.building
+                if (!acc[building]) {
+                    acc[building] = {
+                        building,
+                        consumption: 0,
+                        emissions: 0
+                    }
+                }
+                acc[building].consumption += item.totalConsumption
+                acc[building].emissions += item.emissions
+                return acc
+            }, {} as Record<string, any>)
+
+            const contextData = {
+                buildings: {
+                    aggregatedData,
+                    selectedBuildings,
+                    currentConsumption: Object.values(buildingTotals),
+                    floors: filteredData.reduce((acc, item) => {
+                        const key = `${item.building}-${item.floor}`
+                        acc[key] = {
+                            building: item.building,
+                            floor: item.floor,
+                            consumption: item.totalConsumption,
+                            emissions: item.emissions,
+                            lastUpdate: item.date
+                        }
+                        return acc
+                    }, {} as Record<string, any>)
+                }
+            }
+
+            // Forcer un nouveau chat pour chaque question sur les bâtiments
+            if (input.toLowerCase().includes('batiment') ||
+                input.toLowerCase().includes('bâtiment') ||
+                input.toLowerCase().includes('consommation')) {
+                setChatId(null)
+            }
+
             const response = await fetch('./api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: input,
-                    context: {
-                        filteredData,
-                        aggregatedData
-                    },
+                    context: contextData,
                     chatId
                 })
             })
 
             const data = await response.json()
+            console.log('📊 Réponse de l\'IA avec contexte:', {
+                question: input,
+                réponse: data.response,
+                contextUtilisé: contextData.buildings.currentConsumption
+            })
 
             if (!response.ok) {
                 console.error('Erreur détaillée:', data)
                 if (response.status === 429) {
-                    throw new Error('Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.')
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: QUOTA_ERROR_MESSAGE,
+                        timestamp: Date.now()
+                    }])
+                    setIsLoading(false)
+                    setIsTyping(true)
+                    return
                 }
                 throw new Error(data.error || 'Une erreur est survenue')
             }
@@ -176,8 +236,23 @@ export function ChatInterface() {
                 chatId
             })
         })
-            .then(response => response.json())
-            .then(data => {
+            .then(async response => {
+                const data = await response.json()
+
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        setMessages(prev => [...prev, {
+                            role: 'assistant',
+                            content: QUOTA_ERROR_MESSAGE,
+                            timestamp: Date.now()
+                        }])
+                        setIsLoading(false)
+                        setIsTyping(true)
+                        return
+                    }
+                    throw new Error(data.error || 'Une erreur est survenue')
+                }
+
                 if (!chatId) setChatId(data.chatId)
                 setIsLoading(false)
                 setTimeout(() => {

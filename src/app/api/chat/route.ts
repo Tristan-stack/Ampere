@@ -15,7 +15,26 @@ Règles importantes:
 - Répondre en français
 - Être concis et direct dans les réponses techniques
 
-Si une question est complètement hors sujet, rappelle poliment que tu es spécialisé dans l'énergie et l'électricité.`
+Si une question est complètement hors sujet, rappelle poliment que tu es spécialisé dans l'énergie et l'électricité.
+
+Instructions pour l'analyse des données en temps réel:
+- Tu as accès aux données de consommation actuelles des bâtiments et des étages via le contexte fourni
+- Pour les questions sur un étage spécifique, utilise les données de context.buildings.floors
+- Format des étages: "Rez-de-chaussée", "1er étage", "2e étage", "3e étage"
+- Quand on te demande des informations sur la consommation actuelle, utilise les données du contexte
+- Présente les données de manière claire et concise
+- Convertis les unités si nécessaire pour plus de clarté
+- Compare les étages entre eux si pertinent
+- N'invente pas de données, utilise uniquement celles fournies
+
+Format des données disponibles:
+- aggregatedData: données historiques par bâtiment
+- currentConsumption: dernières mesures de consommation par bâtiment
+- selectedBuildings: bâtiments actuellement sélectionnés
+- floors: données détaillées par étage (format: "batiment-etage")
+
+Exemple de réponse pour une question sur un étage:
+"La consommation actuelle du 1er étage du bâtiment A est de X kWh, ce qui représente Y% de la consommation totale du bâtiment."`
 
 // Stocker les chats actifs
 const activeChats = new Map()
@@ -23,6 +42,14 @@ const activeChats = new Map()
 export async function POST(req: Request) {
     try {
         const { message, context, chatId } = await req.json()
+
+        console.log('🤖 Contexte reçu par l\'API:', {
+            message,
+            buildingsData: {
+                selectedBuildings: context.buildings.selectedBuildings,
+                currentConsumption: context.buildings.currentConsumption
+            }
+        })
 
         if (!process.env.GEMINI_API_KEY) {
             console.error('Clé API Gemini manquante')
@@ -69,7 +96,7 @@ export async function POST(req: Request) {
                         return NextResponse.json(
                             {
                                 error: 'Limite de requêtes atteinte',
-                                details: 'Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.'
+                                details: 'Le service est temporairement indisponible. Veuillez réessayer plus tard.'
                             },
                             { status: 429 }
                         )
@@ -101,6 +128,12 @@ export async function POST(req: Request) {
                     
                     Question de l'utilisateur: ${message}
                     `
+
+                    console.log('💭 Prompt envoyé à Gemini:', {
+                        question: message,
+                        contextDonnées: context.buildings.currentConsumption
+                    })
+
                     const result = await chat.sendMessage(prompt)
                     const response = await result.response.text()
 
@@ -126,7 +159,7 @@ export async function POST(req: Request) {
                 return NextResponse.json(
                     {
                         error: 'Limite de requêtes atteinte',
-                        details: 'Le service est temporairement indisponible. Veuillez réessayer dans quelques minutes.'
+                        details: 'Le service est temporairement indisponible. Veuillez réessayer plus tard.'
                     },
                     { status: 429 }
                 )
