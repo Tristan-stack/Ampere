@@ -21,31 +21,8 @@ type ConsumptionData = {
 };
 
 const calculateEfficiencyScore = (data: ConsumptionData[]) => {
-  if (!data.length) return 300;
-
-  // Calculer les métriques clés
-  const avgConsumption = data.reduce((acc, curr) => acc + curr.totalConsumption, 0) / data.length;
-  const maxConsumption = Math.max(...data.map(d => d.totalConsumption));
-  const variability = data.reduce((acc, curr) => 
-    acc + Math.pow(curr.totalConsumption - avgConsumption, 2), 0) / data.length;
-
-  // Normaliser les métriques (0-100)
-  const avgScore = Math.max(0, 100 - (avgConsumption / 1000) * 100);
-  const peakScore = Math.max(0, 100 - (maxConsumption / 2000) * 100);
-  const variabilityScore = Math.max(0, 100 - (variability / 10000) * 100);
-
-  // Pondérer les différents facteurs
-  const weightedScore = (
-    avgScore * 0.5 +      // Consommation moyenne (50%)
-    peakScore * 0.3 +     // Pics de consommation (30%)
-    variabilityScore * 0.2 // Stabilité de la consommation (20%)
-  );
-
-  // Mapper le score sur l'échelle 300-810
-  const finalScore = 300 + Math.round((weightedScore / 100) * 510);
   
-  // Limiter le score entre 300 et 810
-  return Math.min(810, Math.max(300, finalScore));
+  return 310;
 };
 
 const Batiments = () => {

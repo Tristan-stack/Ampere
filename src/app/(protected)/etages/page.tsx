@@ -52,84 +52,57 @@ const Etages = () => {
 
   // Modifier la préparation des données agrégées
   const aggregatedData = React.useMemo(() => {
-    if (!chartData) return {};
+    if (!chartData || chartData.length === 0) return {};
 
-    const buildingGroups = selectedFloors.reduce((acc, { building }) => {
-      if (!acc[building]) {
-        acc[building] = [];
-      }
-      return acc;
-    }, {} as { [key: string]: any[] });
+    // Créer un objet pour stocker les données agrégées par bâtiment
+    const buildingGroups: { [key: string]: any[] } = {};
 
-    // Agréger les données par bâtiment
+    // Regrouper d'abord toutes les données par bâtiment
     selectedFloors.forEach(({ building, floor }) => {
-      const floorData = chartData.filter(
-        item => item.building === building && item.floor === floor
-      );
-      buildingGroups[building]?.push(...floorData);
+        if (!buildingGroups[building]) {
+            buildingGroups[building] = [];
+        }
+
+        // Filtrer les données pour ce bâtiment et cet étage
+        const floorData = chartData.filter(
+            item => item.building === building && item.floor === floor
+        );
+
+        if (floorData.length > 0) {
+            // Appliquer la réduction et ajouter les données
+            const reducedData = floorData.map(item => ({
+                ...item,
+                totalConsumption: item.totalConsumption * (1 - savingsPercentage / 100),
+                emissions: item.emissions * (1 - savingsPercentage / 100)
+            }));
+            buildingGroups[building].push(...reducedData);
+        }
     });
 
-    // Appliquer la réduction aux données agrégées
-    Object.keys(buildingGroups).forEach(building => {
-      if (buildingGroups[building]) {
-        buildingGroups[building] = buildingGroups[building].map(data => ({
-          ...data,
-          totalConsumption: data.totalConsumption * (1 - savingsPercentage / 100),
-          emissions: data.emissions * (1 - savingsPercentage / 100)
-        }));
-      }
-    });
-
-    // Créer l'objet final avec les données agrégées et interpolées
+    // Pour chaque bâtiment, agréger les données par date
     const aggregated: { [key: string]: any[] } = {};
     Object.entries(buildingGroups).forEach(([building, data]) => {
-      if (data.length > 0) {
-        // Trier les données par date
-        const sortedData = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        if (data.length === 0) return;
 
-        // Créer un tableau de toutes les dates uniques
-        const allDates = [...new Set(data.map(item => item.date))].sort();
-
-        // Initialiser l'objet pour stocker les valeurs interpolées
-        const interpolatedData: { [key: string]: { totalConsumption: number, emissions: number } } = {};
-
-        // Pour chaque date, calculer la valeur interpolée
-        allDates.forEach((date, index) => {
-          const timestamp = new Date(date).getTime();
-          const values = data.filter(item => new Date(item.date).getTime() === timestamp);
-
-          if (values.length > 0) {
-            // Si on a des valeurs pour cette date, on fait la moyenne
-            interpolatedData[date] = {
-              totalConsumption: values.reduce((sum, v) => sum + v.totalConsumption, 0) / values.length,
-              emissions: values.reduce((sum, v) => sum + v.emissions, 0) / values.length
-            };
-          } else {
-            // Sinon on interpole entre les deux points les plus proches
-            const prevDate = allDates[Math.max(0, index - 1)];
-            const nextDate = allDates[Math.min(allDates.length - 1, index + 1)];
-
-            const prevValue = interpolatedData[prevDate];
-            const nextValue = data.find(item => item.date === nextDate);
-
-            if (prevValue && nextValue) {
-              const prevTime = new Date(prevDate).getTime();
-              const nextTime = new Date(nextDate).getTime();
-              const ratio = (timestamp - prevTime) / (nextTime - prevTime);
-
-              interpolatedData[date] = {
-                totalConsumption: prevValue.totalConsumption + (nextValue.totalConsumption - prevValue.totalConsumption) * ratio,
-                emissions: prevValue.emissions + (nextValue.emissions - prevValue.emissions) * ratio
-              };
+        // Regrouper par date
+        const byDate = data.reduce((acc, curr) => {
+            const date = curr.date;
+            if (!acc[date]) {
+                acc[date] = {
+                    date,
+                    totalConsumption: 0,
+                    emissions: 0
+                };
             }
-          }
-        });
+            acc[date].totalConsumption += curr.totalConsumption;
+            acc[date].emissions += curr.emissions;
+            return acc;
+        }, {} as { [key: string]: any });
 
-        aggregated[building] = Object.entries(interpolatedData).map(([date, values]) => ({
-          date,
-          ...values
-        }));
-      }
+        // Convertir en tableau et trier par date
+        aggregated[building] = Object.values(byDate).sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
     });
 
     return aggregated;

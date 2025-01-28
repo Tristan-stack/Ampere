@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import CountUp from "@/components/countup";
-import { Info, ArrowDownLeft, ArrowUpRight, Star, StarOff, Calculator, Lightbulb, Timer, Settings2, Thermometer, Users, Sun, Wind, BarChart2, Bold, Italic, Underline } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Star, StarOff, Calculator, Lightbulb, Bold, Italic, Underline, BellPlus, Pen } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -49,6 +49,20 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
             name: "Notes",
             icon: <Lightbulb className="h-4 w-4" />,
             description: "Prenez des notes sur vos analyses",
+            isFavorite: false
+        },
+        {
+            id: "alerts",
+            name: "Alertes",
+            icon: <BellPlus className="h-4 w-4" />,
+            description: "Configurez vos alertes",
+            isFavorite: false
+        },
+        {
+            id: "write",
+            name: "Dessiner",
+            icon: <Pen className="h-4 w-4" />,
+            description: "Dessinez vos analyses",
             isFavorite: false
         }
     ]);
@@ -203,7 +217,9 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                 className={cn(
                                     "bg-neutral-800/50 rounded-lg p-3 hover:bg-neutral-800/70 transition-colors group relative",
                                     tool.id === "savings" ? "col-span-2" : "",
-                                    tool.id === "notes" ? "col-span-2 row-span-3" : ""
+                                    tool.id === "notes" ? "col-span-2 row-span-3" : "",
+                                    tool.id === "alerts" ? "col-span-2 row-span-2" : "",
+                                    tool.id === "write" ? "col-span-1 row-span-2" : ""
                                 )}>
                                 <div className="flex flex-col items-start justify-start h-full gap-1">
                                     <div className="flex items-center justify-start gap-2 w-full">
@@ -257,6 +273,16 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                             />
                                         </div>
                                     )}
+                                    {tool.id === "alerts" && (
+                                        <div className="w-full h-full">
+                                            <div className="w-full h-full bg-neutral-800 rounded-lg"></div>
+                                        </div>
+                                    )}
+                                    {tool.id === "write" && (
+                                        <div className="w-full h-full">
+                                            <div className="w-full h-full bg-neutral-800 rounded-lg"></div>
+                                        </div>
+                                    )}
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -271,6 +297,7 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                 </Button>
                             </div>
                         ))}
+                        
                         <div className="col-span-2 row-span-2">
                             <div className="w-full h-full bg-neutral-800 rounded-lg"></div>
                         </div>

@@ -97,33 +97,60 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
         .flat()
         .map(item => item.date)
     )].sort();
-
-    return allDates.map(date => ({
-      date,
-      ...Object.entries(aggregatedData).reduce((acc, [building, data]) => {
-        const consumption = data.find(item => item.date === date)?.totalConsumption || 0;
-        return { ...acc, [building]: consumption };
-      }, {}),
-    }));
+  
+    return allDates.map(date => {
+      const dataPoint = { date };
+      Object.entries(aggregatedData).forEach(([building, data]) => {
+        const pointsForDate = data.filter(item => item.date === date);
+        if (pointsForDate.length > 0) {
+          dataPoint[building] = pointsForDate.reduce((sum, item) => 
+            sum + item.totalConsumption, 0
+          );
+        }
+      });
+      return dataPoint;
+    });
   };
 
   const total = React.useMemo(
     () => {
-      const values = Object.values(aggregatedData).flat();
-      return {
-        totalConsumption: values.length > 0
-          ? values.reduce((acc, curr) => acc + curr.totalConsumption, 0)
-          : 0,
-        maxConsumption: values.length > 0
-          ? Math.max(...values.map(item => item.totalConsumption))
-          : 0,
-        minConsumption: values.length > 0
-          ? Math.min(...values.map(item => item.totalConsumption))
-          : 0,
-      };
+        // Récupérer toutes les valeurs de consommation sans agrégation
+        const allConsumptions = Object.values(aggregatedData)
+            .flat()
+            .map(item => item.totalConsumption)
+            .filter(value => value !== null && !isNaN(value));
+
+        // Vérifier s'il y a des données
+        if (allConsumptions.length === 0) {
+            return {
+                totalConsumption: 0,
+                maxConsumption: 0,
+                minConsumption: 0,
+                emissions: 0,
+            };
+        }
+
+        // Calculer le total brut
+        const totalConsumption = allConsumptions.reduce((acc, curr) => acc + curr, 0);
+
+        // Trouver le vrai max et min
+        const maxConsumption = Math.max(...allConsumptions);
+        const minConsumption = Math.min(...allConsumptions);
+
+        // Calculer les émissions totales
+        const emissions = Object.values(aggregatedData)
+            .flat()
+            .reduce((acc, curr) => acc + (curr.emissions || 0), 0);
+
+        return {
+            totalConsumption,
+            maxConsumption,
+            minConsumption,
+            emissions,
+        };
     },
     [aggregatedData]
-  );
+);
 
   const chartData = React.useMemo(() => prepareChartData(), [aggregatedData]);
 
@@ -178,6 +205,39 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
       setBrushEndIndex(brushData.endIndex);
     }
   };
+
+  const findMinMaxPoints = React.useMemo(() => {
+    let maxPoint = { date: '', value: 0, building: '', type: 'max' as const };
+    let minPoint = { date: '', value: Infinity, building: '', type: 'min' as const };
+
+    Object.entries(aggregatedData).forEach(([building, data]) => {
+        data.forEach(point => {
+            if (point.totalConsumption > maxPoint.value) {
+                maxPoint = {
+                    date: point.date,
+                    value: point.totalConsumption,
+                    building,
+                    type: 'max'
+                };
+            }
+            if (point.totalConsumption < minPoint.value) {
+                minPoint = {
+                    date: point.date,
+                    value: point.totalConsumption,
+                    building,
+                    type: 'min'
+                };
+            }
+        });
+    });
+
+    // Si aucune donnée n'a été trouvée, réinitialiser minPoint
+    if (minPoint.value === Infinity) {
+        minPoint = { date: '', value: 0, building: '', type: 'min' };
+    }
+
+    return { maxPoint, minPoint };
+}, [aggregatedData]);
 
   if (!isExpanded) {
     return (
