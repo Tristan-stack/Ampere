@@ -59,10 +59,11 @@ const Etages = () => {
     const measurements: Record<string, Record<string, Set<string>>> = {};
 
     chartData.forEach(item => {
-      measurements[item.building] ??= {};
-      measurements[item.building][item.floor] ??= new Set<string>();
+      const buildingKey = item.building as keyof BuildingFloors;
+      measurements[buildingKey] ??= {};
+      measurements[buildingKey][item.floor] ??= new Set<string>();
       const measurementId = item?.id?.split('-')[0] || '';
-      measurements[item.building][item.floor]?.add(measurementId);
+      measurements[buildingKey][item.floor]?.add(measurementId);
     });
 
     return measurements;

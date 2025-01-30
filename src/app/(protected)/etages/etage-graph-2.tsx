@@ -681,11 +681,9 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                         strokeWidth={2}
                         name={`${building} - ${floor}`}
                         dot={(props) => {
-                          const isMax = selectedPoints.includes('max') &&
-                            props.value === total.maxConsumption;
-                          const isMin = selectedPoints.includes('min') &&
-                            props.value === total.minConsumption;
-
+                          const isMax = selectedPoints.includes('max') && props.value === total.maxConsumption;
+                          const isMin = selectedPoints.includes('min') && props.value === total.minConsumption;
+                        
                           if (isMax || isMin) {
                             return (
                               <circle
@@ -698,7 +696,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                               />
                             );
                           }
-                          return false;
+                          return <g />;
                         }}
                         activeDot={{
                           r: 4,
