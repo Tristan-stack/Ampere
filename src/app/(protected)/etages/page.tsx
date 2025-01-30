@@ -12,6 +12,7 @@ import { EtageGraph2 } from "./etage-graph-2";
 import { useData } from "../context/DataContext";
 import { EtageTools } from "./etage-tools";
 import { EtageEmissionsGraph } from "./etage-graph-3";
+import { EtageCost } from "./etage-cost";
 
 type ConsumptionData = {
   id: string;
@@ -49,6 +50,7 @@ const Etages = () => {
   const [expandedGraph, setExpandedGraph] = useState<number | null>(null);
   const [savingsPercentage, setSavingsPercentage] = useState(0);
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+  const [pricePerKwh, setPricePerKwh] = useState<number>(0.15);
 
   // Obtenir les mesures disponibles pour chaque étage
   const availableMeasurements = React.useMemo(() => {
@@ -457,29 +459,48 @@ const Etages = () => {
               "bg-neutral-900 border rounded-md transition-all",
               expandedGraph === 0 ? "w-full h-full" : expandedGraph === null ? "w-1/2" : "w-1/4"
             )}
- 
           >
             <div className="h-full">
               <EtageTools 
                 onSavingsChange={(savings) => {
                   setSavingsPercentage(savings);
                 }}
+                onPriceChange={(price) => {
+                  setPricePerKwh(price);
+                }}
                 isExpanded={expandedGraph === 0}
                 onToggleExpand={(event) => {
                   event.stopPropagation();
                   handleGraphClick(expandedGraph === 0 ? 2 : 0);
                 }}
+                totalConsumption={Object.values(floorData)
+                    .flat()
+                    .reduce((acc, curr) => acc + curr.totalConsumption, 0)
+                }
               />
             </div>
           </div>
           <div
             className={cn(
-              "bg-neutral-900 border rounded-md transition-all cursor-pointer",
+              "bg-neutral-900 border rounded-md transition-all",
               expandedGraph === 1 ? "w-full h-full" : expandedGraph === null ? "w-1/2" : "w-1/4"
             )}
-            onClick={() => handleGraphClick(1)}
           >
             <div className="h-full">
+              <EtageCost
+                totalConsumption={Object.values(floorData)
+                  .flat()
+                  .reduce((acc, curr) => acc + curr.totalConsumption, 0)
+                }
+                pricePerKwh={pricePerKwh}
+                onPriceChange={setPricePerKwh}
+                isExpanded={expandedGraph === 1}
+                onToggleExpand={(event) => {
+                  event.stopPropagation();
+                  handleGraphClick(expandedGraph === 1 ? 2 : 1);
+                }}
+                isToolsExpanded={expandedGraph === 0}
+              />
             </div>
           </div>
         </div>

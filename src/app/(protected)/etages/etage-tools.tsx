@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GradientText from '@/components/gradient-text';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Input } from "@/components/ui/input";
 
 interface Tool {
     id: string;
@@ -22,15 +23,19 @@ interface Tool {
     icon: React.ReactNode;
     description: string;
     isFavorite: boolean;
+    adminOnly?: boolean;
 }
 
 interface EtageToolsProps {
     onSavingsChange: (savings: number) => void;
+    onPriceChange: (price: number) => void;
     isExpanded: boolean;
     onToggleExpand: (event: React.MouseEvent) => void;
+    isAdmin?: boolean;
+    totalConsumption: number;
 }
 
-export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpanded, onToggleExpand }) => {
+export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPriceChange, isExpanded, onToggleExpand, isAdmin = false, totalConsumption = 0 }) => {
     const [savings, setSavings] = useState<number>(0);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -105,8 +110,10 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
         return () => clearTimeout(timer);
     }, [isExpanded]);
 
+    const visibleTools = tools;
+
     if (!isExpanded) {
-        const favoriteTools = tools.filter(tool => tool.isFavorite);
+        const favoriteTools = visibleTools.filter(tool => tool.isFavorite);
         return (
             <div className="w-full h-full">
                 {!isResizing && (
@@ -211,7 +218,7 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                     </div>
 
                     <div className="grid grid-cols-4 grid-rows-4 h-full gap-3">
-                        {tools.map(tool => (
+                        {visibleTools.map(tool => (
                             <div
                                 key={tool.id}
                                 className={cn(
@@ -219,7 +226,7 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                     tool.id === "savings" ? "col-span-2" : "",
                                     tool.id === "notes" ? "col-span-2 row-span-3" : "",
                                     tool.id === "alerts" ? "col-span-2 row-span-2" : "",
-                                    tool.id === "write" ? "col-span-1 row-span-2" : ""
+                                    tool.id === "write" ? "col-span-1 row-span-2" : "",
                                 )}>
                                 <div className="flex flex-col items-start justify-start h-full gap-1">
                                     <div className="flex items-center justify-start gap-2 w-full">
@@ -297,14 +304,6 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, isExpan
                                 </Button>
                             </div>
                         ))}
-                        
-                        <div className="col-span-2 row-span-2">
-                            <div className="w-full h-full bg-neutral-800 rounded-lg"></div>
-                        </div>
-                        <div className="col-span-1 row-span-2">
-                            <div className="w-full h-full bg-neutral-800 rounded-lg"></div>
-                        </div>
-                        
                     </div>
                 </motion.div>
             )}
