@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDeviceDataByKey, disconnectPrisma } from '@/lib/data-extract';
+import { PrismaClient } from '@prisma/client';
 
-export async function POST(request: NextRequest) {
+const prisma = new PrismaClient();
+
+export async function POST(req: Request) {
     console.log('API Route: Received POST request');
 
     try {
-        const body = await request.json();
-        const { device_key } = body;
+        const { device_key, from, to } = await req.json();
 
         console.log(`Received device_key: ${device_key}`);
 
@@ -15,13 +17,30 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Missing device_key' }, { status: 400 });
         }
 
-        const data = await getDeviceDataByKey(device_key);
-        console.log(`Data fetched: ${JSON.stringify(data)}`);
+        const values = await prisma.devices_values.findMany({
+            where: {
+                device_key: device_key,
+                timestamp: {
+                    gte: new Date(from * 1000),
+                    lte: new Date(to * 1000)
+                }
+            },
+            orderBy: {
+                timestamp: 'asc'
+            }
+        });
 
-        return NextResponse.json(data, { status: 200 });
+        const formattedData = {
+            values: values.map(v => parseFloat(v.value)),
+            timestamps: values.map(v => v.timestamp.toISOString()),
+        };
+
+        console.log(`Data fetched: ${JSON.stringify(formattedData)}`);
+
+        return NextResponse.json(formattedData, { status: 200 });
     } catch (error) {
-        console.error('Error in API handler:', error);
-        return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+        console.error('Erreur lors de la récupération des données:', error);
+        return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
     } finally {
         await disconnectPrisma();
     }

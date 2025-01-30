@@ -20,7 +20,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "start-socket": "bun run src/lib/start-socket.ts",
-    "start:all": "concurrently \"bun run dev\" \"bun run start-socket\""
+    "start:all": "concurrently \"bun run dev\" \"bun run start-socket\"",
+    "insert-values": "node --loader ts-node/esm src/lib/devices-values-insert.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.5.0",

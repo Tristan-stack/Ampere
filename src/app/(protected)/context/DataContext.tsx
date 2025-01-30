@@ -89,6 +89,23 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     return result;
   };
 
+  useEffect(() => {
+    // Définir la plage de dates par défaut (7 derniers jours)
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+
+    // Sauvegarder la plage par défaut dans les cookies si aucune n'existe
+    const savedRange = getCookie('dateRange');
+    if (!savedRange) {
+      const defaultRange = {
+        from: sevenDaysAgo.toISOString(),
+        to: now.toISOString()
+      };
+      document.cookie = `dateRange=${JSON.stringify(defaultRange)}; path=/`;
+    }
+  }, []);
+
   const fetchData = async () => {
     if (isInitialLoad) {
       setIsLoading(true);
@@ -116,14 +133,14 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const savedRange = getCookie('dateRange');
     if (!savedRange) {
       console.warn('Pas de dateRange dans les cookies.');
-      setIsLoading(true);
+      setIsLoading(false);
       setIsInitialLoad(false);
       return;
     }
 
     const { from, to } = JSON.parse(savedRange);
-    const fromTime = new Date(from).getTime();
-    const toTime = new Date(to).getTime();
+    const fromTime = new Date(from).getTime() / 1000; // Convertir en timestamp Unix
+    const toTime = new Date(to).getTime() / 1000;
 
     try {
       const allData: ConsumptionData[] = [];
@@ -138,34 +155,30 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
           },
           body: JSON.stringify({
             device_key: device.key,
+            from: Math.floor(fromTime),
+            to: Math.floor(toTime)
           }),
         });
 
         const data = await response.json();
 
-        const filteredTimestamps = data.timestamps.filter((timestamp: string) => {
-          const recordTime = new Date(timestamp).getTime();
-          return recordTime >= fromTime && recordTime <= toTime;
-        });
+        if (data.values && data.timestamps) {
+          const deviceData = data.timestamps.map((timestamp: string, idx: number) => ({
+            id: `${device.key}-${idx}`,
+            date: timestamp,
+            building: device.building,
+            floor: device.floor,
+            totalConsumption: isTestMode ?
+              data.values[idx] * 0.9 :
+              data.values[idx],
+            emissions: isTestMode ?
+              data.values[idx] * 50 * 0.9 :
+              data.values[idx] * 50,
+          }));
 
-        const filteredIndices = filteredTimestamps.map((timestamp: string) =>
-          data.timestamps.indexOf(timestamp)
-        );
+          allData.push(...deviceData);
+        }
 
-        const deviceData = filteredTimestamps.map((timestamp: string, idx: number) => ({
-          id: `${device.key}-${filteredIndices[idx]}`,
-          date: timestamp,
-          building: device.building,
-          floor: device.floor,
-          totalConsumption: isTestMode ? 
-            data.values[filteredIndices[idx]] * 0.9 :
-            data.values[filteredIndices[idx]],
-          emissions: isTestMode ?
-            data.values[filteredIndices[idx]] * 50 * 0.9 :
-            data.values[filteredIndices[idx]] * 50,
-        }));
-
-        allData.push(...deviceData);
         loadedDevices++;
         setLoadingProgress(Math.floor((loadedDevices / totalDevices) * 100));
       }
@@ -177,7 +190,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoadingProgress(100);
       setTimeout(() => {
-        setIsLoading(true);
+        setIsLoading(false);
       }, 1500);
       setIsInitialLoad(false);
     }
@@ -185,7 +198,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     fetchData();
-    
+
     if (isTestMode) {
       const timer = setTimeout(() => {
         console.log("Rafraîchissement des données avec les vraies valeurs...");
@@ -206,13 +219,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   }, [selectedBuildings, chartData]);
 
   return (
-    <DataContext.Provider value={{ 
-      chartData, 
-      filteredData, 
-      aggregatedData, 
+    <DataContext.Provider value={{
+      chartData,
+      filteredData,
+      aggregatedData,
       isLoading,
       loadingProgress,
-      selectedBuildings, 
+      selectedBuildings,
       setSelectedBuildings,
       deviceData: [],
       labels: [],
