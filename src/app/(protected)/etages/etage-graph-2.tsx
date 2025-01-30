@@ -49,7 +49,6 @@ interface EtageGraph2Props {
     }>;
   };
   isExpanded: boolean;
-  pricePerKwh: number;
   isAdmin?: boolean;
 }
 
@@ -122,7 +121,7 @@ const aggregateDataByInterval = (data: any[], interval: string) => {
   return Object.values(aggregatedData);
 };
 
-export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded, pricePerKwh, isAdmin = false }) => {
+export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded, isAdmin = false }) => {
   const [prevTotal, setPrevTotal] = useState(0);
   const [prevMax, setPrevMax] = useState(0);
   const [prevMin, setPrevMin] = useState(0);
@@ -349,11 +348,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
     return { maxPoint, minPoint };
 }, [floorData]);
-
-  // Calculer le coût total
-  const totalCost = React.useMemo(() => {
-    return total.totalConsumption * pricePerKwh;
-  }, [total.totalConsumption, pricePerKwh]);
 
   if (!isExpanded) {
     return (
