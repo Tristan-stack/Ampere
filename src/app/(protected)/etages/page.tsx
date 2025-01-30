@@ -64,12 +64,12 @@ const Etages = () => {
         measurements[item.building] = {};
       }
       // Initialiser le Set pour l'étage s'il n'existe pas
-      if (!measurements[item.building][item.floor]) {
+      if (!measurements[item.building]?.[item.floor]) {
         measurements[item.building][item.floor] = new Set<string>();
       }
       // Ajouter l'ID de mesure au Set
       const measurementId = item?.id?.split('-')[0] || '';
-      measurements[item.building][item.floor].add(measurementId);
+      measurements[item.building][item.floor]?.add(measurementId);
     });
 
     return measurements;

@@ -69,7 +69,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                         >
                             <div className="flex items-center justify-between relative mb-4 px-4">
                                 <div className="flex items-center gap-2">
-                                    <h4 className="text-lg font-medium text-neutral-300 text-nowrap">Coût énergétique</h4>
+                                    <h4 className="text-lg font-medium text-neutral-300 text-nowrap mt-1">Coût énergétique</h4>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -100,6 +100,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                                 from={0}
                                                 to={hourlyCost}
                                             />
+                                            <span className="text-muted-foreground"> €</span>   
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-neutral-800 pb-2 px-4">
@@ -109,6 +110,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                                 from={0}
                                                 to={dailyCost}
                                             />
+                                            <span className="text-muted-foreground"> €</span>
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between px-4">
@@ -118,6 +120,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                                 from={0}
                                                 to={monthlyCost}
                                             />
+                                            <span className="text-muted-foreground"> €</span>
                                         </span>
                                     </div>
                                 </div>
@@ -174,6 +177,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                             to={hourlyCost}
                                             duration={0.1}
                                         />
+                                        <span className="text-muted-foreground"> €</span>
                                     </span>
                                 </div>
                                 <div className="flex flex-1 flex-col justify-center px-6 py-2 text-left border-r">
@@ -184,6 +188,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                             to={dailyCost}
                                             duration={0.1}
                                         />
+                                        <span className="text-muted-foreground"> €</span>
                                     </span>
                                 </div>
                                 <div className="flex flex-1 flex-col justify-center px-6 py-2 text-left">
@@ -194,6 +199,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                             to={monthlyCost}
                                             duration={0.1}
                                         />
+                                        <span className="text-muted-foreground"> €</span>
                                     </span>
                                 </div>
                             </div>
@@ -260,6 +266,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                         from={0}
                                         to={hourlyCost}
                                     />
+                                    <span className="text-muted-foreground"> €</span>
                                 </div>
                             </div>
                             <div className="text-center">
@@ -269,6 +276,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                         from={0}
                                         to={dailyCost}
                                     />
+                                    <span className="text-muted-foreground"> €</span>
                                 </div>
                             </div>
                             <div className="text-center">
@@ -278,6 +286,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                         from={0}
                                         to={monthlyCost}
                                     />
+                                    <span className="text-muted-foreground"> €</span>
                                 </div>
                             </div>
                         </div>

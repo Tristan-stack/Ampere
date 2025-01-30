@@ -75,12 +75,12 @@ const KWH_TO_MWH = 0.001; // Conversion kWh vers MWh
 // Ajouter cette fonction d'agrégation des données
 const aggregateDataByInterval = (data: any[], interval: string) => {
   const aggregatedData: { [key: string]: any } = {};
-  
+
   data.forEach(item => {
     const date = new Date(item.date);
     let key: string;
-    
-    switch(interval) {
+
+    switch (interval) {
       case "5min":
         date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
         date.setSeconds(0);
@@ -112,12 +112,12 @@ const aggregateDataByInterval = (data: any[], interval: string) => {
         date.setSeconds(0);
         key = date.toISOString();
     }
-    
+
     if (!aggregatedData[key]) {
       aggregatedData[key] = { ...item, date: key };
     }
   });
-  
+
   return Object.values(aggregatedData);
 };
 
@@ -149,7 +149,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
     // Récupérer toutes les données et les agréger par intervalle
     const aggregatedDataByFloor: { [key: string]: any[] } = {};
-    
+
     Object.entries(floorData).forEach(([key, data]) => {
       aggregatedDataByFloor[key] = aggregateDataByInterval(data, chartOptions.timeInterval);
     });
@@ -180,30 +180,30 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
   const total = React.useMemo(() => {
     const allData = Object.values(floorData).flat();
     if (allData.length === 0) {
-        return {
-            totalConsumption: 0,
-            maxConsumption: 0,
-            minConsumption: 0,
-            emissions: 0,
-        };
+      return {
+        totalConsumption: 0,
+        maxConsumption: 0,
+        minConsumption: 0,
+        emissions: 0,
+      };
     }
 
-    const allConsumptions = allData.map(item => item.totalConsumption).filter(value => 
-        typeof value === 'number' && !isNaN(value)
+    const allConsumptions = allData.map(item => item.totalConsumption).filter(value =>
+      typeof value === 'number' && !isNaN(value)
     );
 
     return {
-        totalConsumption: allConsumptions.reduce((acc, curr) => acc + curr, 0),
-        maxConsumption: allConsumptions.length > 0 ? Math.max(...allConsumptions) : 0,
-        minConsumption: allConsumptions.length > 0 ? Math.min(...allConsumptions) : 0,
-        emissions: allData.reduce((acc, curr) => acc + (curr.emissions || 0), 0),
+      totalConsumption: allConsumptions.reduce((acc, curr) => acc + curr, 0),
+      maxConsumption: allConsumptions.length > 0 ? Math.max(...allConsumptions) : 0,
+      minConsumption: allConsumptions.length > 0 ? Math.min(...allConsumptions) : 0,
+      emissions: allData.reduce((acc, curr) => acc + (curr.emissions || 0), 0),
     };
   }, [floorData]);
 
   const chartData = React.useMemo(() => prepareChartData(), [floorData]);
 
   const getDateFormatter = (interval: string) => {
-    switch(interval) {
+    switch (interval) {
       case "5min":
       case "15min":
       case "30min":
@@ -261,7 +261,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     if (chartData.length > 0) {
       // Ajuster les index du brush si nécessaire
       const maxIndex = chartData.length - 1;
-      
+
       if (brushStartIndex === null || brushEndIndex === null) {
         // Initialisation
         setBrushStartIndex(0);
@@ -270,7 +270,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
         // Ajuster les index existants si nécessaire
         const safeStartIndex = Math.min(brushStartIndex, maxIndex);
         const safeEndIndex = Math.min(brushEndIndex, maxIndex);
-        
+
         if (safeStartIndex !== brushStartIndex) {
           setBrushStartIndex(safeStartIndex);
         }
@@ -304,13 +304,13 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
   const handleBrushChange = (brushData: any) => {
     if (!chartData.length) return;
-    
+
     const maxIndex = chartData.length - 1;
     if (brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
       // S'assurer que les index ne dépassent pas les limites
       const safeStartIndex = Math.min(Math.max(0, brushData.startIndex), maxIndex);
       const safeEndIndex = Math.min(Math.max(0, brushData.endIndex), maxIndex);
-      
+
       setBrushStartIndex(safeStartIndex);
       setBrushEndIndex(safeEndIndex);
     }
@@ -321,33 +321,33 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     let minPoint = { date: '', value: Infinity, building: '', type: 'min' as const };
 
     Object.entries(floorData).forEach(([building, data]) => {
-        data.forEach(point => {
-            if (point.totalConsumption > maxPoint.value) {
-                maxPoint = {
-                    date: point.date,
-                    value: point.totalConsumption,
-                    building,
-                    type: 'max'
-                };
-            }
-            if (point.totalConsumption < minPoint.value) {
-                minPoint = {
-                    date: point.date,
-                    value: point.totalConsumption,
-                    building,
-                    type: 'min'
-                };
-            }
-        });
+      data.forEach(point => {
+        if (point.totalConsumption > maxPoint.value) {
+          maxPoint = {
+            date: point.date,
+            value: point.totalConsumption,
+            building,
+            type: 'max'
+          };
+        }
+        if (point.totalConsumption < minPoint.value) {
+          minPoint = {
+            date: point.date,
+            value: point.totalConsumption,
+            building,
+            type: 'min'
+          };
+        }
+      });
     });
 
     // Si aucune donnée n'a été trouvée, réinitialiser minPoint
     if (minPoint.value === Infinity) {
-        minPoint = { date: '', value: 0, building: '', type: 'min' };
+      minPoint = { date: '', value: 0, building: '', type: 'min' };
     }
 
     return { maxPoint, minPoint };
-}, [floorData]);
+  }, [floorData]);
 
   if (!isExpanded) {
     return (
@@ -362,9 +362,19 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           >
             <div className="flex flex-col h-full items-stretch space-y-0 border-b p-0 sm:flex-row w-full">
               <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
-                <div className="flex items-start justify-between flex-col">
+                <div className="flex items-center justify-start gap-1">
                   <h2 className="text-lg font-bold">Consommation par étage</h2>
-
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-neutral-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {/*Texte d'information sur comment lire le graphique et comment fonctionne le selecteur*/}
+                        <p>Le graphique représente la consommation énergétique des mesures que vous selectionnez.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
               <div className="flex">
@@ -520,7 +530,19 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           <div className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row w-full">
             <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold">Consommation par étage</h2>
+              <div className="flex items-center justify-start gap-1">
+                  <h2 className="text-lg font-bold">Consommation par étage</h2>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-neutral-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Le graphique représente la consommation énergétique des mesures que vous selectionnez.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -659,11 +681,11 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                         strokeWidth={2}
                         name={`${building} - ${floor}`}
                         dot={(props) => {
-                          const isMax = selectedPoints.includes('max') && 
+                          const isMax = selectedPoints.includes('max') &&
                             props.value === total.maxConsumption;
-                          const isMin = selectedPoints.includes('min') && 
+                          const isMin = selectedPoints.includes('min') &&
                             props.value === total.minConsumption;
-                          
+
                           if (isMax || isMin) {
                             return (
                               <circle
