@@ -138,10 +138,10 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.5 }}
-                        className="flex flex-col h-full w-full pt-4 gap-2 px-0 bg-neutral-900 rounded-md"
+                        className="flex flex-col h-full w-full px-0 bg-neutral-900 rounded-md"
                     >
                         <div className="flex items-center justify-between relative">
-                            <div className="flex flex-row gap-1 items-center 3xl:flex-col 3xl:items-start px-2">
+                            <div className="flex flex-row gap-1 items-center 3xl:flex-col py-4 3xl:items-start px-2">
                                 <h4 className="text-lg font-medium text-neutral-300">Coût énergétique</h4>
                                 <div className="flex flex-row gap-1 items-center">
                                 <Input
@@ -159,7 +159,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={onToggleExpand}
-                                className="mx-4 bg-neutral-800 hover:bg-neutral-700 px-1 py-1 h-auto 3xl:px-2 3xl:py-2 absolute -top-3 -right-3"
+                                className="mx-4 my-4 bg-neutral-800 hover:bg-neutral-700 px-1 py-1 h-auto 3xl:px-2 3xl:py-2 absolute -top-3 -right-3"
                             >
                                 <ArrowUpLeft className="h-4 w-4" />
                             </Button>
