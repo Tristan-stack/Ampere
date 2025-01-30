@@ -37,7 +37,11 @@ interface Batimentgraph2Props {
   aggregatedData: { [key: string]: { date: string; totalConsumption: number; emissions: number }[] }
   loading: boolean
 }
-
+interface ChartDataPoint {
+  date: string;
+  totalConsumption: number;
+  [key: `consumption${string}`]: number;
+}
 const buildingColors = {
   'A': 'hsl(var(--chart-1))',
   'B': 'hsl(var(--chart-2))',
@@ -234,14 +238,8 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
   // Préparer les données pour le graphique
   const prepareChartData = () => {
     const allDates = new Set<string>();
-    const dataByDate: { 
-      [key: string]: { 
-        date: string; 
-        totalConsumption: number; 
-        [key: `consumption${string}`]: number;
-      }
-    } = {};
-
+    const dataByDate: { [key: string]: ChartDataPoint } = {};
+  
     Object.entries(aggregatedData).forEach(([building, data]) => {
       const aggregatedBuildingData = aggregateDataByInterval(data, chartOptions.timeInterval);
       
@@ -252,19 +250,17 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             date: item.date,
             totalConsumption: 0,
             [`consumption${building}`]: 0
-          };
+          } as ChartDataPoint;
         }
-
-        
+  
         if (chartOptions.displayMode === "combined") {
-          dataByDate[item.date].totalConsumption = (dataByDate[item.date]?.totalConsumption || 0) + item.totalConsumption;
+          dataByDate[item.date].totalConsumption += item.totalConsumption;
         }
         
         dataByDate[item.date][`consumption${building}`] = item.totalConsumption;
       });
     });
-
-
+  
     return sortDataByDate(Object.values(dataByDate));
   };
 
@@ -325,11 +321,11 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
       <div className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Consommation totale</h2>
+            <h2 className="text-sm xl:text-lg font-bold">Consommation totale</h2>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Settings2 className="h-4 w-4" />
+                <Button variant="outline" size="icon" className="w-8 p-2 h-8">
+                  <Settings2 className="h-2 w-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -462,12 +458,12 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs xl:text-sm text-muted-foreground">
             Sur la période sélectionnée.
           </p>
         </div>
         <div className="flex">
-          <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2">
+          <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2">
             <span className="text-xs text-muted-foreground">Total</span>
             <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
               <CountUp
@@ -481,7 +477,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             </span>
           </div>
           <div 
-            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
               selectedPoints.includes('max') ? 'bg-accent/50' : ''
             }`}
             onClick={() => togglePoint('max')}
@@ -499,7 +495,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             </span>
           </div>
           <div 
-            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
               selectedPoints.includes('min') ? 'bg-accent/50' : ''
             }`}
             onClick={() => togglePoint('min')}
@@ -528,7 +524,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />
             </div>
           ) : (
-            <div className="h-full w-full">
+            <div className="h-full w-full "> 
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}

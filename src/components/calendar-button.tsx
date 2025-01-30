@@ -19,9 +19,9 @@ const GradientButton: React.FC<GradientButtonProps> = ({ onClick }) => {
         <TooltipTrigger asChild>
           <button
             onClick={onClick}
-            className="w-8 h-8 shadow-xl rounded-lg bg-neutral-800 ml-auto flex justify-center items-center hover:shadow-white/20 duration-300"
+            className="w-8 h-8 shadow-xl rounded-lg bg-neutral-800 flex justify-center items-center hover:shadow-white/20 duration-300"
           >
-            <Calendar className='h-4' />
+            <Calendar className='h-4 w-4' />
           </button>
         </TooltipTrigger>
         <TooltipContent className='bg-background'>

@@ -87,7 +87,7 @@ export function AppSidebar() {
     <Sidebar
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="dark:bg-[#18181b]">
+      className="dark:bg-[#18181b] h-full">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

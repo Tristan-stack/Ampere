@@ -6,6 +6,7 @@ import GradientButton from "@/components/calendar-button";
 import SidePanel from "@/components/side-panel";
 import { DataProvider } from "@/app/(protected)/context/DataContext";
 import { LoadingScreen } from "@/components/loading-screen";
+import { get } from "http";
 
 type Props = {
     children: React.ReactNode
@@ -13,41 +14,64 @@ type Props = {
 
 const SidebarLayout = ({ children }: Props) => {
     const [isSidePanelVisible, setIsSidePanelVisible] = useState(false);
+
     useEffect(() => {
-        const setCookie = (name: string, value: string, days: number) => {
-          const expires = new Date();
-          expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-          document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-        };
-    
+        // Cookie management functions
         const getCookie = (name: string) => {
-          const nameEQ = name + "=";
-          const ca = document.cookie.split(';');
-          for (let i = 0; i < ca.length; i++) {
-            let c = ca[i]?.trim();
-            if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-          }
-          return null;
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i]?.trim();
+                if (c?.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
         };
-    
+
+        const setCookie = (name: string, value: string, days: number) => {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+        };
+
+        // Check if device is a tablet (screen width between 768px and 1024px)
+        const isTablet = window.matchMedia('(min-width: 768px) and (max-width: 1024px)').matches;
+        console.log("Est tablette:",isTablet);
+        console.log(getCookie('sidebar:state'));
+        // Initialize sidebar state
+        const initializeSidebarState = () => {
+            const savedState = getCookie('sidebar:state');
+            if (isTablet) {
+                // Set to false by default on tablet
+                setCookie('sidebar:state', 'false', 7);
+                // You might want to trigger any necessary UI updates here
+            } else if (isTablet === false) {
+                // Set default state for non-tablet devices
+                setCookie('sidebar:state', 'true', 7);
+            }
+        };
+
+        initializeSidebarState();
+
+        // Initialize date range cookie
         const initializeDateRangeCookie = () => {
-          const savedRange = getCookie('dateRange');
-          if (!savedRange) {
-            const currentDate = new Date();
-            const day = currentDate.getDay() || 7;
-            const monday = new Date(currentDate);
-            monday.setDate(monday.getDate() - (day - 1));
-            const sunday = new Date(monday);
-            sunday.setDate(sunday.getDate() + 6);
-            setCookie('dateRange', JSON.stringify({ from: monday, to: sunday }), 7);
-          }
+            const savedRange = getCookie('dateRange');
+            if (!savedRange) {
+                const currentDate = new Date();
+                const day = currentDate.getDay() || 7;
+                const monday = new Date(currentDate);
+                monday.setDate(monday.getDate() - (day - 1));
+                const sunday = new Date(monday);
+                sunday.setDate(sunday.getDate() + 6);
+                setCookie('dateRange', JSON.stringify({ from: monday, to: sunday }), 7);
+            }
         };
-    
+
         initializeDateRangeCookie();
-      }, []);
-    useEffect(() => {
+
+        // Add dark mode
         document.documentElement.classList.add("dark");
 
+        // Handle keyboard shortcut
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.ctrlKey && event.key === 'd') {
                 event.preventDefault();
@@ -75,13 +99,13 @@ const SidebarLayout = ({ children }: Props) => {
                 <LoadingScreen />
                 <AppSidebar />
                 <SidebarTrigger />
-                <main className='w-full flex flex-col justify-center items-center'>
+                <main className='w-full flex flex-col justify-center items-center relative bg-blue-5 px-2 pr-4 pb-24 xl:pb-0'>
                     {/* Bento */}
-                    <div className="w-full space-y- pr-12">
+                    <div className="w-full pr-6 ">
                         <div className="absolute top-2 right-2">
                             <GradientButton onClick={handleToggleSidePanel}/>
                         </div>
-                        <div className='w-full bg-sidebar shadow rounded-md overflow-hidden h-[calc(100vh-6rem)] pl-4 py-2 flex space-x-4'>
+                        <div className='w-full h-[calc(100vh-6rem)] flex'>
                             {children}
                         </div>
                     </div>

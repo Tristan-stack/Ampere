@@ -56,7 +56,7 @@ const Batiments = () => {
     }, [chartData, selectedBuildings]);
 
     return (
-        <div className="w-full space-y-4 flex flex-col justify-center mx-auto">
+        <div className="w-full space-y-4 flex flex-col justify-center mx-auto items-center md:mt-24 xl:mt-0">
             <div className="w-full h-1/2 flex space-x-4">
                 <div className="w-1/3 bg-neutral-800 rounded-md border">
                     <div className="h-full">
@@ -85,7 +85,7 @@ const Batiments = () => {
                                 </TooltipProvider>
                             </div>
                             <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold -mb-2 mt-2">Sélection des bâtiments</h3>
-                            <div className="flex items-start mt-1 justify-start gap-2">
+                            <div className="flex items-start mt-1 justify-start gap-[0.15rem]">
                                 {["A", "B", "C"].map(building => (
                                     <button
                                         key={building}
@@ -99,7 +99,7 @@ const Batiments = () => {
                                         )}
                                     >
                                         <div 
-                                            className="w-3 h-3 rounded-full" 
+                                            className="w-2 h-2 rounded-full" 
                                             style={{ 
                                                 backgroundColor: buildingColors[building as keyof typeof buildingColors],
                                                 boxShadow: `0 0 10px ${buildingColors[building as keyof typeof buildingColors]}`
