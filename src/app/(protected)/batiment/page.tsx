@@ -60,9 +60,9 @@ const Batiments = () => {
             <div className="w-full h-1/2 flex space-x-4">
                 <div className="w-1/3 bg-neutral-800 rounded-md border">
                     <div className="h-full">
-                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden">
+                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-between">
                             <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
-                            <div className="relative">
+                            <div className="relative w-full">
                                 <Score score={efficiencyScore+500} />
                                 <TooltipProvider>
                                     <Tooltip>
@@ -84,7 +84,7 @@ const Batiments = () => {
                                     </Tooltip>
                                 </TooltipProvider>
                             </div>
-                            <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold mt-2">Sélection des bâtiments</h3>
+                            <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold -mb-2 mt-2">Sélection des bâtiments</h3>
                             <div className="flex items-start mt-1 justify-start gap-2">
                                 {["A", "B", "C"].map(building => (
                                     <button

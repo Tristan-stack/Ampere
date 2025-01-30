@@ -39,9 +39,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface EtageGraph2Props {
-  aggregatedData: {
+  floorData: {
     [key: string]: Array<{
       date: string;
+      building: string;
+      floor: string;
       totalConsumption: number;
       emissions: number;
     }>;
@@ -69,7 +71,56 @@ interface ChartOptions {
 const CO2_COEFFICIENT = 0.67175; // Moyenne des coefficients (0.986 + 0.777 + 0.429 + 0.494) / 4
 const KWH_TO_MWH = 0.001; // Conversion kWh vers MWh
 
-export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpanded }) => {
+// Ajouter cette fonction d'agrégation des données
+const aggregateDataByInterval = (data: any[], interval: string) => {
+  const aggregatedData: { [key: string]: any } = {};
+  
+  data.forEach(item => {
+    const date = new Date(item.date);
+    let key: string;
+    
+    switch(interval) {
+      case "5min":
+        date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "15min":
+        date.setMinutes(Math.floor(date.getMinutes() / 15) * 15);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "30min":
+        date.setMinutes(Math.floor(date.getMinutes() / 30) * 30);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "1h":
+        date.setMinutes(0);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "1d":
+        date.setHours(0);
+        date.setMinutes(0);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      default:
+        date.setMinutes(Math.floor(date.getMinutes() / 15) * 15);
+        date.setSeconds(0);
+        key = date.toISOString();
+    }
+    
+    if (!aggregatedData[key]) {
+      aggregatedData[key] = { ...item, date: key };
+    }
+  });
+  
+  return Object.values(aggregatedData);
+};
+
+export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded }) => {
   const [prevTotal, setPrevTotal] = useState(0);
   const [prevMax, setPrevMax] = useState(0);
   const [prevMin, setPrevMin] = useState(0);
@@ -91,77 +142,112 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
     );
   };
 
+  // Modifier la fonction prepareChartData
   const prepareChartData = () => {
+    if (!floorData || Object.keys(floorData).length === 0) return [];
+
+    // Récupérer toutes les données et les agréger par intervalle
+    const aggregatedDataByFloor: { [key: string]: any[] } = {};
+    
+    Object.entries(floorData).forEach(([key, data]) => {
+      aggregatedDataByFloor[key] = aggregateDataByInterval(data, chartOptions.timeInterval);
+    });
+
+    // Récupérer toutes les dates uniques
     const allDates = [...new Set(
-      Object.values(aggregatedData)
+      Object.values(aggregatedDataByFloor)
         .flat()
         .map(item => item.date)
     )].sort();
-  
+
+    // Créer les points de données pour chaque date
     return allDates.map(date => {
-      const dataPoint = { date };
-      Object.entries(aggregatedData).forEach(([building, data]) => {
-        const pointsForDate = data.filter(item => item.date === date);
-        if (pointsForDate.length > 0) {
-          dataPoint[building] = pointsForDate.reduce((sum, item) => 
-            sum + item.totalConsumption, 0
-          );
+      const dataPoint: any = { date };
+
+      // Ajouter les données de chaque étage
+      Object.entries(aggregatedDataByFloor).forEach(([key, data]) => {
+        const pointForDate = data.find(item => item.date === date);
+        if (pointForDate) {
+          dataPoint[key] = pointForDate.totalConsumption;
         }
       });
+
       return dataPoint;
     });
   };
 
-  const total = React.useMemo(
-    () => {
-        // Récupérer toutes les valeurs de consommation sans agrégation
-        const allConsumptions = Object.values(aggregatedData)
-            .flat()
-            .map(item => item.totalConsumption)
-            .filter(value => value !== null && !isNaN(value));
-
-        // Vérifier s'il y a des données
-        if (allConsumptions.length === 0) {
-            return {
-                totalConsumption: 0,
-                maxConsumption: 0,
-                minConsumption: 0,
-                emissions: 0,
-            };
-        }
-
-        // Calculer le total brut
-        const totalConsumption = allConsumptions.reduce((acc, curr) => acc + curr, 0);
-
-        // Trouver le vrai max et min
-        const maxConsumption = Math.max(...allConsumptions);
-        const minConsumption = Math.min(...allConsumptions);
-
-        // Calculer les émissions totales
-        const emissions = Object.values(aggregatedData)
-            .flat()
-            .reduce((acc, curr) => acc + (curr.emissions || 0), 0);
-
+  const total = React.useMemo(() => {
+    const allData = Object.values(floorData).flat();
+    if (allData.length === 0) {
         return {
-            totalConsumption,
-            maxConsumption,
-            minConsumption,
-            emissions,
+            totalConsumption: 0,
+            maxConsumption: 0,
+            minConsumption: 0,
+            emissions: 0,
         };
-    },
-    [aggregatedData]
-);
+    }
 
-  const chartData = React.useMemo(() => prepareChartData(), [aggregatedData]);
+    const allConsumptions = allData.map(item => item.totalConsumption).filter(value => 
+        typeof value === 'number' && !isNaN(value)
+    );
+
+    return {
+        totalConsumption: allConsumptions.reduce((acc, curr) => acc + curr, 0),
+        maxConsumption: allConsumptions.length > 0 ? Math.max(...allConsumptions) : 0,
+        minConsumption: allConsumptions.length > 0 ? Math.min(...allConsumptions) : 0,
+        emissions: allData.reduce((acc, curr) => acc + (curr.emissions || 0), 0),
+    };
+  }, [floorData]);
+
+  const chartData = React.useMemo(() => prepareChartData(), [floorData]);
 
   const getDateFormatter = (interval: string) => {
-    return (value: string) => {
-      const date = new Date(value);
-      return date.toLocaleString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    };
+    switch(interval) {
+      case "5min":
+      case "15min":
+      case "30min":
+        return (value: string) => {
+          const date = new Date(value);
+          return date.toLocaleString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        };
+      case "1w":
+        return (value: string) => {
+          const date = new Date(value);
+          return `Semaine ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
+        };
+      case "1m":
+        return (value: string) => {
+          const date = new Date(value);
+          return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+        };
+      case "1d":
+        return (value: string) => {
+          const date = new Date(value);
+          return date.toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short"
+          });
+        };
+      case "1h":
+        return (value: string) => {
+          const date = new Date(value);
+          return date.toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        };
+      default:
+        return (value: string) => {
+          const date = new Date(value);
+          return date.toLocaleString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        };
+    }
   };
 
   useEffect(() => {
@@ -171,12 +257,28 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
   }, [total]);
 
   useEffect(() => {
-    if (chartData.length > 0 && brushStartIndex === null) {
-      const endIndex = Math.min(100, chartData.length - 1);
-      setBrushStartIndex(0);
-      setBrushEndIndex(endIndex);
+    if (chartData.length > 0) {
+      // Ajuster les index du brush si nécessaire
+      const maxIndex = chartData.length - 1;
+      
+      if (brushStartIndex === null || brushEndIndex === null) {
+        // Initialisation
+        setBrushStartIndex(0);
+        setBrushEndIndex(Math.min(100, maxIndex));
+      } else {
+        // Ajuster les index existants si nécessaire
+        const safeStartIndex = Math.min(brushStartIndex, maxIndex);
+        const safeEndIndex = Math.min(brushEndIndex, maxIndex);
+        
+        if (safeStartIndex !== brushStartIndex) {
+          setBrushStartIndex(safeStartIndex);
+        }
+        if (safeEndIndex !== brushEndIndex) {
+          setBrushEndIndex(safeEndIndex);
+        }
+      }
     }
-  }, [chartData, brushStartIndex]);
+  }, [chartData, brushStartIndex, brushEndIndex]);
 
   useEffect(() => {
     // Masquer le contenu pendant le redimensionnement
@@ -200,9 +302,16 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
   }, [isExpanded]); // Se déclenche quand le graphique est redimensionné
 
   const handleBrushChange = (brushData: any) => {
+    if (!chartData.length) return;
+    
+    const maxIndex = chartData.length - 1;
     if (brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
-      setBrushStartIndex(brushData.startIndex);
-      setBrushEndIndex(brushData.endIndex);
+      // S'assurer que les index ne dépassent pas les limites
+      const safeStartIndex = Math.min(Math.max(0, brushData.startIndex), maxIndex);
+      const safeEndIndex = Math.min(Math.max(0, brushData.endIndex), maxIndex);
+      
+      setBrushStartIndex(safeStartIndex);
+      setBrushEndIndex(safeEndIndex);
     }
   };
 
@@ -210,7 +319,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
     let maxPoint = { date: '', value: 0, building: '', type: 'max' as const };
     let minPoint = { date: '', value: Infinity, building: '', type: 'min' as const };
 
-    Object.entries(aggregatedData).forEach(([building, data]) => {
+    Object.entries(floorData).forEach(([building, data]) => {
         data.forEach(point => {
             if (point.totalConsumption > maxPoint.value) {
                 maxPoint = {
@@ -237,7 +346,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
     }
 
     return { maxPoint, minPoint };
-}, [aggregatedData]);
+}, [floorData]);
 
   if (!isExpanded) {
     return (
@@ -325,7 +434,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
                 <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap">
                   <CountUp
                     from={0}
-                    to={total.totalConsumption / Object.keys(aggregatedData).length || 0}
+                    to={total.totalConsumption / Object.keys(floorData).length || 0}
                     separator=" "
                     duration={0.1}
                     className="count-up-text"
@@ -538,41 +647,35 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
                       />
                     }
                   />
-                  {Object.entries(aggregatedData).map(([building, data]) => {
-                    const minPoint = data.reduce((min, curr) =>
-                      curr.totalConsumption < min.totalConsumption ? curr : min
-                    );
-                    const maxPoint = data.reduce((max, curr) =>
-                      curr.totalConsumption > max.totalConsumption ? curr : max
-                    );
-
+                  {Object.entries(floorData).map(([key, data]) => {
+                    const [building, floor] = key.split('-');
                     return (
                       <Line
-                        key={building}
+                        key={key}
                         type={chartOptions.curveType}
-                        dataKey={building}
+                        dataKey={key}
                         stroke={buildingColors[building as keyof typeof buildingColors]}
                         strokeWidth={2}
-                        name={`Bâtiment ${building}`}
-                        dot={(props): ReactElement<SVGElement> | null => {
-                          const isMinPoint = selectedPoints.includes('min') &&
-                            props.payload.date === minPoint.date;
-                          const isMaxPoint = selectedPoints.includes('max') &&
-                            props.payload.date === maxPoint.date;
-
-                          if (!isMinPoint && !isMaxPoint) return null;
-
-                          return (
-                            <circle
-                              key={`${building}-${props.payload.date}-${isMinPoint ? 'min' : 'max'}`}
-                              cx={props.cx}
-                              cy={props.cy}
-                              r={6}
-                              fill="white"
-                              stroke={buildingColors[building as keyof typeof buildingColors]}
-                              strokeWidth={3}
-                            />
-                          );
+                        name={`${building} - ${floor}`}
+                        dot={(props) => {
+                          const isMax = selectedPoints.includes('max') && 
+                            props.value === total.maxConsumption;
+                          const isMin = selectedPoints.includes('min') && 
+                            props.value === total.minConsumption;
+                          
+                          if (isMax || isMin) {
+                            return (
+                              <circle
+                                cx={props.cx}
+                                cy={props.cy}
+                                r={6}
+                                fill="white"
+                                stroke={buildingColors[building as keyof typeof buildingColors]}
+                                strokeWidth={2}
+                              />
+                            );
+                          }
+                          return false;
                         }}
                         activeDot={{
                           r: 4,
@@ -580,7 +683,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
                           stroke: buildingColors[building as keyof typeof buildingColors],
                           strokeWidth: 2
                         }}
-                        animationDuration={750}
                         connectNulls
                       />
                     );
@@ -600,41 +702,16 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
                       gap={1}
                     >
                       <LineChart>
-                        {Object.entries(aggregatedData).map(([building, data]) => {
-                          const minPoint = data.reduce((min, curr) =>
-                            curr.totalConsumption < min.totalConsumption ? curr : min
-                          );
-                          const maxPoint = data.reduce((max, curr) =>
-                            curr.totalConsumption > max.totalConsumption ? curr : max
-                          );
-
+                        {Object.entries(floorData).map(([key, data]) => {
+                          const [building, floor] = key.split('-');
                           return (
                             <Line
-                              key={building}
+                              key={key}
                               type={chartOptions.curveType}
-                              dataKey={building}
+                              dataKey={key}
                               stroke={buildingColors[building as keyof typeof buildingColors]}
                               strokeWidth={1}
-                              dot={(props): ReactElement<SVGElement> | null => {
-                                const isMinPoint = selectedPoints.includes('min') &&
-                                  props.payload.date === minPoint.date;
-                                const isMaxPoint = selectedPoints.includes('max') &&
-                                  props.payload.date === maxPoint.date;
-
-                                if (!isMinPoint && !isMaxPoint) return null;
-
-                                return (
-                                  <circle
-                                    key={`brush-${building}-${props.payload.date}-${isMinPoint ? 'min' : 'max'}`}
-                                    cx={props.cx}
-                                    cy={props.cy}
-                                    r={6}
-                                    fill="white"
-                                    stroke={buildingColors[building as keyof typeof buildingColors]}
-                                    strokeWidth={3}
-                                  />
-                                );
-                              }}
+                              dot={false}
                               activeDot={{
                                 r: 4,
                                 fill: "white",
@@ -670,7 +747,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ aggregatedData, isExpa
               <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap">
                 <CountUp
                   from={0}
-                  to={total.totalConsumption / Object.keys(aggregatedData).length || 0}
+                  to={total.totalConsumption / Object.keys(floorData).length || 0}
                   separator=" "
                   duration={0.1}
                   className="count-up-text"
