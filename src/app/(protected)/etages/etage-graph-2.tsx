@@ -363,7 +363,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
             <div className="flex flex-col h-full items-stretch space-y-0 border-b p-0 sm:flex-row w-full">
               <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
                 <div className="flex items-center justify-start gap-1">
-                  <h2 className="text-lg font-bold">Consommation par étage</h2>
+                  <h2 className="md:text-sm xl:text-lg font-bold">Consommation par étage</h2>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -531,7 +531,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
             <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center justify-start gap-1">
-                  <h2 className="text-lg font-bold">Consommation par étage</h2>
+                  <h2 className="md:text-sm xltext-lg font-bold">Consommation par étage</h2>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -575,7 +575,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
               </div>
             </div>
             <div className="flex">
-              <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2">
+              <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2">
                 <span className="text-xs text-muted-foreground">Total</span>
                 <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
                   <CountUp
@@ -589,7 +589,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 </span>
               </div>
               <div
-                className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('max') ? 'bg-accent/50' : ''
+                className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('max') ? 'bg-accent/50' : ''
                   }`}
                 onClick={() => togglePoint('max')}
               >
@@ -606,7 +606,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 </span>
               </div>
               <div
-                className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('min') ? 'bg-accent/50' : ''
+                className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('min') ? 'bg-accent/50' : ''
                   }`}
                 onClick={() => togglePoint('min')}
               >
@@ -745,7 +745,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           </div>
 
           <div className="flex w-full border-t">
-            <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4 text-left even:border-l sm:px-8 sm:py-2">
+            <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4 text-left even:border-l sm:px-4 sm:py-2">
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Moyenne</span>
                 <TooltipProvider>
@@ -770,7 +770,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 <span className="text-xs text-muted-foreground ml-1">kW</span>
               </span>
             </div>
-            <div className="flex flex-1 flex-col justify-center gap-1 border-l px-6 py-4 text-left sm:px-8 sm:py-2">
+            <div className="flex flex-1 flex-col justify-center gap-1 border-l px-6 py-4 text-left sm:px-4 sm:py-2">
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Émissions CO₂</span>
                 <TooltipProvider>
@@ -801,7 +801,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 <span className="text-xs text-muted-foreground ml-1">t CO₂</span>
               </span>
             </div>
-            <div className="flex flex-1 flex-col justify-center gap-1 border-l px-6 py-4 text-left sm:px-8 sm:py-2">
+            <div className="flex flex-1 flex-col justify-center gap-1 border-l px-6 py-4 text-left sm:px-4 sm:py-2">
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Équivalent arbres</span>
                 <TooltipProvider>

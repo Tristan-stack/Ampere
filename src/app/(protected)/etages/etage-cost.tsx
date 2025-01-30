@@ -69,7 +69,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                         >
                             <div className="flex items-center justify-between relative mb-4 px-4">
                                 <div className="flex items-center gap-2">
-                                    <h4 className="text-lg font-medium text-neutral-300 text-nowrap mt-1">Coût énergétique</h4>
+                                    <h4 className="md:text-sm xl:text-lg  font-medium text-neutral-300 text-nowrap mt-1">Coût énergétique</h4>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -88,7 +88,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                         onChange={(e) => handlePriceChange(e.target.value)}
                                         step="0.001"
                                         min="0"
-                                        className="w-24 text-right"
+                                        className="md:w-16 xl:w-24 text-right"
                                     />
                                     <span className="text-xs text-neutral-400">€/kWh</span>
                                 </div>

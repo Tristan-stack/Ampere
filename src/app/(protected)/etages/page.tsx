@@ -220,15 +220,15 @@ const Etages = () => {
   console.log('data', floorData)
 
   return (
-    <div className="w-full h-full flex gap-4">
+    <div className="w-full h-full flex items-center justify-center gap-4 md:mt-16 xl:mt-0">
       {/* Colonne de gauche - Contrôles */}
-      <div className="w-1/3 h-full flex flex-col gap-4">
+      <div className="w-1/3 flex flex-col space-y-4 h-full">
         {/* Section Bâtiments */}
         <div className="h-2/4 space-y-4">
           <div className="bg-neutral-800 h-2/4 rounded-md border">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <h1 className="text-white text-2xl font-bold mb-4">Analyse des étages</h1>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center sm:space-x-0 xl:space-x-4">
                 {Object.keys(buildingFloors).map((building) => {
                   const buildingKey = building as keyof BuildingFloors;
                   const selectedMeasurementsCount = selectedMeasurements.filter(
@@ -243,7 +243,7 @@ const Etages = () => {
                       onClick={() => handleBuildingTabClick(buildingKey)}
                       onDoubleClick={() => handleBuildingDoubleClick(buildingKey)}
                       className={cn(
-                        "flex items-center text-sm space-x-2 px-3 py-1 rounded-md transition-all",
+                        "flex items-center sm:text-xs xl:text-sm space-x-2 px-3 py-1 rounded-md transition-all",
                         activeBuilding === building ? "bg-neutral-800 text-white" : "",
                         isFullySelected
                           ? "border-2 border-neutral-700"
@@ -280,7 +280,7 @@ const Etages = () => {
               </div>
 
               <AnimatePresence mode="wait">
-                <div className="h-20 3xl:h-28 w-full overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-neutral-800 [&::-webkit-scrollbar-track]:bg-neutral-950">
+                <div className="h-20 md:h-24 3xl:h-28 w-full overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-neutral-800 [&::-webkit-scrollbar-track]:bg-neutral-950">
                   {!showSelected ? (
                     <motion.div
                       className=""
@@ -427,7 +427,7 @@ const Etages = () => {
       </div>
 
       {/* Colonne de droite - Visualisations */}
-      <div className="w-2/3 flex flex-col space-y-4">
+      <div className="w-2/3 flex flex-col space-y-4 h-full">
         {/* Graphique principal */}
         <div
           className={cn(

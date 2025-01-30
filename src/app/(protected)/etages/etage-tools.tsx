@@ -260,17 +260,6 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                     )}
                                     {tool.id === "notes" && (
                                         <div className="w-full h-full">
-                                            <ToggleGroup type="multiple" className="absolute top-2 right-10">
-                                                <ToggleGroupItem value="bold" aria-label="Toggle bold">
-                                                    <Bold className="h-4 w-4" />
-                                                </ToggleGroupItem>
-                                                <ToggleGroupItem value="italic" aria-label="Toggle italic">
-                                                    <Italic className="h-4 w-4" />
-                                                </ToggleGroupItem>
-                                                <ToggleGroupItem value="underline" aria-label="Toggle underline">
-                                                    <Underline className="h-4 w-4" />
-                                                </ToggleGroupItem>
-                                            </ToggleGroup>
                                             <Textarea
                                                 id="noteTextarea"
                                                 value={noteContent}
