@@ -29,15 +29,26 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
+    onDataChange?: () => void
 }
 
 export function DataTable<TData, TValue>({
     columns,
     data,
+    onDataChange
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -58,11 +69,16 @@ export function DataTable<TData, TValue>({
             columnFilters,
             columnVisibility,
         },
+        initialState: {
+            pagination: {
+                pageSize: 8,
+            },
+        },
     })
 
     return (
-        <div>
-            <div className="flex items-center py-4 gap-2">
+        <div className="">
+            <div className="w-full flex items-center justify-between py-4 gap-2">
                 <Input
                     placeholder="Filtrer par email..."
                     value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
@@ -142,23 +158,36 @@ export function DataTable<TData, TValue>({
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Précédent
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
-                    Suivant
-                </Button>
+            <div className=" flex flex-col  space-y-4">
+                <div className=" pt-2 text-sm text-muted-foreground">
+                    {table.getFilteredRowModel().rows.length} résultat(s)
+                </div>
+                <Pagination className=" justify-end -mt-6">
+                    <PaginationContent className="-mt-6">
+                        <PaginationItem>
+                            <PaginationPrevious
+                                onClick={() => table.previousPage()}
+                                disabled={!table.getCanPreviousPage()}
+                            />
+                        </PaginationItem>
+                        {Array.from({ length: table.getPageCount() }, (_, i) => (
+                            <PaginationItem key={i}>
+                                <PaginationLink
+                                    onClick={() => table.setPageIndex(i)}
+                                    isActive={table.getState().pagination.pageIndex === i}
+                                >
+                                    {i + 1}
+                                </PaginationLink>
+                            </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                            <PaginationNext
+                                onClick={() => table.nextPage()}
+                                disabled={!table.getCanNextPage()}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             </div>
         </div>
     )

@@ -27,7 +27,7 @@ export type User = {
     lastLogin: string
 }
 
-async function updateUserRole(userId: string, newRole: string) {
+async function updateUserRole(userId: string, newRole: string, onUpdate?: () => void) {
     try {
         const response = await fetch('/api/users/updateRole', {
             method: 'PUT',
@@ -48,6 +48,8 @@ async function updateUserRole(userId: string, newRole: string) {
             theme: "dark",
             transition: Bounce,
         })
+
+        if (onUpdate) onUpdate()
     } catch (error) {
         toast.error('Erreur lors de la mise à jour du rôle', {
             position: "top-right",
@@ -57,7 +59,7 @@ async function updateUserRole(userId: string, newRole: string) {
     }
 }
 
-async function deleteUser(userId: string) {
+async function deleteUser(userId: string, onDelete?: () => void) {
     try {
         const response = await fetch('/api/users/delete', {
             method: 'DELETE',
@@ -78,6 +80,8 @@ async function deleteUser(userId: string) {
             theme: "dark",
             transition: Bounce,
         })
+
+        if (onDelete) onDelete()
     } catch (error) {
         toast.error('Erreur lors de la suppression', {
             position: "top-right",
@@ -87,28 +91,45 @@ async function deleteUser(userId: string) {
     }
 }
 
-function UserActions({ user }: { user: User }) {
+function UserActions({ user, onDataChange }: { user: User; onDataChange?: () => void }) {
     const { user: currentUser } = useUser()
-    const [currentUserRole, setCurrentUserRole] = useState<string>("")
+    const [currentUserRole, setCurrentUserRole] = useState<string>("étudiant")
+    const [error, setError] = useState<string | null>(null)
+
+    const isCurrentUser = currentUser?.emailAddresses?.[0]?.emailAddress === user.email
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            if (currentUser?.id) {
-                try {
-                    const response = await fetch(`/api/users/role/${currentUser.id}`)
-                    const data = await response.json()
-                    setCurrentUserRole(data.role)
-                } catch (error) {
-                    console.error("Erreur lors de la récupération du rôle:", error)
+            if (!currentUser?.emailAddresses?.[0]?.emailAddress) {
+                console.log("Pas d'email trouvé")
+                return
+            }
+
+            const email = currentUser.emailAddresses[0].emailAddress
+            try {
+                const response = await fetch(`/api/users/role?email=${encodeURIComponent(email)}`)
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`)
                 }
+
+                const data = await response.json()
+                console.log("Données reçues:", data)
+                setCurrentUserRole(data.role)
+                setError(null)
+            } catch (error) {
+                console.error("Erreur complète:", error)
+                setError(error instanceof Error ? error.message : 'Erreur inconnue')
             }
         }
 
         fetchUserRole()
-    }, [currentUser?.id])
+    }, [currentUser?.emailAddresses])
 
-    // Si l'utilisateur est un étudiant, pas d'actions disponibles
-    if (currentUserRole === "étudiant") return null
+    // Si on n'est ni admin ni enseignant, on ne montre pas les actions
+    if (currentUserRole !== "admin" && currentUserRole !== "enseignant") {
+        return null
+    }
 
     return (
         <DropdownMenu>
@@ -121,42 +142,63 @@ function UserActions({ user }: { user: User }) {
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
-                {(currentUserRole === "admin" ||
-                    (currentUserRole === "enseignant" && user.role === "étudiant")) && (
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Modifier le rôle</DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                                {currentUserRole === "admin" && (
-                                    <>
-                                        <DropdownMenuItem onClick={() => updateUserRole(user.id, "admin")}>
-                                            Admin
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateUserRole(user.id, "enseignant")}>
-                                            Enseignant
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateUserRole(user.id, "étudiant")}>
-                                            Étudiant
-                                        </DropdownMenuItem>
-                                    </>
-                                )}
-                                {currentUserRole === "enseignant" && user.role === "étudiant" && (
-                                    <DropdownMenuItem onClick={() => updateUserRole(user.id, "enseignant")}>
-                                        Enseignant
-                                    </DropdownMenuItem>
-                                )}
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                    )}
+                {/* Admin peut tout faire sauf sur lui-même */}
+                {currentUserRole === "admin" && !isCurrentUser && (
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>Changer le rôle</DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuItem
+                                onClick={() => updateUserRole(user.id, "admin", onDataChange)}
+                            >
+                                Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => updateUserRole(user.id, "enseignant", onDataChange)}
+                            >
+                                Enseignant
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => updateUserRole(user.id, "étudiant", onDataChange)}
+                            >
+                                Étudiant
+                            </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                )}
 
-                {(currentUserRole === "admin" ||
-                    (currentUserRole === "enseignant" && user.role === "étudiant")) && (
-                        <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => deleteUser(user.id)}
-                        >
-                            Supprimer
-                        </DropdownMenuItem>
-                    )}
+                {/* Enseignant peut seulement gérer les étudiants */}
+                {currentUserRole === "enseignant" && user.role === "étudiant" && (
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>Changer le rôle</DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuItem
+                                onClick={() => updateUserRole(user.id, "enseignant", onDataChange)}
+                            >
+                                Enseignant
+                            </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                )}
+
+                {/* Admin peut supprimer n'importe qui sauf lui-même */}
+                {currentUserRole === "admin" && !isCurrentUser && (
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => deleteUser(user.id, onDataChange)}
+                    >
+                        Supprimer
+                    </DropdownMenuItem>
+                )}
+
+                {/* Enseignant peut seulement supprimer les étudiants */}
+                {currentUserRole === "enseignant" && user.role === "étudiant" && (
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => deleteUser(user.id, onDataChange)}
+                    >
+                        Supprimer
+                    </DropdownMenuItem>
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     )
@@ -216,6 +258,11 @@ export const columns: ColumnDef<User>[] = [
     },
     {
         id: "actions",
-        cell: ({ row }) => <UserActions user={row.original} />
+        cell: ({ row, table }) => (
+            <UserActions
+                user={row.original}
+                onDataChange={(table.options.meta as any)?.onDataChange}
+            />
+        )
     },
 ]

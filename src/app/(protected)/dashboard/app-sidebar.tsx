@@ -81,6 +81,25 @@ export function AppSidebar() {
 
   const { user } = useUser();
   const [isHovered, setIsHovered] = React.useState(false);
+  const [userRole, setUserRole] = React.useState<string>("étudiant");
+
+  React.useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user?.emailAddresses?.[0]?.emailAddress) return;
+
+      try {
+        const response = await fetch(`/api/users/role?email=${encodeURIComponent(user.emailAddresses[0].emailAddress)}`);
+        if (!response.ok) throw new Error('Erreur lors de la récupération du rôle');
+
+        const data = await response.json();
+        setUserRole(data.role);
+      } catch (error) {
+        console.error("Erreur:", error);
+      }
+    };
+
+    fetchUserRole();
+  }, [user?.emailAddresses]);
 
   return (
     <Sidebar
@@ -143,23 +162,25 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-neutral-400">Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton tooltip={item.title} asChild className="hover:bg-zinc-400/10 rounded-md">
-                      <Link href={item.url} className="flex text-lg items-center justify-start">
-                        <item.icon className="size-4 stroke-[2.25px]" />
-                        <span className="mb-[1.5px]">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          {(userRole === "admin" || userRole === "enseignant") && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-neutral-400">Administration</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {adminItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton tooltip={item.title} asChild className="hover:bg-zinc-400/10 rounded-md">
+                        <Link href={item.url} className="flex text-lg items-center justify-start">
+                          <item.icon className="size-4 stroke-[2.25px]" />
+                          <span className="mb-[1.5px]">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
