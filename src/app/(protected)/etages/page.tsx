@@ -11,7 +11,6 @@ import { EtageCarousel } from "./etage-carousel";
 import { EtageGraph2 } from "./etage-graph-2";
 import { useData } from "../context/DataContext";
 import { EtageTools } from "./etage-tools";
-import { EtageEmissionsGraph } from "./etage-graph-3";
 import { EtageCost } from "./etage-cost";
 
 type ConsumptionData = {
