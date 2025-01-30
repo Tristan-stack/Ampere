@@ -57,17 +57,10 @@ const Etages = () => {
     if (!chartData || chartData.length === 0) return {};
 
     const measurements: Record<string, Record<string, Set<string>>> = {};
-    
+
     chartData.forEach(item => {
-      // Initialiser l'objet du bâtiment s'il n'existe pas
-      if (!measurements[item.building]) {
-        measurements[item.building] = {};
-      }
-      // Initialiser le Set pour l'étage s'il n'existe pas
-      if (!measurements[item.building]?.[item.floor]) {
-        measurements[item.building][item.floor] = new Set<string>();
-      }
-      // Ajouter l'ID de mesure au Set
+      measurements[item.building] ??= {};
+      measurements[item.building][item.floor] ??= new Set<string>();
       const measurementId = item?.id?.split('-')[0] || '';
       measurements[item.building][item.floor]?.add(measurementId);
     });
@@ -80,7 +73,7 @@ const Etages = () => {
     if (!chartData || chartData.length === 0) return {};
 
     // Filtrer les données pour les mesures sélectionnées
-    const filteredData = chartData.filter(item => 
+    const filteredData = chartData.filter(item =>
       selectedMeasurements.some(
         m => item.id.startsWith(m.id)
       )
@@ -88,7 +81,7 @@ const Etages = () => {
 
     // Grouper par mesure
     const groupedByMeasurement: { [key: string]: typeof chartData } = {};
-    
+
     filteredData.forEach(item => {
       const measurementId = item.id.split('-')[0];
       const key = `${item.building}-${item.floor}-${measurementId}`;
@@ -124,13 +117,13 @@ const Etages = () => {
   const handleMeasurementSelect = (building: string, floor: string, measurementId: string) => {
     setSelectedMeasurements(prev => {
       const isSelected = prev.some(m => m.id === measurementId);
-      
+
       if (isSelected) {
         return prev.filter(m => m.id !== measurementId);
       }
 
       const measurementNumber = [...(availableMeasurements[building]?.[floor] || [])].indexOf(measurementId) + 1;
-      
+
       return [...prev, {
         id: measurementId,
         building,
@@ -143,7 +136,7 @@ const Etages = () => {
   // Ajout des nouvelles fonctions de gestion des doubles clics
   const handleBuildingDoubleClick = (building: keyof BuildingFloors) => {
     const allMeasurements: SelectedMeasurement[] = [];
-    
+
     buildingFloors[building].forEach(floor => {
       const measurements = availableMeasurements[building]?.[floor] || new Set();
       measurements.forEach(measurementId => {
@@ -158,7 +151,7 @@ const Etages = () => {
     });
 
     // Si toutes les mesures du bâtiment sont déjà sélectionnées, on les désélectionne
-    const allSelected = allMeasurements.every(m => 
+    const allSelected = allMeasurements.every(m =>
       selectedMeasurements.some(sm => sm.id === m.id)
     );
 
@@ -179,7 +172,7 @@ const Etages = () => {
     }));
 
     // Si toutes les mesures de l'étage sont déjà sélectionnées, on les désélectionne
-    const allSelected = floorMeasurements.every(m => 
+    const allSelected = floorMeasurements.every(m =>
       selectedMeasurements.some(sm => sm.id === m.id)
     );
 
@@ -196,7 +189,7 @@ const Etages = () => {
   const handleMeasurementDoubleClick = (building: string, floor: string, measurementId: string) => {
     const measurements = availableMeasurements[building]?.[floor] || new Set();
     const measurementNumber = [...measurements].indexOf(measurementId) + 1;
-    
+
     setSelectedMeasurements([{
       id: measurementId,
       building,
@@ -298,27 +291,27 @@ const Etages = () => {
                     >
                       {buildingFloors[activeBuilding].map((floor) => {
                         const measurements = availableMeasurements[activeBuilding]?.[floor] || new Set();
-                        const isFloorSelected = [...measurements].every(measurementId => 
+                        const isFloorSelected = [...measurements].every(measurementId =>
                           selectedMeasurements.some(m => m.id === measurementId)
                         );
-                        const isPartiallySelected = [...measurements].some(measurementId => 
+                        const isPartiallySelected = [...measurements].some(measurementId =>
                           selectedMeasurements.some(m => m.id === measurementId)
                         );
-                        
+
                         return (
                           <div key={floor}>
-                            <div 
+                            <div
                               className={cn(
                                 "p-3 py-2 mb-1 rounded-lg",
                                 "border-2 transition-all duration-200",
-                                isFloorSelected 
-                                  ? "bg-neutral-800 border-neutral-700" 
-                                  : isPartiallySelected 
+                                isFloorSelected
+                                  ? "bg-neutral-800 border-neutral-700"
+                                  : isPartiallySelected
                                     ? "bg-neutral-800/50 border-neutral-700/50"
                                     : "bg-neutral-900 border-transparent",
                               )}
                             >
-                              <h3 
+                              <h3
                                 className={cn(
                                   "text-sm font-medium flex items-center justify-between",
                                   "cursor-pointer hover:text-neutral-200 transition-colors",
@@ -331,7 +324,7 @@ const Etages = () => {
                                   {floor}
                                 </div>
                                 <div className="text-xs text-neutral-500">
-                                  {[...measurements].filter(m => 
+                                  {[...measurements].filter(m =>
                                     selectedMeasurements.some(sm => sm.id === m)
                                   ).length} / {measurements.size}
                                 </div>
@@ -359,7 +352,7 @@ const Etages = () => {
                                       )}
                                     >
                                       <div className="flex items-center gap-1.5">
-                                        <div 
+                                        <div
                                           className={cn(
                                             "w-2 h-2 rounded-full",
                                             isSelected ? "bg-green-500" : "bg-neutral-600"
@@ -461,7 +454,7 @@ const Etages = () => {
             )}
           >
             <div className="h-full">
-              <EtageTools 
+              <EtageTools
                 onSavingsChange={(savings) => {
                   setSavingsPercentage(savings);
                 }}
@@ -474,8 +467,8 @@ const Etages = () => {
                   handleGraphClick(expandedGraph === 0 ? 2 : 0);
                 }}
                 totalConsumption={Object.values(floorData)
-                    .flat()
-                    .reduce((acc, curr) => acc + curr.totalConsumption, 0)
+                  .flat()
+                  .reduce((acc, curr) => acc + curr.totalConsumption, 0)
                 }
               />
             </div>

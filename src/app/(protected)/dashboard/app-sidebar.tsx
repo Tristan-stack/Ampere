@@ -28,6 +28,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useSidebar } from "@/components/ui/sidebar"
 import { ChatInterface } from "@/components/chat/chat-interface"
+import ColorPicker from "@/components/colors"
 
 
 const mainItems = [
@@ -197,7 +198,10 @@ export function AppSidebar() {
             <SidebarMenuButton tooltip={"Editer l'affichage"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
               <Blocks className="h-4 w-4 stroke-[2.25px]" />
             </SidebarMenuButton>
-
+            <SidebarMenuButton tooltip={"Paramètres"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
+              
+      <ColorPicker />
+            </SidebarMenuButton>
           </div>
         </div>
       </SidebarFooter>
