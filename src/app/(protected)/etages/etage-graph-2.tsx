@@ -530,7 +530,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           <div className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row w-full">
             <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
               <div className="flex items-center justify-between">
-              <div className="flex items-center justify-start gap-1">
+                <div className="flex items-center justify-start gap-1">
                   <h2 className="text-lg font-bold">Consommation par étage</h2>
                   <TooltipProvider>
                     <Tooltip>
@@ -671,10 +671,10 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     }
                   />
                   {Object.entries(floorData).map(([key, data]) => {
-                    const [building, floor] = key.split('-');
+                    const [building, floor] = key.split("-");
                     return (
                       <Line
-                        key={key}
+                        key={`main-${building}-${floor}`} // Changed key format
                         type={chartOptions.curveType}
                         dataKey={key}
                         stroke={buildingColors[building as keyof typeof buildingColors]}
@@ -683,10 +683,11 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                         dot={(props) => {
                           const isMax = selectedPoints.includes('max') && props.value === total.maxConsumption;
                           const isMin = selectedPoints.includes('min') && props.value === total.minConsumption;
-                        
+
                           if (isMax || isMin) {
                             return (
                               <circle
+                                key={`dot-${building}-${floor}-${props.cx}-${props.cy}`} // Added key
                                 cx={props.cx}
                                 cy={props.cy}
                                 r={6}
@@ -696,7 +697,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                               />
                             );
                           }
-                          return <g />;
+                          return <g key={`empty-${building}-${floor}-${props.cx}-${props.cy}`} />; // Added key
                         }}
                         activeDot={{
                           r: 4,
@@ -710,26 +711,19 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   })}
                   {chartData.length > 0 && brushStartIndex !== null && brushEndIndex !== null && (
                     <Brush
-                      dataKey="date"
-                      height={30}
-                      stroke={chartColors.text}
-                      tickFormatter={getDateFormatter(chartOptions.timeInterval)}
                       startIndex={brushStartIndex}
                       endIndex={brushEndIndex}
                       onChange={handleBrushChange}
-                      className="mt-4 "
-                      fill="hsl(var(--background))"
-                      travellerWidth={8}
-                      gap={1}
+                      fill="rgba(0, 0, 0, 0.2)" 
                     >
                       <LineChart>
-                        {Object.entries(floorData).map(([key, data]) => {
-                          const [building, floor] = key.split('-');
+                        {Object.entries(floorData).map(([floorKey, data]) => {
+                          const [building, floor] = floorKey.split("-");
                           return (
                             <Line
-                              key={key}
+                              key={`brush-${building}-${floor}`} // Changed key format
                               type={chartOptions.curveType}
-                              dataKey={key}
+                              dataKey={floorKey}
                               stroke={buildingColors[building as keyof typeof buildingColors]}
                               strokeWidth={1}
                               dot={false}
