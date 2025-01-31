@@ -24,7 +24,7 @@ const TransunionScore: React.FC<TransunionScoreProps> = ({ score }) => {
                 transition={{ duration: 0.5 }}
                 className="flex justify-center items-start"
             >
-                <p className="text-5xl font-bold 3xl:text-6xl">{score}</p>
+                <p className="text-5xl font-bold 3xl:text-6xl -mb-3">{score}</p>
             </motion.div>
             <div className="relative w-full mt-2">
                 {/* Animated Arrow */}

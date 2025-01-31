@@ -3,7 +3,7 @@ import { CardStack } from "@/components/card-stack";
 import { cn } from "@/lib/utils";
 export function BatimentCarousel() {
   return (
-    <div className="h-full flex items-center justify-center w-full p-8 mt-2 3xl:p-16">
+    <div className="h-full flex items-center justify-center w-full px-0 lg:px-8 p-8 mt-2 3xl:p-16">
       <CardStack items={CARDS} />
     </div>
   );

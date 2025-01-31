@@ -23,7 +23,7 @@ export const LoadingScreen = () => {
         <AnimatePresence mode="wait">
             {isLoading && !shouldExit && (
                 <motion.div
-                    className="fixed inset-0 bg-neutral-950 z-50 flex items-center justify-center"
+                    className="fixed hidden inset-0 bg-neutral-950 z-50 flex items-center justify-center"
                     exit={{
                         y: '-100%',
                         transition: {

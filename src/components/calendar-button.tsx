@@ -7,6 +7,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Button } from './ui/button';
+import { cn } from "@/lib/utils"
 
 type GradientButtonProps = {
   onClick: () => void;
@@ -17,12 +19,14 @@ const GradientButton: React.FC<GradientButtonProps> = ({ onClick }) => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
             onClick={onClick}
-            className="w-8 h-8 shadow-xl rounded-lg bg-neutral-800 ml-auto flex justify-center items-center hover:shadow-white/20 duration-300"
-          >
-            <Calendar className='h-4' />
-          </button>
+            variant="ghost"
+            size="icon"
+            className={cn("h-8 w-9 fixed top-2 right-0 z-50")}
+            >
+            <Calendar className='h-4 w-4' />
+          </Button>
         </TooltipTrigger>
         <TooltipContent className='bg-background'>
           <span className="text-xs text-neutral-400 mr-1">Selecteur de périodes</span>

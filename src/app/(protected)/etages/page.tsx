@@ -7,11 +7,11 @@ import { Info, Building2, ArrowRight } from "lucide-react";
 import Score from "@/components/score";
 import Squares from "@/components/squares";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { EtageCarousel } from "./etage-carousel";
 import { EtageGraph2 } from "./etage-graph-2";
 import { useData } from "../context/DataContext";
 import { EtageTools } from "./etage-tools";
+import { EtageCost } from "./etage-cost";
 
 type ConsumptionData = {
   id: string;
@@ -34,79 +34,69 @@ const buildingFloors: BuildingFloors = {
   'C': ['1er étage', '2e étage'],
 };
 
-type SelectedFloor = {
-  building: keyof BuildingFloors;
+type SelectedMeasurement = {
+  id: string;  // ID unique de la mesure
+  building: string;
   floor: string;
+  measurementNumber: number;  // Numéro de la mesure pour cet étage
 };
 
 const Etages = () => {
   const { chartData, isLoading } = useData();
-  const [selectedFloors, setSelectedFloors] = useState<SelectedFloor[]>([
-    { building: 'A', floor: 'Rez-de-chaussée' }
-  ]);
+  const [selectedMeasurements, setSelectedMeasurements] = useState<SelectedMeasurement[]>([]);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
   const [showSelected, setShowSelected] = useState(false);
   const [expandedGraph, setExpandedGraph] = useState<number | null>(null);
   const [savingsPercentage, setSavingsPercentage] = useState(0);
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+  const [pricePerKwh, setPricePerKwh] = useState<number>(0.15);
 
-  // Modifier la préparation des données agrégées
-  const aggregatedData = React.useMemo(() => {
+  // Obtenir les mesures disponibles pour chaque étage
+  const availableMeasurements = React.useMemo(() => {
     if (!chartData || chartData.length === 0) return {};
 
-    // Créer un objet pour stocker les données agrégées par bâtiment
-    const buildingGroups: { [key: string]: any[] } = {};
+    const measurements: Record<string, Record<string, Set<string>>> = {};
 
-    // Regrouper d'abord toutes les données par bâtiment
-    selectedFloors.forEach(({ building, floor }) => {
-        if (!buildingGroups[building]) {
-            buildingGroups[building] = [];
-        }
-
-        // Filtrer les données pour ce bâtiment et cet étage
-        const floorData = chartData.filter(
-            item => item.building === building && item.floor === floor
-        );
-
-        if (floorData.length > 0) {
-            // Appliquer la réduction et ajouter les données
-            const reducedData = floorData.map(item => ({
-                ...item,
-                totalConsumption: item.totalConsumption * (1 - savingsPercentage / 100),
-                emissions: item.emissions * (1 - savingsPercentage / 100)
-            }));
-            buildingGroups[building].push(...reducedData);
-        }
+    chartData.forEach(item => {
+      const buildingKey = item.building as keyof BuildingFloors;
+      measurements[buildingKey] ??= {};
+      measurements[buildingKey][item.floor] ??= new Set<string>();
+      const measurementId = item?.id?.split('-')[0] || '';
+      measurements[buildingKey][item.floor]?.add(measurementId);
     });
 
-    // Pour chaque bâtiment, agréger les données par date
-    const aggregated: { [key: string]: any[] } = {};
-    Object.entries(buildingGroups).forEach(([building, data]) => {
-        if (data.length === 0) return;
+    return measurements;
+  }, [chartData]);
 
-        // Regrouper par date
-        const byDate = data.reduce((acc, curr) => {
-            const date = curr.date;
-            if (!acc[date]) {
-                acc[date] = {
-                    date,
-                    totalConsumption: 0,
-                    emissions: 0
-                };
-            }
-            acc[date].totalConsumption += curr.totalConsumption;
-            acc[date].emissions += curr.emissions;
-            return acc;
-        }, {} as { [key: string]: any });
+  // Préparer les données pour le graphique
+  const floorData = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) return {};
 
-        // Convertir en tableau et trier par date
-        aggregated[building] = Object.values(byDate).sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
+    // Filtrer les données pour les mesures sélectionnées
+    const filteredData = chartData.filter(item =>
+      selectedMeasurements.some(
+        m => item.id.startsWith(m.id)
+      )
+    );
+
+    // Grouper par mesure
+    const groupedByMeasurement: { [key: string]: typeof chartData } = {};
+
+    filteredData.forEach(item => {
+      const measurementId = item.id.split('-')[0];
+      const key = `${item.building}-${item.floor}-${measurementId}`;
+      if (!groupedByMeasurement[key]) {
+        groupedByMeasurement[key] = [];
+      }
+      groupedByMeasurement[key].push({
+        ...item,
+        totalConsumption: item.totalConsumption * (1 - savingsPercentage / 100),
+        emissions: item.emissions * (1 - savingsPercentage / 100)
+      });
     });
 
-    return aggregated;
-  }, [chartData, selectedFloors, savingsPercentage]);
+    return groupedByMeasurement;
+  }, [chartData, selectedMeasurements, savingsPercentage]);
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -124,19 +114,88 @@ const Etages = () => {
     'C': 'hsl(var(--chart-3))'
   } as const;
 
-  const handleFloorClick = (building: keyof BuildingFloors, floor: string) => {
-    setSelectedFloors(prev => {
-      const isSelected = prev.some(
-        f => f.building === building && f.floor === floor
-      );
+  const handleMeasurementSelect = (building: string, floor: string, measurementId: string) => {
+    setSelectedMeasurements(prev => {
+      const isSelected = prev.some(m => m.id === measurementId);
 
       if (isSelected) {
-        return prev.filter(
-          f => !(f.building === building && f.floor === floor)
-        );
+        return prev.filter(m => m.id !== measurementId);
       }
-      return [...prev, { building, floor }];
+
+      const measurementNumber = [...(availableMeasurements[building]?.[floor] || [])].indexOf(measurementId) + 1;
+
+      return [...prev, {
+        id: measurementId,
+        building,
+        floor,
+        measurementNumber
+      }];
     });
+  };
+
+  // Ajout des nouvelles fonctions de gestion des doubles clics
+  const handleBuildingDoubleClick = (building: keyof BuildingFloors) => {
+    const allMeasurements: SelectedMeasurement[] = [];
+
+    buildingFloors[building].forEach(floor => {
+      const measurements = availableMeasurements[building]?.[floor] || new Set();
+      measurements.forEach(measurementId => {
+        const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+        allMeasurements.push({
+          id: measurementId,
+          building,
+          floor,
+          measurementNumber
+        });
+      });
+    });
+
+    // Si toutes les mesures du bâtiment sont déjà sélectionnées, on les désélectionne
+    const allSelected = allMeasurements.every(m =>
+      selectedMeasurements.some(sm => sm.id === m.id)
+    );
+
+    if (allSelected) {
+      setSelectedMeasurements(prev => prev.filter(m => m.building !== building));
+    } else {
+      setSelectedMeasurements(allMeasurements);
+    }
+  };
+
+  const handleFloorDoubleClick = (building: string, floor: string) => {
+    const measurements = availableMeasurements[building]?.[floor] || new Set();
+    const floorMeasurements = [...measurements].map((measurementId, index) => ({
+      id: measurementId,
+      building,
+      floor,
+      measurementNumber: index + 1
+    }));
+
+    // Si toutes les mesures de l'étage sont déjà sélectionnées, on les désélectionne
+    const allSelected = floorMeasurements.every(m =>
+      selectedMeasurements.some(sm => sm.id === m.id)
+    );
+
+    if (allSelected) {
+      setSelectedMeasurements(prev => prev.filter(m => m.building !== building || m.floor !== floor));
+    } else {
+      setSelectedMeasurements(prev => {
+        const otherMeasurements = prev.filter(m => m.building !== building || m.floor !== floor);
+        return [...otherMeasurements, ...floorMeasurements];
+      });
+    }
+  };
+
+  const handleMeasurementDoubleClick = (building: string, floor: string, measurementId: string) => {
+    const measurements = availableMeasurements[building]?.[floor] || new Set();
+    const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+
+    setSelectedMeasurements([{
+      id: measurementId,
+      building,
+      floor,
+      measurementNumber
+    }]);
   };
 
   const handleBuildingTabClick = (building: keyof BuildingFloors) => {
@@ -157,32 +216,33 @@ const Etages = () => {
     handleGraphClick(0);
   };
 
-  console.log('data', aggregatedData)
+  console.log('data', floorData)
 
   return (
-    <div className="w-full h-full flex gap-4">
+    <div className="w-full md:w-full h-full flex flex-col lg:flex-row items-center justify-start md:justify-center gap-4 md:mt-16 xl:mt-0">
       {/* Colonne de gauche - Contrôles */}
-      <div className="w-1/3 h-full flex flex-col gap-4">
+      <div className="w-full lg:w-1/3 flex flex-row lg:flex-col space-y-4 h-full md:h-36 lg:h-full">
         {/* Section Bâtiments */}
-        <div className="h-2/4 space-y-4">
-          <div className="bg-neutral-800 h-2/4 rounded-md border">
+        <div className="h-36 w-full lg:h-2/4 block justify-start items-start md:flex md:justify-center md:items-center lg:block lg:justify-start lg:items-start lg:space-y-4 space-y-4 md:space-y-0 space-x-0 md:space-x-4 lg:space-x-0">
+          <div className="bg-neutral-800 h-full lg:h-2/4 rounded-md border">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <h1 className="text-white text-2xl font-bold mb-4">Analyse des étages</h1>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center sm:space-x-0 xl:space-x-4">
                 {Object.keys(buildingFloors).map((building) => {
                   const buildingKey = building as keyof BuildingFloors;
-                  const selectedFloorsCount = selectedFloors.filter(
-                    f => f.building === buildingKey
+                  const selectedMeasurementsCount = selectedMeasurements.filter(
+                    m => m.building === buildingKey
                   ).length;
-                  const isPartiallySelected = selectedFloorsCount > 0 && selectedFloorsCount < buildingFloors[buildingKey].length;
-                  const isFullySelected = selectedFloorsCount === buildingFloors[buildingKey].length;
+                  const isPartiallySelected = selectedMeasurementsCount > 0 && selectedMeasurementsCount < buildingFloors[buildingKey].length;
+                  const isFullySelected = selectedMeasurementsCount === buildingFloors[buildingKey].length;
 
                   return (
                     <button
                       key={building}
                       onClick={() => handleBuildingTabClick(buildingKey)}
+                      onDoubleClick={() => handleBuildingDoubleClick(buildingKey)}
                       className={cn(
-                        "flex items-center text-sm space-x-2 px-3 py-1 rounded-md transition-all",
+                        "flex items-center sm:text-xs xl:text-sm space-x-2 px-3 py-1 rounded-md transition-all",
                         activeBuilding === building ? "bg-neutral-800 text-white" : "",
                         isFullySelected
                           ? "border-2 border-neutral-700"
@@ -203,55 +263,109 @@ const Etages = () => {
             </div>
           </div>
 
-          {/* Section Étages */}
-          <div className="h-2/4 bg-neutral-800 rounded-md border">
+          {/* Section Étages et Mesures */}
+          <div className="h-36 lg:h-2/4 w-full bg-neutral-800 rounded-md border">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <div className="flex items-center justify-between mb-1 3xl:mb-3">
                 <h3 className="text-neutral-300 text-sm 3xl:text-lg font-medium">
-                  {showSelected ? "Sélections actives" : "Étages disponibles"}
+                  {showSelected ? "Sélections actives" : "Mesures disponibles"}
                 </h3>
                 <button
                   onClick={() => setShowSelected(!showSelected)}
                   className="text-xs px-2 py-1 rounded-md bg-neutral-800 text-neutral-400 hover:text-neutral-300 transition-colors"
                 >
-                  {showSelected ? "Voir les étages" : "Voir les sélections"}
+                  {showSelected ? "Voir les mesures" : "Voir les sélections"}
                 </button>
               </div>
 
               <AnimatePresence mode="wait">
-                <ScrollArea className="h-[80%]">
+                <div className="h-20 md:h-24 3xl:h-28 w-full overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-neutral-800 [&::-webkit-scrollbar-track]:bg-neutral-950">
                   {!showSelected ? (
                     <motion.div
-                      key="floors"
+                      className=""
+                      key="measurements"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="flex flex-wrap gap-2"
                     >
-                      {buildingFloors[activeBuilding].map((floor, index) => {
-                        const isSelected = selectedFloors.some(
-                          f => f.building === activeBuilding && f.floor === floor
+                      {buildingFloors[activeBuilding].map((floor) => {
+                        const measurements = availableMeasurements[activeBuilding]?.[floor] || new Set();
+                        const isFloorSelected = [...measurements].every(measurementId =>
+                          selectedMeasurements.some(m => m.id === measurementId)
+                        );
+                        const isPartiallySelected = [...measurements].some(measurementId =>
+                          selectedMeasurements.some(m => m.id === measurementId)
                         );
 
                         return (
-                          <motion.button
-                            key={floor}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.1 }}
-                            onClick={() => handleFloorClick(activeBuilding, floor)}
-                            className={cn(
-                              "px-3 py-1 rounded-md transition-all text-xs 3xl:text-sm",
-                              isSelected
-                                ? "bg-neutral-800 text-white shadow-lg shadow-neutral-900/50"
-                                : "text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800/50",
-                              "border-2",
-                              isSelected ? "border-neutral-700" : "border-transparent"
-                            )}
-                          >
-                            {floor}
-                          </motion.button>
+                          <div key={floor}>
+                            <div
+                              className={cn(
+                                "p-3 py-2 mb-1 rounded-lg",
+                                "border-2 transition-all duration-200",
+                                isFloorSelected
+                                  ? "bg-neutral-800 border-neutral-700"
+                                  : isPartiallySelected
+                                    ? "bg-neutral-800/50 border-neutral-700/50"
+                                    : "bg-neutral-900 border-transparent",
+                              )}
+                            >
+                              <h3
+                                className={cn(
+                                  "text-sm font-medium flex items-center justify-between",
+                                  "cursor-pointer hover:text-neutral-200 transition-colors",
+                                  isFloorSelected ? "text-white" : "text-neutral-400"
+                                )}
+                                onClick={() => handleFloorDoubleClick(activeBuilding, floor)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4" />
+                                  {floor}
+                                </div>
+                                <div className="text-xs text-neutral-500">
+                                  {[...measurements].filter(m =>
+                                    selectedMeasurements.some(sm => sm.id === m)
+                                  ).length} / {measurements.size}
+                                </div>
+                              </h3>
+
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {[...measurements].map((measurementId) => {
+                                  const isSelected = selectedMeasurements.some(
+                                    m => m.id === measurementId
+                                  );
+                                  const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+
+                                  return (
+                                    <button
+                                      key={measurementId}
+                                      onClick={() => handleMeasurementSelect(activeBuilding, floor, measurementId)}
+                                      onDoubleClick={() => handleMeasurementDoubleClick(activeBuilding, floor, measurementId)}
+                                      className={cn(
+                                        "flex items-center gap-2 px-3 py-1.5 rounded-md",
+                                        "text-xs transition-all duration-200",
+                                        isSelected
+                                          ? "bg-neutral-700 text-white shadow-lg shadow-neutral-900/50"
+                                          : "bg-neutral-800/50 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800",
+                                        "border border-neutral-700/50"
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-1.5">
+                                        <div
+                                          className={cn(
+                                            "w-2 h-2 rounded-full",
+                                            isSelected ? "bg-green-500" : "bg-neutral-600"
+                                          )}
+                                        />
+                                        Mesure {measurementNumber}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
                         );
                       })}
                     </motion.div>
@@ -264,18 +378,20 @@ const Etages = () => {
                       transition={{ duration: 0.2 }}
                       className="flex flex-wrap gap-2"
                     >
-                      {selectedFloors.length > 0 ? (
-                        selectedFloors.map(({ building, floor }) => (
+                      {selectedMeasurements.length > 0 ? (
+                        selectedMeasurements.map((measurement) => (
                           <div
-                            key={`${building}-${floor}`}
+                            key={measurement.id}
                             className="flex items-center space-x-2 px-3 py-1 bg-neutral-800 rounded-md text-xs"
                             style={{
-                              borderLeft: `3px solid ${buildingColors[building]}`,
+                              borderLeft: `3px solid ${buildingColors[measurement?.building as keyof BuildingFloors]}`,
                             }}
                           >
-                            <span className="text-white">Bât. {building} - {floor}</span>
+                            <span className="text-white">
+                              Bât. {measurement.building} - {measurement.floor} - Mesure {measurement.measurementNumber}
+                            </span>
                             <button
-                              onClick={() => handleFloorClick(building, floor)}
+                              onClick={() => handleMeasurementSelect(measurement.building, measurement.floor, measurement.id)}
                               className="text-neutral-400 hover:text-neutral-300"
                             >
                               ×
@@ -283,17 +399,17 @@ const Etages = () => {
                           </div>
                         ))
                       ) : (
-                        <p className="text-neutral-400 text-sm">Aucun étage sélectionné</p>
+                        <p className="text-neutral-400 text-sm">Aucune mesure sélectionnée</p>
                       )}
                     </motion.div>
                   )}
-                </ScrollArea>
+                </div>
               </AnimatePresence>
             </div>
           </div>
         </div>
         {/* Section Squares */}
-        <div className="h-2/4  rounded-md relative">
+        <div className="h-72 xl:h-2/4 hidden lg:block rounded-md relative">
           <div className="h-full pt-4">
             <Squares
               speed={0.15}
@@ -310,19 +426,19 @@ const Etages = () => {
       </div>
 
       {/* Colonne de droite - Visualisations */}
-      <div className="w-2/3 flex flex-col space-y-4">
+      <div className="w-full lg:w-2/3 mt-36 md:mt-0 pt-4 md:pt-0 flex flex-col space-y-4 h-full overflow-visible md:overflow-hidden">
         {/* Graphique principal */}
         <div
           className={cn(
             "bg-neutral-800 rounded-md border transition-all",
-            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-1/4  cursor-pointer" : "h-3/4"
+            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-2/4 md:h-1/4 cursor-pointer" : "h-96 md:h-3/4"
           )}
           onClick={() => handleGraphClick(2)}
         >
           <div className="h-full">
             <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
               <EtageGraph2
-                aggregatedData={aggregatedData}
+                floorData={floorData}
                 isExpanded={expandedGraph === 2 || expandedGraph === null}
               />
             </div>
@@ -330,36 +446,54 @@ const Etages = () => {
         </div>
 
         {/* Graphiques secondaires */}
-        <div className={cn("flex space-x-4 transition-all", expandedGraph !== null ? "h-3/4" : "h-1/4")}>
+        <div className={cn(" space-x-4 transition-all hidden md:flex", expandedGraph !== null ? "h-full md:h-3/4" : "h-1/4")}>
           <div
             className={cn(
               "bg-neutral-900 border rounded-md transition-all",
               expandedGraph === 0 ? "w-full h-full" : expandedGraph === null ? "w-1/2" : "w-1/4"
             )}
- 
           >
             <div className="h-full">
-              <EtageTools 
+              <EtageTools
                 onSavingsChange={(savings) => {
                   setSavingsPercentage(savings);
+                }}
+                onPriceChange={(price) => {
+                  setPricePerKwh(price);
                 }}
                 isExpanded={expandedGraph === 0}
                 onToggleExpand={(event) => {
                   event.stopPropagation();
                   handleGraphClick(expandedGraph === 0 ? 2 : 0);
                 }}
+                totalConsumption={Object.values(floorData)
+                  .flat()
+                  .reduce((acc, curr) => acc + curr.totalConsumption, 0)
+                }
               />
             </div>
           </div>
           <div
             className={cn(
-              "bg-neutral-900 border rounded-md transition-all cursor-pointer",
+              "bg-neutral-900 border rounded-md transition-all",
               expandedGraph === 1 ? "w-full h-full" : expandedGraph === null ? "w-1/2" : "w-1/4"
             )}
-            onClick={() => handleGraphClick(1)}
           >
             <div className="h-full">
-              {/* TODO: Deuxième graphique secondaire */}
+              <EtageCost
+                totalConsumption={Object.values(floorData)
+                  .flat()
+                  .reduce((acc, curr) => acc + curr.totalConsumption, 0)
+                }
+                pricePerKwh={pricePerKwh}
+                onPriceChange={setPricePerKwh}
+                isExpanded={expandedGraph === 1}
+                onToggleExpand={(event) => {
+                  event.stopPropagation();
+                  handleGraphClick(expandedGraph === 1 ? 2 : 1);
+                }}
+                isToolsExpanded={expandedGraph === 0}
+              />
             </div>
           </div>
         </div>

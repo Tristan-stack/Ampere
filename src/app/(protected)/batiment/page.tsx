@@ -56,13 +56,13 @@ const Batiments = () => {
     }, [chartData, selectedBuildings]);
 
     return (
-        <div className="w-full space-y-4 flex flex-col justify-center mx-auto">
-            <div className="w-full h-1/2 flex space-x-4">
-                <div className="w-1/3 bg-neutral-800 rounded-md border">
+        <div className="w-full space-y-4 flex flex-col justify-start lg:justify-center  pt-8 md:pt-0 mx-auto items-center md:mt-10 xl:mt-0">
+            <div className="w-full h-full lg:h-1/2 flex flex-col lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
+                <div className="sm:w-full lg:w-1/3 bg-neutral-800 rounded-md border">
                     <div className="h-full">
-                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden">
+                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-between">
                             <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
-                            <div className="relative">
+                            <div className="relative w-full">
                                 <Score score={efficiencyScore+500} />
                                 <TooltipProvider>
                                     <Tooltip>
@@ -84,8 +84,9 @@ const Batiments = () => {
                                     </Tooltip>
                                 </TooltipProvider>
                             </div>
-                            <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold mt-2">Sélection des bâtiments</h3>
-                            <div className="flex items-start mt-1 justify-start gap-2">
+                            <div>
+                            <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold pb-0 lg:-pb-2 mt-2">Sélection des bâtiments</h3>
+                            <div className="flex items-start mt-1 justify-start gap-[0.15rem]">
                                 {["A", "B", "C"].map(building => (
                                     <button
                                         key={building}
@@ -99,7 +100,7 @@ const Batiments = () => {
                                         )}
                                     >
                                         <div 
-                                            className="w-3 h-3 rounded-full" 
+                                            className="w-2 h-2 rounded-full" 
                                             style={{ 
                                                 backgroundColor: buildingColors[building as keyof typeof buildingColors],
                                                 boxShadow: `0 0 10px ${buildingColors[building as keyof typeof buildingColors]}`
@@ -109,10 +110,11 @@ const Batiments = () => {
                                     </button>
                                 ))}
                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="w-2/3 bg-neutral-800 rounded-md">
+                <div className="w-full lg:w-2/3 bg-neutral-800 rounded-md">
                     <div className="h-full">
                         <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
                             <Batimentgraph2 aggregatedData={aggregatedData} loading={false} />
@@ -120,10 +122,10 @@ const Batiments = () => {
                     </div>
                 </div>
             </div>
-            <div className="w-full h-1/2 flex space-x-4">
-                <div className="w-1/3 rounded-md">
+            <div className="w-full h-full pt-20 md:pt-0 lg:h-1/2 flex flex-col lg:flex-row space-x-0  lg:space-x-4">
+                <div className="w-full lg:w-1/3 rounded-md">
                     <div className="h-full">
-                        <div className="w-full h-full rounded-md relative">
+                        <div className="w-full h-72 md:h-96 lg:h-full rounded-md relative">
                             <Squares
                                 speed={0.15}
                                 squareSize={40}
@@ -137,16 +139,16 @@ const Batiments = () => {
                         </div>
                     </div>
                 </div>
-                <div className="w-2/3 h-full flex space-x-4">
-                    <div className="w-1/2 bg-neutral-800 rounded-md">
-                        <div className="h-full">
+                <div className="w-full lg:w-2/3 h-full flex flex-col pt-4 lg:pt-0 lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
+                    <div className="w-full lg:w-1/2 bg-neutral-800 rounded-md">
+                        <div className="h-72 md:h-96 lg:h-full">
                             <div className="w-full h-full bg-neutral-900 rounded-md relative">
                                 <BatimentgraphTable filteredData={filteredData} loading={false} />
                             </div>
                         </div>
                     </div>
-                    <div className="w-1/2 bg-neutral-900 rounded-md">
-                        <div className="h-full">
+                    <div className="w-full lg:w-1/2 bg-neutral-900 rounded-md">
+                        <div className="h-72 md:h-96 lg:h-full">
                             <div className="w-full h-full rounded-md">
                                 <Batimentgraph4 />
                             </div>

@@ -225,7 +225,7 @@ export function BatimentgraphTable({ filteredData, loading }: BatimentgraphTable
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="text-sm lg:text-xs xl:text-sm">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
