@@ -12,26 +12,31 @@ import { Info } from "lucide-react"
 import { useData } from '../context/DataContext';
 
 type ConsumptionData = {
-  id: string;
-  date: string;
-  building: string;
-  floor: string;
-  totalConsumption: number;
-  emissions: number;
+    id: string;
+    date: string;
+    building: string;
+    floor: string;
+    totalConsumption: number;
+    emissions: number;
 };
 
 const calculateEfficiencyScore = (data: ConsumptionData[]) => {
-  
-  return 310;
+    if (data.length === 0) {
+        return 500; // Score neutre si pas de données
+    }
+
+    // Votre logique de calcul ici
+    return 310;
 };
 
 const Batiments = () => {
-    const { 
-        chartData, 
-        filteredData, 
-        aggregatedData, 
-        selectedBuildings, 
-        setSelectedBuildings 
+    const {
+        chartData,
+        filteredData,
+        aggregatedData,
+        selectedBuildings,
+        setSelectedBuildings,
+        efficiencyScore
     } = useData();
 
     const items = ["A", "B", "C"];
@@ -50,11 +55,6 @@ const Batiments = () => {
         'C': 'hsl(var(--chart-3))'
     } as const;
 
-    const efficiencyScore = React.useMemo(() => {
-        const filteredForScore = chartData.filter(item => selectedBuildings.includes(item.building));
-        return calculateEfficiencyScore(filteredForScore);
-    }, [chartData, selectedBuildings]);
-
     return (
         <div className="w-full space-y-4 flex flex-col justify-start lg:justify-center  pt-8 md:pt-0 mx-auto items-center md:mt-10 xl:mt-0">
             <div className="w-full h-full lg:h-1/2 flex flex-col lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
@@ -63,53 +63,34 @@ const Batiments = () => {
                         <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-between">
                             <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
                             <div className="relative w-full">
-                                <Score score={efficiencyScore+500} />
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button className="absolute top-0 right-0 p-2 text-neutral-400 hover:text-neutral-300 transition-colors">
-                                                <Info className="h-4 w-4" />
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-sm">
-                                            <p className="text-sm">
-                                                Le score est calculé en fonction de 3 critères :
-                                                <br />• Consommation moyenne (50%)
-                                                <br />• Pics de consommation (30%)
-                                                <br />• Stabilité de la consommation (20%)
-                                                <br /><br />
-                                                Plus le score est élevé, plus la consommation est optimisée.
-                                            </p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <Score score={efficiencyScore} />
                             </div>
                             <div>
-                            <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold pb-0 lg:-pb-2 mt-2">Sélection des bâtiments</h3>
-                            <div className="flex items-start mt-1 justify-start gap-[0.15rem]">
-                                {["A", "B", "C"].map(building => (
-                                    <button
-                                        key={building}
-                                        onClick={() => handleBuildingSelection(building)}
-                                        className={cn(
-                                            "px-2 py-2 3xl:px-4 3xl:py-2 rounded-md transition-all duration-200 font-medium text-xs",
-                                            "border hover:bg-zinc-800 flex items-center gap-2",
-                                            selectedBuildings.includes(building)
-                                                ? "bg-neutral-950 text-white shadow-lg shadow-neutral-900/50"
-                                                : "bg-neutral-900 text-neutral-400 hover:text-neutral-300"
-                                        )}
-                                    >
-                                        <div 
-                                            className="w-2 h-2 rounded-full" 
-                                            style={{ 
-                                                backgroundColor: buildingColors[building as keyof typeof buildingColors],
-                                                boxShadow: `0 0 10px ${buildingColors[building as keyof typeof buildingColors]}`
-                                            }} 
-                                        />
-                                        Bâtiment {building}
-                                    </button>
-                                ))}
-                            </div>
+                                <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold pb-0 lg:-pb-2 mt-2">Sélection des bâtiments</h3>
+                                <div className="flex items-start mt-1 justify-start gap-[0.15rem]">
+                                    {["A", "B", "C"].map(building => (
+                                        <button
+                                            key={building}
+                                            onClick={() => handleBuildingSelection(building)}
+                                            className={cn(
+                                                "px-2 py-2 3xl:px-4 3xl:py-2 rounded-md transition-all duration-200 font-medium text-xs",
+                                                "border hover:bg-zinc-800 flex items-center gap-2",
+                                                selectedBuildings.includes(building)
+                                                    ? "bg-neutral-950 text-white shadow-lg shadow-neutral-900/50"
+                                                    : "bg-neutral-900 text-neutral-400 hover:text-neutral-300"
+                                            )}
+                                        >
+                                            <div
+                                                className="w-2 h-2 rounded-full"
+                                                style={{
+                                                    backgroundColor: buildingColors[building as keyof typeof buildingColors],
+                                                    boxShadow: `0 0 10px ${buildingColors[building as keyof typeof buildingColors]}`
+                                                }}
+                                            />
+                                            Bâtiment {building}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -94,7 +94,7 @@ async function deleteUser(userId: string, onDelete?: () => void) {
 function UserActions({ user, onDataChange }: { user: User; onDataChange?: () => void }) {
     const { user: currentUser } = useUser()
     const [currentUserRole, setCurrentUserRole] = useState<string>("étudiant")
-    
+
     // Vérifier si c'est le compte actuel
     const isCurrentUser = currentUser?.emailAddresses?.[0]?.emailAddress === user.email
 
@@ -104,7 +104,7 @@ function UserActions({ user, onDataChange }: { user: User; onDataChange?: () => 
 
     const fetchUserRole = async () => {
         if (!currentUser?.emailAddresses?.[0]?.emailAddress) return
-        
+
         try {
             const response = await fetch(`/api/users/role?email=${encodeURIComponent(currentUser.emailAddresses[0].emailAddress)}`)
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)

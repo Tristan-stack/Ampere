@@ -25,6 +25,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Batimentgraph3 } from "./graph/batiment-graph-3";
 import { Linechartsm } from "./graph/line-chart-sm";
 import { RadialChart } from "./graph/radial-chart";
+import TransunionScore from '@/components/score';
 
 ChartJS.register(
     CategoryScale,
@@ -50,7 +51,9 @@ const Dashboard: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [configLoading, setConfigLoading] = useState(true);
     const [config, setConfig] = useState<string[] | null>(null);
-
+    const { efficiencyScore } = useData();
+    console.log('Score dans Dashboard:', efficiencyScore);
+    
     const getSwapyConfig = (): string[] => {
         if (!container.current) return [];
         const items = Array.from(
@@ -337,6 +340,7 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <TransunionScore score={efficiencyScore} />
         </div>
     );
 };

@@ -5,20 +5,16 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
-    console.log('API Route: Received POST request');
-
     try {
-        const { device_key, from, to } = await req.json();
+        const body = await req.json();
+        const { device_key, from, to } = body;
 
-        console.log(`Received device_key: ${device_key}`);
-
-        if (!device_key) {
-            console.log('Missing device_key in request body');
-            return NextResponse.json({ 
-                values: [], 
+        if (!device_key || !from || !to) {
+            return NextResponse.json({
+                values: [],
                 timestamps: [],
-                error: 'Missing device_key'
-            }, { status: 400 });
+                error: 'Paramètres manquants'
+            });
         }
 
         const values = await prisma.devices_values.findMany({
@@ -39,17 +35,16 @@ export async function POST(req: Request) {
             timestamps: values.map(v => v.timestamp.toISOString()),
         };
 
-        console.log(`Data fetched: ${JSON.stringify(formattedData)}`);
-
         return NextResponse.json(formattedData);
     } catch (error) {
-        console.error('Erreur lors de la récupération des données:', error);
-        return NextResponse.json({ 
-            values: [], 
+        console.error('Erreur API:', error);
+        // Toujours retourner un objet JSON valide
+        return NextResponse.json({
+            values: [],
             timestamps: [],
-            error: 'Erreur lors de la récupération des données'
-        }, { status: 500 });
+            error: error instanceof Error ? error.message : 'Erreur inconnue'
+        });
     } finally {
-        await disconnectPrisma();
+        await prisma.$disconnect();
     }
 }
