@@ -219,12 +219,12 @@ const Etages = () => {
   console.log('data', floorData)
 
   return (
-    <div className="w-full h-full flex items-center justify-center gap-4 md:mt-16 xl:mt-0">
+    <div className="w-full md:w-full h-full flex flex-col lg:flex-row items-center justify-start md:justify-center gap-4 md:mt-16 xl:mt-0">
       {/* Colonne de gauche - Contrôles */}
-      <div className="w-1/3 flex flex-col space-y-4 h-full">
+      <div className="w-full lg:w-1/3 flex flex-row lg:flex-col space-y-4 h-full md:h-36 lg:h-full">
         {/* Section Bâtiments */}
-        <div className="h-2/4 space-y-4">
-          <div className="bg-neutral-800 h-2/4 rounded-md border">
+        <div className="h-36 w-full lg:h-2/4 block justify-start items-start md:flex md:justify-center md:items-center lg:block lg:justify-start lg:items-start lg:space-y-4 space-y-4 md:space-y-0 space-x-0 md:space-x-4 lg:space-x-0">
+          <div className="bg-neutral-800 h-full lg:h-2/4 rounded-md border">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <h1 className="text-white text-2xl font-bold mb-4">Analyse des étages</h1>
               <div className="flex items-center sm:space-x-0 xl:space-x-4">
@@ -264,7 +264,7 @@ const Etages = () => {
           </div>
 
           {/* Section Étages et Mesures */}
-          <div className="h-2/4 bg-neutral-800 rounded-md border">
+          <div className="h-36 lg:h-2/4 w-full bg-neutral-800 rounded-md border">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <div className="flex items-center justify-between mb-1 3xl:mb-3">
                 <h3 className="text-neutral-300 text-sm 3xl:text-lg font-medium">
@@ -409,7 +409,7 @@ const Etages = () => {
           </div>
         </div>
         {/* Section Squares */}
-        <div className="h-2/4  rounded-md relative">
+        <div className="h-72 xl:h-2/4 hidden lg:block rounded-md relative">
           <div className="h-full pt-4">
             <Squares
               speed={0.15}
@@ -426,12 +426,12 @@ const Etages = () => {
       </div>
 
       {/* Colonne de droite - Visualisations */}
-      <div className="w-2/3 flex flex-col space-y-4 h-full">
+      <div className="w-full lg:w-2/3 mt-36 md:mt-0 pt-4 md:pt-0 flex flex-col space-y-4 h-full overflow-auto md:overflow-hidden">
         {/* Graphique principal */}
         <div
           className={cn(
             "bg-neutral-800 rounded-md border transition-all",
-            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-1/4  cursor-pointer" : "h-3/4"
+            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-2/4 md:h-1/4 cursor-pointer" : "h-96 md:h-3/4"
           )}
           onClick={() => handleGraphClick(2)}
         >
@@ -446,7 +446,7 @@ const Etages = () => {
         </div>
 
         {/* Graphiques secondaires */}
-        <div className={cn("flex space-x-4 transition-all", expandedGraph !== null ? "h-3/4" : "h-1/4")}>
+        <div className={cn(" space-x-4 transition-all hidden md:flex", expandedGraph !== null ? "h-full md:h-3/4" : "h-1/4")}>
           <div
             className={cn(
               "bg-neutral-900 border rounded-md transition-all",
