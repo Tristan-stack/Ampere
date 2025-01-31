@@ -426,7 +426,7 @@ const Etages = () => {
       </div>
 
       {/* Colonne de droite - Visualisations */}
-      <div className="w-full lg:w-2/3 mt-36 md:mt-0 pt-4 md:pt-0 flex flex-col space-y-4 h-full overflow-auto md:overflow-hidden">
+      <div className="w-full lg:w-2/3 mt-36 md:mt-0 pt-4 md:pt-0 flex flex-col space-y-4 h-full overflow-visible md:overflow-hidden">
         {/* Graphique principal */}
         <div
           className={cn(
