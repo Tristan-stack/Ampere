@@ -190,7 +190,7 @@ export function BatimentgraphTable({ filteredData, loading }: BatimentgraphTable
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="h-full w-full rounded-md border iv">
+      <div className="h-full w-full rounded-md border">
         {loading ? (
           <div className="flex justify-center items-center h-full">
             <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />
@@ -225,7 +225,7 @@ export function BatimentgraphTable({ filteredData, loading }: BatimentgraphTable
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="sm:text-xs xl:text-sm">
+                      <TableCell key={cell.id} className="text-sm lg:text-xs xl:text-sm">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()

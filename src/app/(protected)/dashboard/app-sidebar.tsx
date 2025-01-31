@@ -199,8 +199,8 @@ export function AppSidebar() {
               <Blocks className="h-4 w-4 stroke-[2.25px]" />
             </SidebarMenuButton>
             <SidebarMenuButton tooltip={"Paramètres"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
-              
-      <ColorPicker />
+
+              <ColorPicker />
             </SidebarMenuButton>
           </div>
         </div>

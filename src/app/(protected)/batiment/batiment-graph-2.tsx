@@ -254,10 +254,11 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
         }
   
         if (chartOptions.displayMode === "combined") {
-          dataByDate[item.date].totalConsumption += item.totalConsumption;
+          dataByDate[item.date]!.totalConsumption += item.totalConsumption;
         }
         
-        dataByDate[item.date][`consumption${building}`] = item.totalConsumption;
+        dataByDate[item.date]!.totalConsumption += item.totalConsumption;
+        dataByDate[item.date]![`consumption${building}`] = item.totalConsumption;
       });
     });
   
@@ -319,7 +320,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
   return (
     <div className="relative h-full w-full rounded-md border">
       <div className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
-        <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
+        <div className="flex flex-1 flex-col justify-center gap-1 px-2 md:px-6 py-1 pb-2 md:py-5 sm:py-2">
           <div className="flex items-center justify-between">
             <h2 className="text-sm xl:text-lg font-bold">Consommation totale</h2>
             <DropdownMenu>
@@ -463,7 +464,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
           </p>
         </div>
         <div className="flex">
-          <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2">
+          <div className="flex flex-1 flex-col justify-center gap-1 border-t md:px-6 md:py-4 text-left even:border-l sm:border-l sm:border-t-0 px-2 py-1">
             <span className="text-xs text-muted-foreground">Total</span>
             <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
               <CountUp
@@ -477,7 +478,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             </span>
           </div>
           <div 
-            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+            className={`flex flex-1 flex-col justify-center gap-1 border-t border-r md:border-r-0 md:px-6 md:py-4 text-left even:border-l sm:border- sm:border-t-0 px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
               selectedPoints.includes('max') ? 'bg-accent/50' : ''
             }`}
             onClick={() => togglePoint('max')}
@@ -495,7 +496,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             </span>
           </div>
           <div 
-            className={`flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-4 sm:py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+            className={`flex flex-1 flex-col justify-center gap-1 border-t md:px-6 md:py-4 text-left even:border-l sm:border-l sm:border-t-0 px-2 py-1 cursor-pointer hover:bg-accent/50 transition-colors ${
               selectedPoints.includes('min') ? 'bg-accent/50' : ''
             }`}
             onClick={() => togglePoint('min')}
@@ -528,7 +529,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}
-                  margin={{ top: 20, right: 50, left: -10, bottom: 90 }}
+                  margin={{ top: 20, right: 50, left: -10, bottom: 100 }}
                 >
                   <CartesianGrid 
                     strokeDasharray="3 3" 

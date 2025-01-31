@@ -35,7 +35,7 @@ const SidebarLayout = ({ children }: Props) => {
 
         // Check if device is a tablet (screen width between 768px and 1024px)
         const isTablet = window.matchMedia('(min-width: 768px) and (max-width: 1024px)').matches;
-        console.log("Est tablette:",isTablet);
+        console.log("Est tablette:", isTablet);
         console.log(getCookie('sidebar:state'));
         // Initialize sidebar state
         const initializeSidebarState = () => {
@@ -99,12 +99,11 @@ const SidebarLayout = ({ children }: Props) => {
                 <LoadingScreen />
                 <AppSidebar />
                 <SidebarTrigger />
-                <main className='w-full flex flex-col justify-center items-center relative bg-blue-5 px-2 pr-4 pb-24 xl:pb-0'>
+                <main className='w-full flex flex-col justify-center items-center relative bg-blue-5 -ml-8 z-0 pb-24 xl:pb-0'>
                     {/* Bento */}
-                    <div className="w-full pr-6 ">
-                        <div className="absolute top-2 right-2">
-                            <GradientButton onClick={handleToggleSidePanel}/>
-                        </div>
+
+                    <GradientButton onClick={handleToggleSidePanel} />
+                    <div className="w-full px-6 ">
                         <div className='w-full h-[calc(100vh-6rem)] flex'>
                             {children}
                         </div>
