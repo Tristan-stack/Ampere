@@ -7,11 +7,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
 
+    console.log('API Role - Email reçu:', email)
+
     if (!email) {
-        return NextResponse.json(
-            { error: "Email requis" },
-            { status: 400 }
-        )
+        console.log('API Role - Email manquant')
+        return NextResponse.json({ error: "Email requis" }, { status: 400 })
     }
 
     try {
@@ -20,20 +20,19 @@ export async function GET(request: Request) {
             select: { role: true }
         })
 
+        console.log('API Role - Utilisateur trouvé:', user)
+
         if (!user) {
-            return NextResponse.json(
-                { role: "étudiant" }, // Par défaut
-                { status: 200 }
-            )
+            // Au lieu de renvoyer une erreur, on renvoie un rôle par défaut
+            console.log('API Role - Utilisateur non trouvé, renvoi du rôle par défaut')
+            return NextResponse.json({ role: "étudiant" })
         }
 
+        console.log('API Role - Rôle renvoyé:', user.role)
         return NextResponse.json({ role: user.role })
     } catch (error) {
-        console.error('Erreur lors de la récupération du rôle:', error)
-        return NextResponse.json(
-            { error: "Erreur serveur" },
-            { status: 500 }
-        )
+        console.error('API Role - Erreur:', error)
+        return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
     } finally {
         await prisma.$disconnect()
     }

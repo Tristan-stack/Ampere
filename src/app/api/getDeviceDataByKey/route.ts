@@ -14,7 +14,11 @@ export async function POST(req: Request) {
 
         if (!device_key) {
             console.log('Missing device_key in request body');
-            return NextResponse.json({ message: 'Missing device_key' }, { status: 400 });
+            return NextResponse.json({ 
+                values: [], 
+                timestamps: [],
+                error: 'Missing device_key'
+            }, { status: 400 });
         }
 
         const values = await prisma.devices_values.findMany({
@@ -37,10 +41,14 @@ export async function POST(req: Request) {
 
         console.log(`Data fetched: ${JSON.stringify(formattedData)}`);
 
-        return NextResponse.json(formattedData, { status: 200 });
+        return NextResponse.json(formattedData);
     } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
-        return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+        return NextResponse.json({ 
+            values: [], 
+            timestamps: [],
+            error: 'Erreur lors de la récupération des données'
+        }, { status: 500 });
     } finally {
         await disconnectPrisma();
     }

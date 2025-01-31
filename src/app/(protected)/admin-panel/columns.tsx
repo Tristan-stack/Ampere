@@ -94,37 +94,26 @@ async function deleteUser(userId: string, onDelete?: () => void) {
 function UserActions({ user, onDataChange }: { user: User; onDataChange?: () => void }) {
     const { user: currentUser } = useUser()
     const [currentUserRole, setCurrentUserRole] = useState<string>("étudiant")
-    const [error, setError] = useState<string | null>(null)
-
+    
+    // Vérifier si c'est le compte actuel
     const isCurrentUser = currentUser?.emailAddresses?.[0]?.emailAddress === user.email
 
     useEffect(() => {
-        const fetchUserRole = async () => {
-            if (!currentUser?.emailAddresses?.[0]?.emailAddress) {
-                console.log("Pas d'email trouvé")
-                return
-            }
-
-            const email = currentUser.emailAddresses[0].emailAddress
-            try {
-                const response = await fetch(`/api/users/role?email=${encodeURIComponent(email)}`)
-
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`)
-                }
-
-                const data = await response.json()
-                console.log("Données reçues:", data)
-                setCurrentUserRole(data.role)
-                setError(null)
-            } catch (error) {
-                console.error("Erreur complète:", error)
-                setError(error instanceof Error ? error.message : 'Erreur inconnue')
-            }
-        }
-
         fetchUserRole()
     }, [currentUser?.emailAddresses])
+
+    const fetchUserRole = async () => {
+        if (!currentUser?.emailAddresses?.[0]?.emailAddress) return
+        
+        try {
+            const response = await fetch(`/api/users/role?email=${encodeURIComponent(currentUser.emailAddresses[0].emailAddress)}`)
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+            const data = await response.json()
+            setCurrentUserRole(data.role)
+        } catch (error) {
+            console.error("Erreur lors de la récupération du rôle:", error)
+        }
+    }
 
     // Si on n'est ni admin ni enseignant, on ne montre pas les actions
     if (currentUserRole !== "admin" && currentUserRole !== "enseignant") {

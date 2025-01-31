@@ -69,6 +69,11 @@ export function DataTable<TData, TValue>({
             columnFilters,
             columnVisibility,
         },
+        meta: {
+            onDataChange: () => {
+                onDataChange?.()
+            }
+        },
         initialState: {
             pagination: {
                 pageSize: 8,
