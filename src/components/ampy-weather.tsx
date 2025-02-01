@@ -90,9 +90,9 @@ const AmpyWeather: React.FC<AmypWeatherProps> = ({ score }) => {
     };
 
     const getCurrentDayEmissions = () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
         const todayData = filteredData.filter(item =>
-            item.date.startsWith(today)
+            new Date(item.date).toISOString().split('T')[0] === today
         );
         return calculateEmissions(todayData);
     };
@@ -101,11 +101,13 @@ const AmpyWeather: React.FC<AmypWeatherProps> = ({ score }) => {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
+
         const yesterdayData = filteredData.filter(item =>
-            item.date.startsWith(yesterdayStr)
+            new Date(item.date).toISOString().split('T')[0] === yesterdayStr
         );
         return calculateEmissions(yesterdayData);
     };
+
 
     useEffect(() => {
         const fetchWeatherData = async () => {

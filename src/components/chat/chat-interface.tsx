@@ -439,7 +439,7 @@ export function ChatInterface() {
                                     >
                                         <div className="max-w-[80%] rounded-2xl p-4 bg-transparent">
                                             <ShinyText
-                                                text={currentLoadingMessage}
+                                                text={currentLoadingMessage || ''}
                                                 disabled={false}
                                                 speed={1}
                                             />
