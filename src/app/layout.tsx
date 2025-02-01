@@ -1,4 +1,3 @@
-
 import "@/styles/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
@@ -6,6 +5,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { TRPCReactProvider } from "@/trpc/react";
 import { ToastContainer, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { WeatherProvider } from '@/app/(protected)/context/WeatherContext';
 
 export const metadata: Metadata = {
   title: "EcoTrack",
@@ -18,25 +18,27 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${GeistSans.variable} dark`}>
-        <body>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick={false}
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-            transition={Bounce}
-            progressClassName="toast-progress"
-          />
-        </body>
-      </html>
+      <WeatherProvider>
+        <html lang="en" className={`${GeistSans.variable} dark`}>
+          <body>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick={false}
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="dark"
+              transition={Bounce}
+              progressClassName="toast-progress"
+            />
+          </body>
+        </html>
+      </WeatherProvider>
     </ClerkProvider>
   );
 }

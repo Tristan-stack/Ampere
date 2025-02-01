@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { TypewriterText } from '@/components/ui/typewriter-text'
 import { SparklesCore } from '@/components/ui/sparkles'
 import { useSidebar } from '@/components/ui/sidebar'
+import { useWeather } from '@/app/(protected)/context/WeatherContext'
 
 interface Message {
     role: 'user' | 'assistant'
@@ -31,9 +32,10 @@ const loadingMessages = [
 
 // Ajout des suggestions de questions
 const SUGGESTED_QUESTIONS = [
-    "Comment puis-je réduire ma consommation d'énergie ?",
-    "Explique-moi comment fonctionne un panneau solaire",
+    "Quelle est la température actuelle ?",
+    "Quel a été le jour le plus froid cette semaine ?",
     "Quels sont les appareils qui consomment le plus ?",
+    "Y a-t-il un lien entre la météo et le score d'efficacité ?",
 ]
 
 // Ajout d'un message d'erreur personnalisé pour le quota dépassé
@@ -74,6 +76,7 @@ export function ChatInterface() {
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const [isTyping, setIsTyping] = useState(false)
     const { isCollapsed } = useSidebar()
+    const { weatherData } = useWeather()
 
     const getRandomLoadingMessage = (): string => {
         const availableMessages = loadingMessages.filter(msg => msg !== lastLoadingMessage)
@@ -146,8 +149,9 @@ export function ChatInterface() {
                             lastUpdate: item.date
                         }
                         return acc
-                    }, {} as Record<string, any>)
-                }
+                    }, {} as Record<string, any>),
+                },
+                weatherData: weatherData
             }
 
             // Forcer un nouveau chat pour chaque question sur les bâtiments
@@ -224,15 +228,47 @@ export function ChatInterface() {
         setMessages(prev => [...prev, newMessage])
         setIsLoading(true)
 
+        // Utiliser la même structure de données que handleSubmit
+        const buildingTotals = filteredData.reduce((acc, item) => {
+            const building = item.building
+            if (!acc[building]) {
+                acc[building] = {
+                    building,
+                    consumption: 0,
+                    emissions: 0
+                }
+            }
+            acc[building].consumption += item.totalConsumption
+            acc[building].emissions += item.emissions
+            return acc
+        }, {} as Record<string, any>)
+
+        const contextData = {
+            buildings: {
+                aggregatedData,
+                selectedBuildings,
+                currentConsumption: Object.values(buildingTotals),
+                floors: filteredData.reduce((acc, item) => {
+                    const key = `${item.building}-${item.floor}`
+                    acc[key] = {
+                        building: item.building,
+                        floor: item.floor,
+                        consumption: item.totalConsumption,
+                        emissions: item.emissions,
+                        lastUpdate: item.date
+                    }
+                    return acc
+                }, {} as Record<string, any>),
+            },
+            weatherData: weatherData
+        }
+
         fetch('./api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: question,
-                context: {
-                    filteredData,
-                    aggregatedData
-                },
+                context: contextData,
                 chatId
             })
         })
