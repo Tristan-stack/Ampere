@@ -1,14 +1,16 @@
 'use client'
 
 import * as React from "react"
-import { GalleryVerticalEnd, ChevronRight, LayoutGrid, HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks, Building2 } from 'lucide-react'
+import { GalleryVerticalEnd, Bot, ChevronRight, LayoutGrid, HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks, Building2 } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible"
 import { useUser } from "@clerk/nextjs"
 import { SearchBar } from "@/components/searchbar"
 import Rainbow from "@/components/ui/rainbow"
+import { Separator } from "@/components/ui/separator"
 import {
   Sidebar,
   SidebarContent,
@@ -91,17 +93,21 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="hover:bg-zinc-600/10 transition-colors">
+            <SidebarMenuButton size="lg" className="hover:bg-zinc-600/10 transition-colors items-center">
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-black ">
                 <Rainbow hovered={isHovered} />
               </div>
               <span className="text-xl font-semibold mb-1">Ampere</span>
+              <span className="text-xs text-neutral-400 font-bold">IUT de Haguenau</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
       </SidebarHeader>
       <SidebarContent>
+        <ScrollArea className="h-full">
         <div className="flex flex-col h-full">
+
           <SidebarGroup>
             <SidebarGroupLabel className="text-neutral-400">Suivi énergétique</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -168,17 +174,41 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarGroup className="flex-1 overflow-hidden">
-            <SidebarGroupLabel className="text-neutral-400">Assistant IA</SidebarGroupLabel>
-            <SidebarGroupContent className="h-full overflow-hidden">
-              <div className="h-full">
+
+          <Separator className="my-2 group-data-[state=collapsed]:hidden" />
+          <SidebarGroup className="flex-1 py-0 overflow-hidden">
+            <SidebarGroupLabel className="py-0 text-neutral-400">Assistant IA</SidebarGroupLabel>
+            <SidebarGroupContent className="py-0 h-full overflow-hidden">
+              <div className="h-96 group-data-[state=collapsed]:hidden hidden 3xl:block pb-2">
                 <ChatInterface />
               </div>
+              <SidebarMenu className="3xl:hidden group-data-[state=collapsed]:3xl:block">
+                <SidebarMenuItem>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <SidebarMenuButton tooltip={"Assistant IA"} asChild className="hover:bg-zinc-400/10 cursor-pointer rounded-md">
+                        <div className="flex text-lg items-center justify-start">
+                          <Bot className="size-4 stroke-[2.25px]" />
+                          <span className="mb-[1.5px]">Discuter avec Ampy</span>
+                        </div>
+                      </SidebarMenuButton>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 bg-zinc-900 ml-14 -mt-8 h-[21.7rem] rounded-lg">
+                      <ChatInterface />
+                    </PopoverContent>
+                  </Popover>
+
+
+
+                </SidebarMenuItem>
+              </SidebarMenu>
             </SidebarGroupContent>
+
           </SidebarGroup>
         </div>
+        </ScrollArea>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <div className="flex justify-between gap-2 group-data-[state=collapsed]:flex-col-reverse">
           <UserButton appearance={{
             elements: {
@@ -198,7 +228,7 @@ export function AppSidebar() {
             <SidebarMenuButton tooltip={"Editer l'affichage"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
               <Blocks className="h-4 w-4 stroke-[2.25px]" />
             </SidebarMenuButton>
-            <SidebarMenuButton tooltip={"Paramètres"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
+            <SidebarMenuButton tooltip={"Thème de couleurs"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
 
               <ColorPicker />
             </SidebarMenuButton>

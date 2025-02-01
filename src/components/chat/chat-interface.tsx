@@ -305,7 +305,7 @@ export function ChatInterface() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-zinc-900 rounded-xl shadow-xl">
+        <div className="flex flex-col justify-around h-full bg-zinc-900 rounded-xl overflow-hidden shadow-xl">
             <div className="p-2 border-b border-zinc-800 relative">
                 {/* Sparkles en dessous du titre et de la bordure */}
                 <div className="absolute inset-0 w-full h-16">
@@ -417,7 +417,7 @@ export function ChatInterface() {
                 </ScrollArea>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 border-t border-zinc-800">
+            <form onSubmit={handleSubmit} className="p-2 ">
                 <div className="relative">
                     <input
                         type="text"
