@@ -46,6 +46,7 @@ interface EtageGraph2Props {
       floor: string;
       totalConsumption: number;
       emissions: number;
+      name: string;
     }>;
   };
   isExpanded: boolean;
@@ -69,8 +70,11 @@ interface ChartOptions {
   timeInterval: "5min" | "15min" | "30min" | "1h" | "1d";
 }
 
-const CO2_COEFFICIENT = 0.67175; // Moyenne des coefficients (0.986 + 0.777 + 0.429 + 0.494) / 4
-const KWH_TO_MWH = 0.001; // Conversion kWh vers MWh
+const W_TO_KWH = 1 / 1000; // Conversion W vers kWh (diviser par 1000)
+const KWH_TO_MWH = 1 / 1000; // Conversion kWh vers MWh (diviser par 1000) 
+const CO2_COEFFICIENT = 671.75; // kg CO2/MWh (converti de 0.67175 tCO2/MWh en kg)
+const TREE_CO2_ABSORPTION = 22; // kg de CO2 par arbre par an (converti de 0.022 tonnes)
+
 
 // Ajouter cette fonction d'agrégation des données
 const aggregateDataByInterval = (data: any[], interval: string) => {
@@ -119,6 +123,28 @@ const aggregateDataByInterval = (data: any[], interval: string) => {
   });
 
   return Object.values(aggregatedData);
+};
+
+// Ajouter ces fonctions au début du fichier, après les imports
+const adjustColorSaturation = (baseColor: string, index: number, total: number) => {
+  // Convertir la couleur HSL en valeurs numériques
+  const hslMatch = baseColor.match(/hsl\(var\((--chart-\d+)\)\)/);
+  if (!hslMatch) return baseColor;
+
+  // Calculer la saturation en fonction de l'index
+  // On garde la même teinte mais on varie la saturation
+  const saturationPercent = 100 - (index * 10);
+
+  return `hsl(var(${hslMatch[1]}) / ${saturationPercent}%)`;
+};
+
+const getMeasureColor = (building: keyof typeof buildingColors, measureId: string, data: any) => {
+  // Trouver toutes les mesures du même bâtiment
+  const buildingMeasures = Object.keys(data).filter(key => key.split('-')[1] === building);
+  const measureIndex = buildingMeasures.indexOf(measureId);
+
+  const baseColor = buildingColors[building];
+  return adjustColorSaturation(baseColor, measureIndex, buildingMeasures.length);
 };
 
 export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded, isAdmin = false }) => {
@@ -363,7 +389,12 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
             <div className="flex flex-col h-full items-stretch space-y-0 border-b p-0 sm:flex-row w-full">
               <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
                 <div className="flex items-center justify-start gap-1">
-                  <h2 className="md:text-sm xl:text-lg font-bold">Consommation par étage</h2>
+                  <div className="flex items-start flex-col gap-1">
+                    <h2 className="md:text-sm xl:text-lg font-bold">Puissance par étages</h2>
+                    <p className="text-xs text-muted-foreground -mt-2">
+                      Sur la période sélectionnée dans le menu période
+                    </p>
+                  </div>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -371,7 +402,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       </TooltipTrigger>
                       <TooltipContent>
                         {/*Texte d'information sur comment lire le graphique et comment fonctionne le selecteur*/}
-                        <p>Le graphique représente la consommation énergétique des mesures que vous selectionnez.</p>
+                        <p>Le graphique représente la puissance énergétique des mesures que vous selectionnez.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -389,6 +420,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       duration={0.1}
                       className="count-up-text"
                     />
+                    <span className="text-xs text-muted-foreground ml-1">W</span>
                   </span>
                 </div>
                 <div
@@ -406,6 +438,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       duration={0.1}
                       className="count-up-text"
                     />
+                    <span className="text-xs text-muted-foreground ml-1">W</span>
                   </span>
                 </div>
                 <div
@@ -423,6 +456,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       duration={0.1}
                       className="count-up-text"
                     />
+                    <span className="text-xs text-muted-foreground ml-1">W</span>
                   </span>
                 </div>
               </div>
@@ -450,7 +484,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     duration={0.1}
                     className="count-up-text"
                   />
-                  <span className="text-xs text-muted-foreground ml-1">kW</span>
+                  <span className="text-xs text-muted-foreground ml-1">W</span>
                 </span>
               </div>
               <div className="flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-4 text-left px-2 py-2">
@@ -476,12 +510,13 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap">
                   <CountUp
                     from={0}
-                    to={(total.totalConsumption * KWH_TO_MWH * CO2_COEFFICIENT)}
+                    to={(total.totalConsumption * W_TO_KWH * KWH_TO_MWH * CO2_COEFFICIENT)}
+
                     separator=" "
                     duration={0.1}
                     className="count-up-text"
                   />
-                  <span className="text-xs text-muted-foreground ml-1">t CO₂</span>
+                  <span className="text-xs text-muted-foreground ml-1">kg CO₂</span>
                 </span>
               </div>
               <div className="flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-4 text-left px-2 py-2">
@@ -502,7 +537,8 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap">
                   <CountUp
                     from={0}
-                    to={Math.round((total.totalConsumption * KWH_TO_MWH * CO2_COEFFICIENT) * 45)}
+                    to={Math.ceil((total.totalConsumption * W_TO_KWH * KWH_TO_MWH * CO2_COEFFICIENT) / TREE_CO2_ABSORPTION)}
+
                     separator=" "
                     duration={0.1}
                     className="count-up-text"
@@ -531,14 +567,23 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
             <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center justify-start gap-1">
-                  <h2 className="md:text-sm xltext-lg font-bold">Consommation par étage</h2>
+                  <div className="flex items-start flex-col gap-1">
+                    <h2 className="md:text-sm xl:text-lg font-bold">Puissance par étages</h2>
+                    <p className="text-xs text-muted-foreground -mt-2">
+                      Sur la période sélectionnée dans le menu période
+                    </p>
+                  </div>
+
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
+
+
                         <Info className="h-4 w-4 text-neutral-500" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Le graphique représente la consommation énergétique des mesures que vous selectionnez.</p>
+                        <p>Le graphique représente la puissance énergétique des mesures que vous selectionnez.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -586,6 +631,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     duration={0.1}
                     className="count-up-text"
                   />
+                  <span className="text-xs text-muted-foreground ml-1">W</span>
                 </span>
               </div>
               <div
@@ -603,6 +649,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     duration={0.1}
                     className="count-up-text"
                   />
+                  <span className="text-xs text-muted-foreground ml-1">W</span>
                 </span>
               </div>
               <div
@@ -620,6 +667,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     duration={0.1}
                     className="count-up-text"
                   />
+                  <span className="text-xs text-muted-foreground ml-1">W</span>
                 </span>
               </div>
             </div>
@@ -671,15 +719,19 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     }
                   />
                   {Object.entries(floorData).map(([key, data]) => {
-                    const [building, floor] = key.split("-");
+                    const parts = key.split("-");
+                    const building = parts[1] as keyof typeof buildingColors; // Cast building to correct type
+                    const floor = parts[2];
+                    const lineColor = getMeasureColor(building, key, floorData);
+
                     return (
                       <Line
-                        key={`main-${building}-${floor}`} // Changed key format
+                        key={key}
                         type={chartOptions.curveType}
-                        dataKey={key}
-                        stroke={buildingColors[building as keyof typeof buildingColors]}
+                        dataKey={`${key}`}
+                        stroke={lineColor}
                         strokeWidth={2}
-                        name={`${building} - ${floor}`}
+                        name={data[0]?.name ?? `${building} - ${floor}`}
                         dot={(props) => {
                           const isMax = selectedPoints.includes('max') && props.value === total.maxConsumption;
                           const isMin = selectedPoints.includes('min') && props.value === total.minConsumption;
@@ -687,22 +739,22 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                           if (isMax || isMin) {
                             return (
                               <circle
-                                key={`dot-${building}-${floor}-${props.cx}-${props.cy}`} // Added key
+                                key={`dot-${key}-${props.cx}-${props.cy}`}
                                 cx={props.cx}
                                 cy={props.cy}
                                 r={6}
                                 fill="white"
-                                stroke={buildingColors[building as keyof typeof buildingColors]}
+                                stroke={lineColor}
                                 strokeWidth={2}
                               />
                             );
                           }
-                          return <g key={`empty-${building}-${floor}-${props.cx}-${props.cy}`} />; // Added key
+                          return <g key={`empty-${key}-${props.cx}-${props.cy}`} />;
                         }}
                         activeDot={{
                           r: 4,
                           fill: "white",
-                          stroke: buildingColors[building as keyof typeof buildingColors],
+                          stroke: lineColor,
                           strokeWidth: 2
                         }}
                         connectNulls
@@ -711,28 +763,32 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   })}
                   {chartData.length > 0 && brushStartIndex !== null && brushEndIndex !== null && (
                     <Brush
+                      data={chartData}
+                      dataKey="date"
                       startIndex={brushStartIndex}
                       endIndex={brushEndIndex}
                       onChange={handleBrushChange}
-                      fill="rgba(0, 0, 0, 0.2)" 
+                      fill="rgba(0, 0, 0, 0.2)"
+                      tickFormatter={(value) => {
+                        const dateStr = new Date(value).toLocaleDateString();
+                        return dateStr;
+                      }}
                     >
                       <LineChart>
-                        {Object.entries(floorData).map(([floorKey, data]) => {
-                          const [building, floor] = floorKey.split("-");
+                        {Object.entries(floorData).map(([key, data]) => {
+                          const parts = key.split("-");
+                          const building = parts[1] as keyof typeof buildingColors; // Cast building to correct type
+                          const floor = parts[2];
+                          const lineColor = getMeasureColor(building, key, floorData);
+
                           return (
                             <Line
-                              key={`brush-${building}-${floor}`} // Changed key format
+                              key={key}
                               type={chartOptions.curveType}
-                              dataKey={floorKey}
-                              stroke={buildingColors[building as keyof typeof buildingColors]}
-                              strokeWidth={1}
+                              dataKey={`${key}`}
+                              stroke={lineColor}
+                              strokeWidth={2}
                               dot={false}
-                              activeDot={{
-                                r: 4,
-                                fill: "white",
-                                stroke: buildingColors[building as keyof typeof buildingColors],
-                                strokeWidth: 2
-                              }}
                             />
                           );
                         })}
@@ -767,7 +823,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   duration={0.1}
                   className="count-up-text"
                 />
-                <span className="text-xs text-muted-foreground ml-1">kW</span>
+                <span className="text-xs text-muted-foreground ml-1">W</span>
               </span>
             </div>
             <div className="flex flex-1 flex-col justify-center gap-1 border-l px-6 py-4 text-left sm:px-4 sm:py-2">
@@ -790,15 +846,16 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap ">
+              <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap">
                 <CountUp
                   from={0}
-                  to={(total.totalConsumption * KWH_TO_MWH * CO2_COEFFICIENT)}
+                  to={(total.totalConsumption * W_TO_KWH * KWH_TO_MWH * CO2_COEFFICIENT)}
+
                   separator=" "
                   duration={0.1}
                   className="count-up-text"
                 />
-                <span className="text-xs text-muted-foreground ml-1">t CO₂</span>
+                <span className="text-xs text-muted-foreground ml-1">kg CO₂</span>
               </span>
             </div>
             <div className="flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-4 text-left px-2 py-2">
@@ -811,7 +868,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Nombre d'arbres nécessaires pour absorber ces émissions de CO₂ sur un an.</p>
-                      <p className="mt-1">Un arbre absorbe en moyenne 22kg de CO₂ par an.</p>
+                      <p className="mt-1">Un arbre absorbe en moyenne 18kg de CO₂ par an.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -819,7 +876,8 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
               <span className="text-xl 3xl:text-3xl font-bold leading-none whitespace-nowrap">
                 <CountUp
                   from={0}
-                  to={Math.round((total.totalConsumption * KWH_TO_MWH * CO2_COEFFICIENT) * 45)}
+                  to={Math.ceil((total.totalConsumption * W_TO_KWH * KWH_TO_MWH * CO2_COEFFICIENT) / TREE_CO2_ABSORPTION)}
+
                   separator=" "
                   duration={0.1}
                   className="count-up-text"
@@ -836,4 +894,4 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
       )}
     </div>
   );
-} 
+}
