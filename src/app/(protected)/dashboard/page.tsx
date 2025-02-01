@@ -25,7 +25,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Batimentgraph3 } from "./graph/batiment-graph-3";
 import { Linechartsm } from "./graph/line-chart-sm";
 import { RadialChart } from "./graph/radial-chart";
-import TransunionScore from '@/components/score';
 
 ChartJS.register(
     CategoryScale,
@@ -340,7 +339,6 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <TransunionScore score={efficiencyScore} />
         </div>
     );
 };
