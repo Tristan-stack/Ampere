@@ -110,6 +110,19 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
         }
     };
 
+    const handleDateRangeChange = async () => {
+        setLoading(true);
+        try {
+            await fetchConsumption();
+            // Recharger la page
+            window.location.reload();
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour des données:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchConsumption();
     }, []);
@@ -241,7 +254,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
                                     <EnergyPerformanceBar value={80} />
                                 </motion.div>
                                 <motion.div className='h-full overflow-hidden' variants={itemVariants}>
-                                    <DateSelector width={width} onDateRangeChange={fetchConsumption} />
+                                    <DateSelector width={width} onDateRangeChange={handleDateRangeChange} />
                                 </motion.div>
                             </motion.div>
                         </ScrollArea>

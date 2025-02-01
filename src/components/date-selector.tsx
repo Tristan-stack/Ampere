@@ -6,6 +6,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { RotateCcw, CalendarCheck2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DateSelectorProps {
   width: number;
@@ -17,6 +18,8 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
   const [numberOfMonths, setNumberOfMonths] = useState(1);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
+  const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
     if (width >= 900) setNumberOfMonths(3);
@@ -52,22 +55,22 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
   };
 
   const handleSelect = (range: DateRange | undefined) => {
-    if (range) {
-      setDateRange(range);
-      setCookie('dateRange', JSON.stringify(range), 7);
-    } else {
-      const currentDate = new Date();
-      const day = currentDate.getDay() || 7;
-      const monday = new Date(currentDate);
-      monday.setDate(monday.getDate() - (day - 1));
-      const sunday = new Date(monday);
-      sunday.setDate(sunday.getDate() + 6);
-      const newRange = { from: monday, to: sunday };
-      setDateRange(newRange);
-      setCookie('dateRange', JSON.stringify(newRange), 7);
+    setTempDateRange(range);
+    setIsDirty(true);
+  };
+
+  const handleSave = () => {
+    if (tempDateRange) {
+      setCookie('dateRange', JSON.stringify(tempDateRange), 7);
+      setDateRange(tempDateRange);
+      setIsDirty(false);
+      onDateRangeChange?.();
     }
-    // Rappeler le parent pour recharger la consommation
-    onDateRangeChange?.();
+  };
+
+  const handleCancel = () => {
+    setTempDateRange(dateRange);
+    setIsDirty(false);
   };
 
   const selectPeriod = (days: number) => {
@@ -161,23 +164,42 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
           <CalendarCheck2 className="h-4" />
         </button>
       </div>
-      <div className="w-full h-full overflow-hidden relative rounded-2xl flex justify-center items-center py-2 text-white bg-neutral-800 border border-gray-300/50">
+      <div className="w-full h-full overflow-hidden relative rounded-2xl flex flex-col justify-between items-center py-2 text-white bg-neutral-800 border border-gray-300/50">
         <Calendar
           mode="range"
-          selected={dateRange}
+          selected={tempDateRange || dateRange}
           onSelect={handleSelect}
           className="bg-neutral-800 text-blue border-gray-700"
           numberOfMonths={numberOfMonths}
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => handleSelect(undefined)}
-          className="h-8 w-8 text-white hover:bg-neutral-700 transition-colors absolute top-4 right-4"
-          title="Réinitialiser"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+        <AnimatePresence>
+          {isDirty && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full px-4 mt-4 flex justify-between items-center"
+            >
+              <Button
+                onClick={handleCancel}
+                variant="outline"
+                className="text-neutral-300"
+              >
+                Annuler
+              </Button>
+              <button
+                onClick={handleSave}
+                className="relative inline-flex h-10 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+              >
+                <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
+                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-1 text-sm font-medium text-white backdrop-blur-3xl">
+                  Sauvegarder
+                </span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       {dateRange && (
         <div className="mt-4 text-lg">
