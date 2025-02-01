@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Building2, ArrowRight } from "lucide-react";
@@ -20,6 +20,7 @@ type ConsumptionData = {
   floor: string;
   totalConsumption: number;
   emissions: number;
+  name: string;
 };
 
 type BuildingFloors = {
@@ -29,10 +30,11 @@ type BuildingFloors = {
 };
 
 const buildingFloors: BuildingFloors = {
-  'A': ['Rez-de-chaussée', '1er étage', '2e étage', '3e étage'],
-  'B': ['Rez-de-chaussée', '1er étage'],
+  'A': ['RDC', '1er étage', '2e étage', '3e étage'],
+  'B': ['RDC', '1er étage'],
   'C': ['1er étage', '2e étage'],
 };
+
 
 type SelectedMeasurement = {
   id: string;  // ID unique de la mesure
@@ -43,6 +45,7 @@ type SelectedMeasurement = {
 
 const Etages = () => {
   const { chartData, isLoading } = useData();
+  
   const [selectedMeasurements, setSelectedMeasurements] = useState<SelectedMeasurement[]>([]);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
   const [showSelected, setShowSelected] = useState(false);
@@ -79,12 +82,12 @@ const Etages = () => {
       )
     );
 
-    // Grouper par mesure
+    // Grouper par mesure individuelle
     const groupedByMeasurement: { [key: string]: typeof chartData } = {};
 
     filteredData.forEach(item => {
       const measurementId = item.id.split('-')[0];
-      const key = `${item.building}-${item.floor}-${measurementId}`;
+      const key = `${measurementId}-${item.building}-${item.floor}`;
       if (!groupedByMeasurement[key]) {
         groupedByMeasurement[key] = [];
       }
@@ -216,7 +219,29 @@ const Etages = () => {
     handleGraphClick(0);
   };
 
-  console.log('data', floorData)
+    // Add new state
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Modify useEffect
+  useEffect(() => {
+    if (!isInitialized && chartData && chartData.length > 0) {
+      const allMeasurements: SelectedMeasurement[] = [];
+      buildingFloors['A'].forEach(floor => {
+        const measurements = availableMeasurements['A']?.[floor] || new Set();
+        measurements.forEach(measurementId => {
+          const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+          allMeasurements.push({
+            id: measurementId,
+            building: 'A',
+            floor,
+            measurementNumber
+          });
+        });
+      });
+      setSelectedMeasurements(allMeasurements);
+      setIsInitialized(true);
+    }
+  }, [chartData, availableMeasurements, isInitialized]);
 
   return (
     <div className="w-full md:w-full h-full flex flex-col lg:flex-row items-center justify-start md:justify-center gap-4 md:mt-16 xl:mt-0">
@@ -332,10 +357,8 @@ const Etages = () => {
 
                               <div className="flex flex-wrap gap-2 mt-1">
                                 {[...measurements].map((measurementId) => {
-                                  const isSelected = selectedMeasurements.some(
-                                    m => m.id === measurementId
-                                  );
-                                  const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+                                  const isSelected = selectedMeasurements.some(m => m.id === measurementId);
+                                  const matchingData = chartData.find(item => item.id.startsWith(measurementId));
 
                                   return (
                                     <button
@@ -358,7 +381,7 @@ const Etages = () => {
                                             isSelected ? "bg-green-500" : "bg-neutral-600"
                                           )}
                                         />
-                                        Mesure {measurementNumber}
+                                        {matchingData?.name /* Removed fallback "Mesure X" */}
                                       </div>
                                     </button>
                                   );

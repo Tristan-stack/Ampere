@@ -57,23 +57,36 @@ export const LoadingScreen = () => {
                         }}
                     >
                         <div className='flex items-end justify-center'>
-                        <CountUp
-                            to={loadingProgress}
-                            from={0}
-                            duration={0.5}
-                            className="text-6xl font-bold text-white"
-                            onEnd={() => {
-                                if (loadingProgress === 100) {
-                                    setTimeout(() => {
-                                        setShouldExit(true);
-                                    }, 300);
-                                }
-                            }}
-                        />
-                        <p className='text-xl font-bold text-white'>%</p>
+                            <CountUp
+                                to={loadingProgress}
+                                from={0}
+                                duration={0.5}
+                                className="text-6xl font-bold text-white"
+                                onEnd={() => {
+                                    if (loadingProgress === 100) {
+                                        setTimeout(() => {
+                                            setShouldExit(true);
+                                        }, 300);
+                                    }
+                                }}
+                            />
+                            <p className='text-xl font-bold text-white'>%</p>
                         </div>
                         <ShinyText text="Chargement des données en cours" disabled={false} speed={1.5} className='text-xs' />
                     </motion.div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="absolute top-8 left-0 w-full flex justify-center flex-col items-end px-8 gap-2"
+                    >
+
+                        <img src="/img/IUT_Haguenau_logo.png" alt="logo" className='h-24 pb-8 opacity-70 invert' />
+                    </motion.div>
+
+
+
+
                 </motion.div>
             )}
         </AnimatePresence>

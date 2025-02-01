@@ -8,12 +8,20 @@ type ConsumptionData = {
   floor: string;
   totalConsumption: number;
   emissions: number;
+  name: string;
 };
 
 type DataContextType = {
   chartData: ConsumptionData[];
   filteredData: ConsumptionData[];
-  aggregatedData: { [key: string]: { date: string; totalConsumption: number; emissions: number }[] };
+  aggregatedData: {
+    [key: string]: {
+      date: string;
+      totalConsumption: number;
+      emissions: number;
+      names: string[]; 
+    }[]
+  };
   isLoading: boolean;
   loadingProgress: number;
   selectedBuildings: string[];
@@ -171,7 +179,7 @@ const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: str
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [chartData, setChartData] = useState<ConsumptionData[]>([]);
   const [filteredData, setFilteredData] = useState<ConsumptionData[]>([]);
-  const [aggregatedData, setAggregatedData] = useState<{ [key: string]: { date: string; totalConsumption: number; emissions: number }[] }>({});
+  const [aggregatedData, setAggregatedData] = useState<{ [key: string]: { date: string; totalConsumption: number; emissions: number; names: string[] }[] }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>(["A", "B", "C"]);
@@ -207,7 +215,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const aggregateDataByBuildingAndDate = (data: ConsumptionData[]) => {
-    const result: { [key: string]: { date: string; totalConsumption: number; emissions: number }[] } = {};
+    const result: { [key: string]: { date: string; totalConsumption: number; emissions: number; names: string[] }[] } = {};
 
     data.forEach(item => {
       if (!result[item.building]) {
@@ -220,14 +228,19 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       if (existingDateEntry) {
         existingDateEntry.totalConsumption += item.totalConsumption;
         existingDateEntry.emissions += item.emissions;
+        if (!existingDateEntry.names.includes(item.name)) {
+          existingDateEntry.names.push(item.name);
+        }
       } else {
         result[item.building]?.push({
           date: item.date,
           totalConsumption: item.totalConsumption,
           emissions: item.emissions,
+          names: [item.name],
         });
       }
     });
+
 
     return result;
   };
@@ -256,21 +269,30 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const deviceKeys = [
-      { key: '4f887d23-3cf2-4d1c-8ae8-0f0bea45cf09', building: 'A', floor: 'Rez-de-chaussée' },
-      { key: '510478e8-ddfe-40d1-8d2f-f8562e4fb128', building: 'A', floor: '1er étage' },
-      { key: 'ca8bf525-9259-4cfa-9ebe-856b4356895e', building: 'A', floor: '2e étage' },
-      { key: '3b36f6d7-8abd-4e79-8154-72ccb92b9273', building: 'A', floor: '3e étage' },
-      { key: '5ef1fc4b-0bfd-4b13-a174-835d154a0744', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: '85d14dac-8e5c-477b-a0f8-3e7768fcc8ee', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: 'b3195f2e-7071-4729-babd-47ca4f3e252e', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: '14ca1560-66ec-417a-99ee-5f7e4ac8e4a1', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: '566fbe08-44fa-442a-9fb8-1eadf8f66da1', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: '01db2140-19c7-4698-9b19-959f8a8f63a9', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: 'eba9db95-7b31-44cf-a715-08bc75d3976c', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: '131be744-6676-47c2-9d8d-c6b503c7220b', building: 'B', floor: 'Rez-de-chaussée' },
-      { key: '22e195a1-30ca-4d2b-a533-0be1b4e93f23', building: 'B', floor: '1er étage' },
-      { key: '31cea110-651d-4cd2-8edf-add92b13bf17', building: 'C', floor: '1er étage' },
-      { key: '306e5d7a-fa63-4f86-b117-aa0da4830a80', building: 'C', floor: '2e étage' },
+      { key: '4f887d23-3cf2-4d1c-8ae8-0f0bea45cf09', building: 'A', floor: 'RDC', name: 'A0 Mesure 1' },
+      { key: '510478e8-ddfe-40d1-8d2f-f8562e4fb128', building: 'A', floor: '1er étage', name: 'A1 Mesure 1' },
+
+      { key: 'ca8bf525-9259-4cfa-9ebe-856b4356895e', building: 'A', floor: '2e étage', name: 'A2 Mesure 1' },
+      { key: '3b36f6d7-8abd-4e79-8154-72ccb92b9273', building: 'A', floor: '3e étage', name: 'A3 Mesure 1' },
+
+      { key: '5ef1fc4b-0bfd-4b13-a174-835d154a0744', building: 'B', floor: 'RDC', name: 'Panneau kibouj 1' },
+      { key: '85d14dac-8e5c-477b-a0f8-3e7768fcc8ee', building: 'B', floor: 'RDC', name: 'Panneau statique 1' },
+
+      { key: 'b3195f2e-7071-4729-babd-47ca4f3e252e', building: 'B', floor: 'RDC', name: 'Panneau kibouj 2' },      
+      { key: '14ca1560-66ec-417a-99ee-5f7e4ac8e4a1', building: 'B', floor: 'RDC', name: 'Panneau statique 2' },
+
+
+      { key: '566fbe08-44fa-442a-9fb8-1eadf8f66da1', building: 'B', floor: 'RDC', name: 'B0 Mesure 1' },  
+      { key: '01db2140-19c7-4698-9b19-959f8a8f63a9', building: 'B', floor: 'RDC', name: 'B0 Mesure 2' },
+
+      { key: 'eba9db95-7b31-44cf-a715-08bc75d3976c', building: 'B', floor: 'RDC', name: 'B0 Mesure 2' },
+      { key: '131be744-6676-47c2-9d8d-c6b503c7220b', building: 'B', floor: 'RDC', name: 'B0 Mesure 4' },
+
+      { key: '22e195a1-30ca-4d2b-a533-0be1b4e93f23', building: 'B', floor: '1er étage', name: 'B1 Mesure 1' },
+
+      { key: '31cea110-651d-4cd2-8edf-add92b13bf17', building: 'C', floor: '1er étage', name: 'C1 Mesure 1' },
+      { key: '306e5d7a-fa63-4f86-b117-aa0da4830a80', building: 'C', floor: '2e étage', name: 'C2 VMC/Compresseur QLIO' },
+
     ];
 
     const savedRange = getCookie('dateRange');
