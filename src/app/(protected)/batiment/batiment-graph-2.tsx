@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import BounceLoader from "react-spinners/BounceLoader"
+import { motion } from "framer-motion"
+import { useSearchParams } from 'next/navigation'
 
 const chartConfig = {
   total: {
@@ -63,12 +65,12 @@ interface ChartOptions {
 
 const aggregateDataByInterval = (data: any[], interval: string) => {
   const aggregatedData: { [key: string]: number } = {};
-  
+
   data.forEach(item => {
     const date = new Date(item.date);
     let key: string;
-    
-    switch(interval) {
+
+    switch (interval) {
       case "5min":
         date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
         date.setSeconds(0);
@@ -114,13 +116,13 @@ const aggregateDataByInterval = (data: any[], interval: string) => {
         date.setSeconds(0);
         key = date.toISOString();
     }
-    
+
     if (!aggregatedData[key]) {
       aggregatedData[key] = 0;
     }
     aggregatedData[key] += item.totalConsumption;
   });
-  
+
   return Object.entries(aggregatedData).map(([date, value]) => ({
     date,
     totalConsumption: value
@@ -164,10 +166,12 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
     displayMode: "separate"
   }));
   const [selectedPoints, setSelectedPoints] = useState<('min' | 'max')[]>([]);
+  const searchParams = useSearchParams()
+  const isHighlighted = searchParams.get('highlight') === 'batiment-graph-2'
 
   const togglePoint = (type: 'min' | 'max') => {
-    setSelectedPoints(prev => 
-      prev.includes(type) 
+    setSelectedPoints(prev =>
+      prev.includes(type)
         ? prev.filter(p => p !== type)
         : [...prev, type]
     );
@@ -178,7 +182,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
     let maxPoint: MinMaxPoint = { date: '', value: 0, building: '', type: 'max' };
     let minPoint: MinMaxPoint = { date: '', value: 0, building: '', type: 'min' };
 
-    const allValues = Object.entries(aggregatedData).flatMap(([building, data]) => 
+    const allValues = Object.entries(aggregatedData).flatMap(([building, data]) =>
       data.map(point => ({
         date: point.date,
         value: point.totalConsumption,
@@ -187,21 +191,21 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
     ).filter(point => point.value !== null && !isNaN(point.value));
 
     if (allValues.length > 0) {
-      const maxValue = allValues.reduce((max, point) => 
+      const maxValue = allValues.reduce((max, point) =>
         point.value > (max?.value ?? 0) ? point : max
-      , allValues[0]);
-      
-      const minValue = allValues.reduce((min, point) => 
-        point.value < (min?.value ?? 0) ? point : min
-      , allValues[0]);
+        , allValues[0]);
 
-      maxPoint = { 
+      const minValue = allValues.reduce((min, point) =>
+        point.value < (min?.value ?? 0) ? point : min
+        , allValues[0]);
+
+      maxPoint = {
         date: maxValue?.date || '',
         value: maxValue?.value || 0,
         building: maxValue?.building || '',
         type: 'max'
       };
-      minPoint = { 
+      minPoint = {
         date: minValue?.date || '',
         value: minValue?.value || 0,
         building: minValue?.building || '',
@@ -239,10 +243,10 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
   const prepareChartData = () => {
     const allDates = new Set<string>();
     const dataByDate: { [key: string]: ChartDataPoint } = {};
-  
+
     Object.entries(aggregatedData).forEach(([building, data]) => {
       const aggregatedBuildingData = aggregateDataByInterval(data, chartOptions.timeInterval);
-      
+
       aggregatedBuildingData.forEach(item => {
         allDates.add(item.date);
         if (!dataByDate[item.date]) {
@@ -252,16 +256,16 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             [`consumption${building}`]: 0
           } as ChartDataPoint;
         }
-  
+
         if (chartOptions.displayMode === "combined") {
           dataByDate[item.date]!.totalConsumption += item.totalConsumption;
         }
-        
+
         dataByDate[item.date]!.totalConsumption += item.totalConsumption;
         dataByDate[item.date]![`consumption${building}`] = item.totalConsumption;
       });
     });
-  
+
     return sortDataByDate(Object.values(dataByDate));
   };
 
@@ -269,7 +273,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
 
   // Modifier le formatage des dates selon l'intervalle
   const getDateFormatter = (interval: string) => {
-    switch(interval) {
+    switch (interval) {
       case "5min":
       case "15min":
       case "30min":
@@ -318,7 +322,17 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
   };
 
   return (
-    <div className="relative h-full w-full rounded-md border">
+    <motion.div
+      animate={isHighlighted ? {
+        boxShadow: [
+          "0 0 0 0px rgba(255,255,255,0)",
+          "0 0 0 3px rgba(255,255,255,0.8)",
+          "0 0 0 3px rgba(255,255,255,0)"
+        ]
+      } : {}}
+      transition={{ duration: 1, times: [0, 0.5, 1] }}
+      className="relative h-full w-full rounded-md border"
+    >
       <div className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-2 md:px-6 py-1 pb-2 md:py-5 sm:py-2">
           <div className="flex items-center justify-between">
@@ -332,7 +346,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>Personnalisation</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuLabel className="text-xs">Mode d'affichage</DropdownMenuLabel>
                 <DropdownMenuItem
                   className="cursor-pointer"
@@ -379,7 +393,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
 
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs">Intervalle temporel</DropdownMenuLabel>
-                
+
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "5min" }))}
@@ -390,7 +404,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                     {chartOptions.timeInterval === "5min" && <Check className="h-4 w-4" />}
                   </div>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "15min" }))}
@@ -477,10 +491,9 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               />
             </span>
           </div>
-          <div 
-            className={`flex flex-1 flex-col justify-center gap-1 border-t border-r md:border-r-0 md:px-6 md:py-4 text-left even:border-l sm:border- sm:border-t-0 px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
-              selectedPoints.includes('max') ? 'bg-accent/50' : ''
-            }`}
+          <div
+            className={`flex flex-1 flex-col justify-center gap-1 border-t border-r md:border-r-0 md:px-6 md:py-4 text-left even:border-l sm:border- sm:border-t-0 px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('max') ? 'bg-accent/50' : ''
+              }`}
             onClick={() => togglePoint('max')}
           >
             <span className="text-xs text-muted-foreground">Maximum</span>
@@ -495,10 +508,9 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               />
             </span>
           </div>
-          <div 
-            className={`flex flex-1 flex-col justify-center gap-1 border-t md:px-6 md:py-4 text-left even:border-l sm:border-l sm:border-t-0 px-2 py-1 cursor-pointer hover:bg-accent/50 transition-colors ${
-              selectedPoints.includes('min') ? 'bg-accent/50' : ''
-            }`}
+          <div
+            className={`flex flex-1 flex-col justify-center gap-1 border-t md:px-6 md:py-4 text-left even:border-l sm:border-l sm:border-t-0 px-2 py-1 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('min') ? 'bg-accent/50' : ''
+              }`}
             onClick={() => togglePoint('min')}
           >
             <span className="text-xs text-muted-foreground">Minimum</span>
@@ -525,14 +537,14 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
               <BounceLoader color='#00ff96' size={25} className='drop-shadow-[0_0_10px_rgba(47,173,121,1)]' />
             </div>
           ) : (
-            <div className="h-full w-full "> 
+            <div className="h-full w-full ">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}
                   margin={{ top: 20, right: 50, left: -10, bottom: 100 }}
                 >
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
+                  <CartesianGrid
+                    strokeDasharray="3 3"
                     stroke={chartColors.grid}
                     opacity={0.5}
                   />
@@ -545,7 +557,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                     tick={{ fill: chartColors.text }}
                     tickFormatter={getDateFormatter(chartOptions.timeInterval)}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fill: chartColors.text }}
                     axisLine={{ stroke: chartColors.axis }}
                     tickLine={{ stroke: chartColors.axis }}
@@ -586,13 +598,13 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                         stroke={buildingColors[building as keyof typeof buildingColors]}
                         strokeWidth={2}
                         dot={(props) => {
-                          const isMinPoint = selectedPoints.includes('min') && 
-                            props.payload.date === findMinMaxPoints.minPoint.date && 
+                          const isMinPoint = selectedPoints.includes('min') &&
+                            props.payload.date === findMinMaxPoints.minPoint.date &&
                             `consumption${findMinMaxPoints.minPoint.building}` === props.dataKey;
-                          const isMaxPoint = selectedPoints.includes('max') && 
-                            props.payload.date === findMinMaxPoints.maxPoint.date && 
+                          const isMaxPoint = selectedPoints.includes('max') &&
+                            props.payload.date === findMinMaxPoints.maxPoint.date &&
                             `consumption${findMinMaxPoints.maxPoint.building}` === props.dataKey;
-                          
+
                           if (!isMinPoint && !isMaxPoint) return false;
 
                           const pointType = isMinPoint ? 'min' : 'max';
@@ -638,6 +650,6 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
           )}
         </ChartContainer>
       </div>
-    </div>
+    </motion.div>
   )
 }

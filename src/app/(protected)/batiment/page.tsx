@@ -61,13 +61,13 @@ const Batiments = () => {
             <div className="w-full h-full lg:h-1/2 flex flex-col lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
                 <div className="sm:w-full lg:w-1/3 bg-neutral-800 rounded-md border">
                     <div className="h-full">
-                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-around gap-4">
-                            <h1 className="text-white text-2xl font-bold mb-1 3xl:mb-8">Analyse des bâtiments</h1>
-                            <div className="relative w-full">
+                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-4">
+                            <h1 className="text-white text-2xl font-bold mb-3">Analyse des bâtiments</h1>
+                            <div className="relative w-full space-y-4">
                                 <Score score={efficiencyScore} />
+                                <AmpyWeather score={efficiencyScore} />
                             </div>
 
-                            <AmpyWeather score={efficiencyScore} />
 
                             <div>
                                 <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold pb-0 lg:-pb-2 mt-2">Sélection des bâtiments</h3>

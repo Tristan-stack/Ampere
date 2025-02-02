@@ -12,6 +12,7 @@ import { EtageGraph2 } from "./etage-graph-2";
 import { useData } from "../context/DataContext";
 import { EtageTools } from "./etage-tools";
 import { EtageCost } from "./etage-cost";
+import { useSearchParams } from 'next/navigation'
 
 type ConsumptionData = {
   id: string;
@@ -45,7 +46,9 @@ type SelectedMeasurement = {
 
 const Etages = () => {
   const { chartData, isLoading } = useData();
-  
+  const searchParams = useSearchParams()
+  const isHighlighted = searchParams.get('highlight') === 'etage-graph-2'
+
   const [selectedMeasurements, setSelectedMeasurements] = useState<SelectedMeasurement[]>([]);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
   const [showSelected, setShowSelected] = useState(false);
@@ -219,9 +222,9 @@ const Etages = () => {
     handleGraphClick(0);
   };
 
-    // Add new state
+  // Add new state
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   // Modify useEffect
   useEffect(() => {
     if (!isInitialized && chartData && chartData.length > 0) {
@@ -249,7 +252,17 @@ const Etages = () => {
       <div className="w-full lg:w-1/3 flex flex-row lg:flex-col space-y-4 h-full md:h-36 lg:h-full">
         {/* Section Bâtiments */}
         <div className="h-36 w-full lg:h-2/4 block justify-start items-start md:flex md:justify-center md:items-center lg:block lg:justify-start lg:items-start lg:space-y-4 space-y-4 md:space-y-0 space-x-0 md:space-x-4 lg:space-x-0">
-          <div className="bg-neutral-800 h-full lg:h-2/4 rounded-md border">
+          <motion.div
+            animate={isHighlighted ? {
+              boxShadow: [
+                "0 0 0 0px rgba(255,255,255,0)",
+                "0 0 0 3px rgba(255,255,255,0.8)",
+                "0 0 0 3px rgba(255,255,255,0)"
+              ]
+            } : {}}
+            transition={{ duration: 1, times: [0, 0.5, 1] }}
+            className="bg-neutral-800 h-full lg:h-2/4 rounded-md border"
+          >
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <h1 className="text-white text-2xl font-bold mb-4">Analyse des étages</h1>
               <div className="flex items-center sm:space-x-0 xl:space-x-4">
@@ -286,7 +299,7 @@ const Etages = () => {
                 })}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Section Étages et Mesures */}
           <div className="h-36 lg:h-2/4 w-full bg-neutral-800 rounded-md border">
@@ -459,12 +472,22 @@ const Etages = () => {
           onClick={() => handleGraphClick(2)}
         >
           <div className="h-full">
-            <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
+            <motion.div
+              animate={isHighlighted ? {
+                boxShadow: [
+                  "0 0 0 0px rgba(255,255,255,0)",
+                  "0 0 0 3px rgba(255,255,255,0.8)",
+                  "0 0 0 3px rgba(255,255,255,0)"
+                ]
+              } : {}}
+              transition={{ duration: 1, times: [0, 0.5, 1] }}
+              className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center"
+            >
               <EtageGraph2
                 floorData={floorData}
                 isExpanded={expandedGraph === 2 || expandedGraph === null}
               />
-            </div>
+            </motion.div>
           </div>
         </div>
 
