@@ -31,7 +31,9 @@ export const EtageCost: React.FC<EtageCostProps> = ({
     const [isResizing, setIsResizing] = React.useState(false);
 
     // Conversion W vers kWh (sur une heure)
-    const wattsToKwh = (watts: number) => watts / 1000;
+    const calculateHourlyCost = (wattsPerHour: number, pricePerKwh: number) => {
+        return (wattsPerHour * pricePerKwh) / 1000; // Convert W to kW and multiply by price
+    };
 
     const handlePriceChange = (value: string) => {
         const newPrice = parseFloat(value);
@@ -40,11 +42,9 @@ export const EtageCost: React.FC<EtageCostProps> = ({
         }
     };
 
-    // Calculer le coût horaire
-    const hourlyCost = wattsToKwh(totalConsumption) * pricePerKwh;
-    // Calculer le coût journalier estimé (24h)
+    // Calculate costs
+    const hourlyCost = calculateHourlyCost(totalConsumption, pricePerKwh);
     const dailyCost = hourlyCost * 24;
-    // Calculer le coût mensuel estimé (30 jours)
     const monthlyCost = dailyCost * 30;
 
     React.useEffect(() => {

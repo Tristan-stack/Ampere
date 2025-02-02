@@ -177,16 +177,15 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
 
 
                                     {tool.id === "savings" && (
-                                        <div className="flex flex-col gap-2 w-full  mb-4">
+                                        <div className="flex flex-col gap-2 w-full  mb-4 relative">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-end gap-2 relative w-full">
-                                                    <span className="text-xs text-neutral-400">{tool.name}</span>
-                                                    <span className="text-sm font-medium text-neutral-200 text-right absolute right-0 top-7">
-                                                        {savings.toFixed(1)}%
-                                                    </span>
+                                                    <span className="text-xs text-neutral-400 w-full text-nowrap">{tool.name}</span>
                                                 </div>
                                             </div>
                                             <Slider
+
+
                                                 value={[savings]}
                                                 max={30}
                                                 step={0.5}
@@ -202,7 +201,11 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                                 }}
                                                 className="cursor-pointer"
                                             />
+                                            <span className="text-sm font-medium text-neutral-200 text-right absolute right-0 top-7">
+                                                {savings.toFixed(1)}%
+                                            </span>
                                         </div>
+
                                     )}
                                     {tool.id === "notes" && (
                                         <Popover>

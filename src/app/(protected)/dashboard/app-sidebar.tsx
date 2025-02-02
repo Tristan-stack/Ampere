@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { GalleryVerticalEnd, Bot, ChevronRight, LayoutGrid, HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks, Building2 } from 'lucide-react'
+import { GalleryVerticalEnd, Bot, ChevronRight, LayoutGrid, HousePlug, Star, BarChart, Calendar, MapPin, Bell, Users, AlarmCheck, LogOut, User, BrickWall, Blocks, Building2, Paintbrush } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -125,108 +125,105 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <ScrollArea className="h-full">
-        <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full">
 
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-neutral-400">Suivi énergétique</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {item.hasChildren ? (
-                      <Collapsible>
-                        <CollapsibleTrigger asChild className="group">
-                          <SidebarMenuButton tooltip={item.title} className="flex text-s items-center justify-start w-full hover:bg-zinc-400/10 rounded-md">
-                            <item.icon className="size-4 stroke-[2.25px]" />
-                            <span className="pl-2 mb-[1.5px] text-s">{item.title}</span>
-                            <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {item.children && item.children.map((subItem) => (
-                              <SidebarMenuSubItem key={subItem.title}>
-                                <SidebarMenuSubButton asChild>
-                                  <Link href={subItem.url} className="hover:bg-zinc-400/10 rounded-md">
-                                    {subItem.title}
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ) : (
-                      <SidebarMenuButton asChild tooltip={item.title} className="hover:bg-zinc-400/10 rounded-md">
-                        <Link href={item.url} className="flex text-s items-center justify-start">
-                          <item.icon className="size-4 stroke-[2.25px]" />
-                          <span className="mb-[1.5px] text-s">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          {(userRole === "admin" || userRole === "enseignant") && (
             <SidebarGroup>
-              <SidebarGroupLabel className="text-neutral-400">Administration</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-neutral-400">Suivi énergétique</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {adminItems.map((item) => (
+                  {mainItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton tooltip={item.title} asChild className="hover:bg-zinc-400/10 rounded-md">
-                        <Link href={item.url} className="flex text-lg items-center justify-start">
-                          <item.icon className="size-4 stroke-[2.25px]" />
-                          <span className="mb-[1.5px]">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
+                      {item.hasChildren ? (
+                        <Collapsible>
+                          <CollapsibleTrigger asChild className="group">
+                            <SidebarMenuButton tooltip={item.title} className="flex text-s items-center justify-start w-full hover:bg-zinc-400/10 rounded-md">
+                              <item.icon className="size-4 stroke-[2.25px]" />
+                              <span className="pl-2 mb-[1.5px] text-s">{item.title}</span>
+                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {item.children && item.children.map((subItem) => (
+                                <SidebarMenuSubItem key={subItem.title}>
+                                  <SidebarMenuSubButton asChild>
+                                    <Link href={subItem.url} className="hover:bg-zinc-400/10 rounded-md">
+                                      {subItem.title}
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ) : (
+                        <SidebarMenuButton asChild tooltip={item.title} className="hover:bg-zinc-400/10 rounded-md">
+                          <Link href={item.url} className="flex text-s items-center justify-start">
+                            <item.icon className="size-4 stroke-[2.25px]" />
+                            <span className="mb-[1.5px] text-s">{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      )}
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-          )}
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SearchBar />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            {(userRole === "admin" || userRole === "enseignant") && (
+              <SidebarGroup>
+                <SidebarGroupLabel className="text-neutral-400">Administration</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {adminItems.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton tooltip={item.title} asChild className="hover:bg-zinc-400/10 rounded-md">
+                          <Link href={item.url} className="flex text-lg items-center justify-start">
+                            <item.icon className="size-4 stroke-[2.25px]" />
+                            <span className="mb-[1.5px]">{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SearchBar />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-          <Separator className="my-2 group-data-[state=collapsed]:hidden" />
-          <SidebarGroup className="flex-1 py-0 overflow-hidden">
-            <SidebarGroupLabel className="py-0 text-neutral-400">Assistant IA</SidebarGroupLabel>
-            <SidebarGroupContent className="py-0 h-full overflow-hidden">
-              <div className="h-96 group-data-[state=collapsed]:hidden hidden 3xl:block pb-2">
-                <ChatInterface />
-              </div>
-              <SidebarMenu className="3xl:hidden group-data-[state=collapsed]:3xl:block">
-                <SidebarMenuItem>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <SidebarMenuButton tooltip={"Assistant IA"} asChild className="hover:bg-zinc-400/10 cursor-pointer rounded-md">
-                        <div className="flex text-lg items-center justify-start">
-                          <Bot className="size-4 stroke-[2.25px]" />
-                          <span className="mb-[1.5px]">Discuter avec Ampy</span>
-                        </div>
-                      </SidebarMenuButton>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 bg-zinc-900 ml-14 -mt-8 h-[21.7rem] rounded-lg">
-                      <ChatInterface />
-                    </PopoverContent>
-                  </Popover>
+            <Separator className="my-2 group-data-[state=collapsed]:hidden" />
+            <SidebarGroup className="flex-1 py-0 overflow-hidden">
+              <SidebarGroupLabel className="py-0 text-neutral-400">Assistant IA</SidebarGroupLabel>
+              <SidebarGroupContent className="py-0 h-full overflow-hidden">
+                <div className="h-96 group-data-[state=collapsed]:hidden hidden 3xl:block pb-2">
+                  <ChatInterface />
+                </div>
+                <SidebarMenu className="3xl:hidden group-data-[state=collapsed]:3xl:block">
+                  <SidebarMenuItem>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <SidebarMenuButton tooltip={"Assistant IA"} asChild className="hover:bg-zinc-400/10 cursor-pointer rounded-md">
+                          <div className="flex text-lg items-center justify-start">
+                            <Bot className="size-4 stroke-[2.25px]" />
+                            <span className="mb-[1.5px]">Discuter avec Ampy</span>
+                          </div>
+                        </SidebarMenuButton>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 bg-zinc-900 ml-14 -mt-8 h-[21.7rem] rounded-lg">
+                        <ChatInterface />
+                      </PopoverContent>
+                    </Popover>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
 
-
-
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-
-          </SidebarGroup>
-        </div>
+            </SidebarGroup>
+          </div>
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter className="border-t">
@@ -249,10 +246,16 @@ export function AppSidebar() {
             <SidebarMenuButton tooltip={"Editer l'affichage"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
               <Blocks className="h-4 w-4 stroke-[2.25px]" />
             </SidebarMenuButton>
-            <SidebarMenuButton tooltip={"Thème de couleurs"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
-
-              <ColorPicker />
-            </SidebarMenuButton>
+            <Popover>
+              <PopoverTrigger asChild>
+                <SidebarMenuButton tooltip={"Thème de couleurs"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
+                  <Paintbrush className="h-4 w-4 stroke-[2.25px]" />
+                </SidebarMenuButton>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" sideOffset={5}>
+                <ColorPicker />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </SidebarFooter>

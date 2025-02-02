@@ -88,11 +88,7 @@ const ColorPicker = () => {
   ColorControl.displayName = "ColorControl"
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-      <Paintbrush className="h-4 w-4" />
-      </PopoverTrigger>
-      <PopoverContent className="w-80" sideOffset={5}>
+    
         <Tabs defaultValue="chart-1" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="chart-1">Bâtiment A</TabsTrigger>
@@ -101,16 +97,12 @@ const ColorPicker = () => {
           </TabsList>
           {colors.map((_, index) => (
             <TabsContent key={index} value={`chart-${index + 1}`}>
-              <Card>
-                <CardContent className="pt-6">
                   <ColorControl index={index} label={`Bâtiment ${String.fromCharCode(65 + index)}`} />
-                </CardContent>
-              </Card>
+                
             </TabsContent>
           ))}
         </Tabs>
-      </PopoverContent>
-    </Popover>
+      
   )
 }
 
