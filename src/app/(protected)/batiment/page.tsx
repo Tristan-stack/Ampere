@@ -107,7 +107,7 @@ const Batiments = () => {
                     </div>
                 </div>
             </div>
-            <div className="w-full h-full pt-20 md:pt-0 lg:h-1/2 flex flex-col lg:flex-row space-x-0  lg:space-x-4">
+            <div className="w-full h-full pt-32 md:pt-0 lg:h-1/2 flex flex-col lg:flex-row space-x-0  lg:space-x-4">
                 <div className="w-full lg:w-1/3 rounded-md">
                     <div className="h-full">
                         <div className="w-full h-72 md:h-96 lg:h-full rounded-md relative">
@@ -134,7 +134,7 @@ const Batiments = () => {
                     </div>
                     <div className="w-full lg:w-1/2 bg-neutral-900 rounded-md">
                         <div className="h-72 md:h-96 lg:h-full">
-                            <div className="w-full h-full rounded-md">
+                            <div className="w-full h-full rounded-md overflow-hidden border">
                                 <Batimentgraph4 />
                             </div>
                         </div>

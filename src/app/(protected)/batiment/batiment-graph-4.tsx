@@ -1,127 +1,159 @@
-"use client"
+import type React from "react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { ChartLine, Grid2x2 } from "lucide-react";
 
-import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid } from "recharts"
-import { motion } from "framer-motion"
-
-const chartData = [
-  { date: "Jan", price: 0.32 },
-  { date: "Feb", price: 0.38 },
-  { date: "Mar", price: 0.42 },
-  { date: "Apr", price: 0.48 },
-  { date: "May", price: 0.51 },
-  { date: "Jun", price: 0.567 },
-  { date: "Jul", price: 0.59 }
-]
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: { value: number }[];
+interface PanelInfo {
+  name: string;
+  currentTotalPower: number;
+  status: "active" | "inactive" | "maintenance";
+  startDate: string;
 }
 
-const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg bg-black/90 p-2 shadow-lg border border-[#00ff9d]/20">
-        <p className="text-xs text-[#00ff9d]">Jun 7, 2023, 12:53:31 a.m.</p>
-        <p className="text-sm font-medium text-white">
-          Price: {payload[0]?.value.toFixed(3)}
-        </p>
-      </div>
-    )
-  }
-  return null
-}
+const panels: PanelInfo[] = [
+  { name: "Panneau statique 1", currentTotalPower: 0.8, status: "active", startDate: "2024-01-01" },
+  { name: "Panneau statique 2", currentTotalPower: 0.7, status: "active", startDate: "2024-01-01" },
+  { name: "Panneau dynamique 1", currentTotalPower: 0.0, status: "maintenance", startDate: "2024-01-01" },
+  { name: "Panneau dynamique 2", currentTotalPower: 0.9, status: "active", startDate: "2024-01-01" },
+];
 
-interface CustomDotProps {
-  cx?: number;
-  cy?: number;
-  payload?: { date: string };
-}
+const statusColors = {
+  active: "bg-green-500",
+  maintenance: "bg-yellow-500",
+  inactive: "bg-red-500",
+};
 
-const CustomDot = ({ cx, cy, payload }: CustomDotProps) => {
-  if (payload && payload.date === "Jun") {
-    return (
-      <g>
-        {/* Inner dot */}
-        <motion.circle 
-          cx={cx} 
-          cy={cy} 
-          r={5} 
-          fill="#00ff9d"
-          filter="url(#glow)"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5 }}
-        />
-        <motion.circle 
-          cx={cx} 
-          cy={cy} 
-          r={16} 
-          fill="transparent"
-          stroke="#00ff9d"
-          strokeWidth={2}
-          filter="url(#gf"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5 }}
-        />
-      </g>
-    )
-  }
-  return null
-}
+const calculateTotalPower = (panels: PanelInfo[]) => 
+  panels.reduce((sum, panel) => sum + panel.currentTotalPower, 0);
 
-export default function Batimentgraph4() {
+const countPanelsByStatus = (panels: PanelInfo[]) => 
+  panels.reduce((acc, panel) => ({
+    ...acc,
+    [panel.status]: (acc[panel.status] || 0) + 1
+  }), {} as Record<string, number>);
+
+const PanelSummary: React.FC<{ panels: PanelInfo[] }> = ({ panels }) => {
+  const totalPower = calculateTotalPower(panels);
+  const statusCount = countPanelsByStatus(panels);
+  
   return (
-    <div className="relative h-full w-full rounded-md bg- border">
-      {/* SVG Filters for glow effects */}
-      <svg width="0" height="0">
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-      </svg>
-      <p className="absolute top-4 left-4 text-white text-sm z-10">
-        Prédiction sur l'évolution de la consommation du bâtiment
-      </p>
-      {/* Chart */}
-      <div className="h-full w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={chartData}
-            margin={{ top: 50, right: 20, left: 20, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00ff9d" stopOpacity={0.2} />
-                <stop offset="90%" stopColor="#00ff9d" stopOpacity={0.5} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" />
-            <XAxis 
-              dataKey="date" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#4B5563', fontSize: 12 }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="price"
-              stroke="#00ff9d"
-              strokeWidth={2}
-              fill="url(#colorPrice)"
-              dot={<CustomDot />}
-              className="filter drop-shadow-[0_0_30px_rgba(0,255,157,1)]"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+    <div className="bg-background/20 w-full p-2 px-4 3xl:p-4 rounded-xl mb-2">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <h3 className="text-sm text-gray-400">Production Totale</h3>
+          <p className="text-lg 3xl:text-2xl font-bold text-white">{totalPower.toFixed(1)} kW</p>
+        </div>
+        <div>
+          <h3 className="text-sm text-gray-400">État des panneaux</h3>
+          <div className="flex gap-3 mt-1">
+            {Object.entries(statusCount).map(([status, count]) => (
+              <div key={status} className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${statusColors[status as keyof typeof statusColors]}`} />
+                <span className="text-sm text-white">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+const PanelCard: React.FC<{ panel: PanelInfo }> = ({ panel }) => (
+  <div className="p-4 border rounded-xl h-full shadow-md bg-background/30">
+    <h3 className="text-sm 3xl:text-md font-semibold text-white">{panel.name}</h3>
+    <div className="mt-2 space-y-1">
+      <p className="text-xs 3xl:text-sm text-gray-400">
+        Production: <span className="text-white">{panel.currentTotalPower} kW</span>
+      </p>
+      <p className="text-xs 3xl:text-sm hidden 3xl:block text-gray-400">
+        Début: <span className="text-white">{panel.startDate}</span>
+      </p>
+      <div className="flex items-center gap-2 mt-2">
+        <div className={`w-3 h-3 rounded-full ${statusColors[panel.status]}`} />
+        <span className="text-xs 3xl:text-sm text-gray-300 capitalize">{panel.status}</span>
+      </div>
+    </div>
+  </div>
+);
+
+const Batimentgraph4: React.FC = () => {
+  const [isFirstDisplay, setIsFirstDisplay] = useState(true);
+  const toggleDisplay = () => {
+    setIsFirstDisplay(!isFirstDisplay);
+  };
+
+  return (
+    <div 
+      className="relative w-full h-full p-2 rounded-lg"
+    >
+      <div
+        className="absolute top-1 z-10 right-1"
+      >
+       <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleDisplay}
+          className="bg-background hover:bg-neutral-800 py-2 px-2 h-auto 3xl:px-2 3xl:py-2"
+        >
+          <AnimatePresence mode="wait">
+            {isFirstDisplay ? (
+              <motion.div
+                key="chart"
+                initial={{ opacity: 0, rotate: -180 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChartLine className="w-4 h-4" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="grid"
+                initial={{ opacity: 0, rotate: -180 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Grid2x2 className="w-4 h-4" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Button>
+      </div>
+      <AnimatePresence mode="wait">
+        {isFirstDisplay ? (
+          <motion.div
+            key="display1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full z-0 h-full flex flex-col items-center justify-center"
+          >
+            <PanelSummary panels={panels} />
+            <div className="grid grid-cols-2 gap-2 w-full">
+              {panels.map((panel) => (
+                <PanelCard key={panel.name} panel={panel} />
+              ))}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="display2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full h-full flex items-center justify-center text-white text-2xl font-bold"
+          >
+            Affichage Alternatif
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default Batimentgraph4;
