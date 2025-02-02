@@ -99,8 +99,9 @@ const SidebarLayout = ({ children }: Props) => {
                 <LoadingScreen />
                 <AppSidebar />
                 <SidebarTrigger />
-                <main className='w-full flex flex-col justify-center items-center relative bg-blue-5 -ml-8 z-0 pb-24 xl:pb-0'>
+                <main className='w-full flex flex-col justify-center items-center relative bg-blue-5 -ml-8 z-0 pb-24 xl:pb-0 mt-6'>
                     {/* Bento */}
+
 
                     <GradientButton onClick={handleToggleSidePanel} />
                     <div className="w-full px-6 ">

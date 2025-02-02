@@ -23,7 +23,7 @@ const GradientButton: React.FC<GradientButtonProps> = ({ onClick }) => {
             onClick={onClick}
             variant="ghost"
             size="icon"
-            className={cn("h-8 w-9 fixed top-2 right-0 z-50")}
+            className={cn("h-8 w-9 fixed top-2 right-6 z-50 bg-neutral-800 hover:bg-neutral-700")}
             >
             <Calendar className='h-4 w-4' />
           </Button>

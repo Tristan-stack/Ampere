@@ -170,6 +170,18 @@ const SidePanel: React.FC<SidePanelProps> = ({ isVisible, onClose, onToggle }) =
         };
     }, [isResizing]);
 
+    // Ajouter un useEffect pour ouvrir le panel au chargement
+    useEffect(() => {
+        // Petit délai pour laisser le temps à l'application de se charger
+        const timer = setTimeout(() => {
+            if (!isVisible) {
+                onToggle();
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, []); // S'exécute une seule fois au montage
+
     return (
         <AnimatePresence>
             {isVisible && (
