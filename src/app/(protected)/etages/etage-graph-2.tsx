@@ -213,16 +213,16 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
         emissions: 0,
       };
     }
-
+  
     const allConsumptions = allData.map(item => item.totalConsumption).filter(value =>
       typeof value === 'number' && !isNaN(value)
     );
-
+  
     return {
-      totalConsumption: allConsumptions.reduce((acc, curr) => acc + curr, 0),
-      maxConsumption: allConsumptions.length > 0 ? Math.max(...allConsumptions) : 0,
-      minConsumption: allConsumptions.length > 0 ? Math.min(...allConsumptions) : 0,
-      emissions: allData.reduce((acc, curr) => acc + (curr.emissions || 0), 0),
+      totalConsumption: Number(allConsumptions.reduce((acc, curr) => acc + curr, 0).toFixed(2)),
+      maxConsumption: Number((allConsumptions.length > 0 ? Math.max(...allConsumptions) : 0).toFixed(2)),
+      minConsumption: Number((allConsumptions.length > 0 ? Math.min(...allConsumptions) : 0).toFixed(2)),
+      emissions: Number(allData.reduce((acc, curr) => acc + (curr.emissions || 0), 0).toFixed(2)),
     };
   }, [floorData]);
 
@@ -413,6 +413,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       to={total.totalConsumption}
                       separator=" "
                       direction="up"
+                      decimals={2}
                       duration={0.1}
                       className="count-up-text"
                     />
@@ -431,6 +432,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       to={total.maxConsumption}
                       separator=" "
                       direction="up"
+                      decimals={2}
                       duration={0.1}
                       className="count-up-text"
                     />
@@ -450,6 +452,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       separator=" "
                       direction="up"
                       duration={0.1}
+                      decimals={2}
                       className="count-up-text"
                     />
                     <span className="text-xs text-muted-foreground ml-1">W</span>
@@ -478,6 +481,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     to={total.totalConsumption / Object.keys(floorData).length || 0}
                     separator=" "
                     duration={0.1}
+                    decimals={2}
                     className="count-up-text"
                   />
                   <span className="text-xs text-muted-foreground ml-1">W</span>
@@ -507,7 +511,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   <CountUp
                     from={0}
                     to={(total.totalConsumption * W_TO_KWH * KWH_TO_MWH * CO2_COEFFICIENT)}
-
+                    decimals={2}
                     separator=" "
                     duration={0.1}
                     className="count-up-text"
@@ -534,7 +538,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   <CountUp
                     from={0}
                     to={Math.ceil((total.totalConsumption * W_TO_KWH * KWH_TO_MWH * CO2_COEFFICIENT) / TREE_CO2_ABSORPTION)}
-
+                    decimals={2}
                     separator=" "
                     duration={0.1}
                     className="count-up-text"
@@ -625,6 +629,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     separator=" "
                     direction="up"
                     duration={0.1}
+                    decimals={2}
                     className="count-up-text"
                   />
                   <span className="text-xs text-muted-foreground ml-1">W</span>
@@ -643,6 +648,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     separator=" "
                     direction="up"
                     duration={0.1}
+                    decimals={2}
                     className="count-up-text"
                   />
                   <span className="text-xs text-muted-foreground ml-1">W</span>
@@ -661,6 +667,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     separator=" "
                     direction="up"
                     duration={0.1}
+                    decimals={2}
                     className="count-up-text"
                   />
                   <span className="text-xs text-muted-foreground ml-1">W</span>
@@ -817,6 +824,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   to={total.totalConsumption / Object.keys(floorData).length || 0}
                   separator=" "
                   duration={0.1}
+                  decimals={2}
                   className="count-up-text"
                 />
                 <span className="text-xs text-muted-foreground ml-1">W</span>
@@ -849,6 +857,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
                   separator=" "
                   duration={0.1}
+                  decimals={2}
                   className="count-up-text"
                 />
                 <span className="text-xs text-muted-foreground ml-1">kg CO₂</span>
@@ -876,6 +885,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
                   separator=" "
                   duration={0.1}
+                  decimals={2}
                   className="count-up-text"
                 />
                 <span className="text-xs text-muted-foreground ml-1">arbres/an</span>

@@ -2,30 +2,33 @@ import { useEffect, useRef } from "react";
 import { useInView, useMotionValue, useSpring } from "framer-motion";
 
 interface CountUpProps {
-    to: number;
-    from?: number;
-    direction?: 'up' | 'down';
-    delay?: number;
-    duration?: number;
-    className?: string;
-    startWhen?: boolean;
-    separator?: string;
-    onStart?: () => void;
-    onEnd?: () => void;
-  }
+  to: number;
+  from?: number;
+  direction?: 'up' | 'down';
+  delay?: number;
+  duration?: number;
+  className?: string;
+  startWhen?: boolean;
+  separator?: string;
+  decimals?: number;
+  onStart?: () => void;
+  onEnd?: () => void;
+}
 
-  export default function CountUp({
-    to,
-    from = 0,
-    direction = "up",
-    delay = 0,
-    duration = 2,
-    className = "",
-    startWhen = true,
-    separator = "",
-    onStart,
-    onEnd,
-  }: CountUpProps) {
+
+export default function CountUp({
+  to,
+  from = 0,
+  direction = "up",
+  delay = 0,
+  duration = 2,
+  className = "",
+  startWhen = true,
+  separator = "",
+  decimals = 0,
+  onStart,
+  onEnd,
+}: CountUpProps) {
     const ref = useRef<HTMLSpanElement | null>(null);
 const motionValue = useMotionValue(direction === "down" ? to : from);
 
@@ -70,23 +73,24 @@ useEffect(() => {
 
 useEffect(() => {
   const unsubscribe = springValue.on("change", (latest) => {
-    if (ref.current) {
-      const options = {
-        useGrouping: !!separator,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      };
+      if (ref.current) {
+          const options = {
+              useGrouping: !!separator,
+              minimumFractionDigits: decimals,
+              maximumFractionDigits: decimals,
+          };
 
-      const formattedNumber = Intl.NumberFormat("en-US", options).format(latest);
+          const formattedNumber = Intl.NumberFormat("en-US", options).format(latest);
 
-      ref.current.textContent = separator
-        ? formattedNumber.replace(/,/g, separator)
-        : formattedNumber;
-    }
+          ref.current.textContent = separator
+              ? formattedNumber.replace(/,/g, separator)
+              : formattedNumber;
+      }
   });
 
   return () => unsubscribe();
-}, [springValue, separator]);
+}, [springValue, separator, decimals]);
+
 
 return <span className={`${className}`} ref={ref} />;
 }
