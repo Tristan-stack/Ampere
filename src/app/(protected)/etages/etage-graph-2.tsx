@@ -387,14 +387,10 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
             className="flex items-center justify-between h-full w-full flex-col"
           >
             <div className="flex flex-col h-full items-stretch space-y-0 border-b p-0 sm:flex-row w-full">
-              <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-2">
+              <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-3 sm:py-2">
                 <div className="flex items-center justify-start gap-1">
-                  <div className="flex items-start flex-col gap-1">
-                    <h2 className="md:text-sm xl:text-lg font-bold">Puissance par étages</h2>
-                    <p className="text-xs text-muted-foreground -mt-2">
-                      Sur la période sélectionnée dans le menu période
-                    </p>
-                  </div>
+                  
+                <h2 className="md:text-sm xl:text-lg font-bold">Puissance par étages</h2>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -409,7 +405,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 </div>
               </div>
               <div className="flex">
-                <div className="flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-4 text-left px-2 py-2">
+                <div className="flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-3 text-left px-2 py-2">
                   <span className="text-xs text-muted-foreground">Total</span>
                   <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
                     <CountUp
@@ -424,7 +420,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   </span>
                 </div>
                 <div
-                  className={`flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-4 text-left px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('max') ? 'bg-accent/50' : ''
+                  className={`flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-3 text-left px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('max') ? 'bg-accent/50' : ''
                     }`}
                   onClick={() => togglePoint('max')}
                 >
@@ -442,7 +438,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   </span>
                 </div>
                 <div
-                  className={`flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-4 text-left px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('min') ? 'bg-accent/50' : ''
+                  className={`flex flex-1 flex-col justify-center gap-1 border-l md:px-6 md:py-3 text-left px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('min') ? 'bg-accent/50' : ''
                     }`}
                   onClick={() => togglePoint('min')}
                 >
@@ -868,7 +864,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Nombre d'arbres nécessaires pour absorber ces émissions de CO₂ sur un an.</p>
-                      <p className="mt-1">Un arbre absorbe en moyenne 18kg de CO₂ par an.</p>
+                      <p className="mt-1">Un arbre absorbe en moyenne 22kg de CO₂ par an.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

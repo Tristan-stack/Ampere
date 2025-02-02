@@ -135,7 +135,7 @@ const fetchPreviousWeekData = async (fromTime: number, toTime: number): Promise<
   }
 };
 
-const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: string, floor: string }>, fromTime: number, toTime: number): Promise<ConsumptionData[]> => {
+const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: string, floor: string, name: string }>, fromTime: number, toTime: number): Promise<ConsumptionData[]> => {
   const allData: ConsumptionData[] = [];
 
   try {
@@ -160,6 +160,7 @@ const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: str
               floor: device.floor,
               totalConsumption: data.values[idx],
               emissions: data.values[idx] * 50,
+              name: device.name,
             }));
           }
           return [];

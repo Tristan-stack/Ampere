@@ -360,6 +360,7 @@ const Etages = () => {
                                   const isSelected = selectedMeasurements.some(m => m.id === measurementId);
                                   const matchingData = chartData.find(item => item.id.startsWith(measurementId));
 
+                                  console.log('Full chartData:', chartData.filter(item => item.id.startsWith(measurementId)));
                                   return (
                                     <button
                                       key={measurementId}

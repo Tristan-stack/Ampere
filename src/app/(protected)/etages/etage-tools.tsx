@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import CountUp from "@/components/countup";
-import { ArrowDownLeft, ArrowUpRight, Star, StarOff, Calculator, Lightbulb, Bold, Italic, Underline, BellPlus, Pen } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Star, StarOff, Calculator, NotebookPen, Bold, Italic, Underline, BellPlus, Pen, Download, PenTool, AlertCircle } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -16,6 +16,7 @@ import GradientText from '@/components/gradient-text';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 interface Tool {
     id: string;
@@ -51,8 +52,8 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
         },
         {
             id: "notes",
-            name: "Notes",
-            icon: <Lightbulb className="h-4 w-4" />,
+            name: "Commentaires",
+            icon: <NotebookPen className="h-4 w-4" />,
             description: "Prenez des notes sur vos analyses",
             isFavorite: false
         },
@@ -71,6 +72,22 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
             isFavorite: false
         }
     ]);
+
+    const handleSaveNotes = () => {
+        const blob = new Blob([noteContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const today = new Date();
+        const formattedDate = today.toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        a.download = `AMPERE-commentaires-${formattedDate}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+    };
+
     const toggleFavorite = (toolId: string) => {
         setTools(tools.map(tool =>
             tool.id === toolId ? { ...tool, isFavorite: !tool.isFavorite } : tool
@@ -145,19 +162,30 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                 <ArrowUpRight className="h-4 w-4" />
                             </Button>
                         </div>
-                        <div className="flex-1 space-y-4">
+                        <div className=" flex justify-between items-start flex-row flex-wrap gap-24 h-auto sm:gap-2">
                             {favoriteTools.map(tool => (
-                                <div key={tool.id} className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-end gap-2 relative w-full">
-                                            <span className="text-xs text-neutral-400">{tool.name}</span>
-                                            <span className="text-sm font-medium text-neutral-200 text-right absolute right-0">
-                                                {savings.toFixed(1)}%
-                                            </span>
-                                        </div>
-                                    </div>
+                                <div
+                                    key={tool.id}
+
+
+
+                                    className={cn(
+                                        "flex flex-col justify-start h-fit gap-2",
+                                        favoriteTools.length === 1 ? "w-full" : " flex-1 sm:flex-none"
+                                    )}
+                                >
+
+
                                     {tool.id === "savings" && (
-                                        <>
+                                        <div className="flex flex-col gap-2 w-full  mb-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-end gap-2 relative w-full">
+                                                    <span className="text-xs text-neutral-400">{tool.name}</span>
+                                                    <span className="text-sm font-medium text-neutral-200 text-right absolute right-0 top-7">
+                                                        {savings.toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
                                             <Slider
                                                 value={[savings]}
                                                 max={30}
@@ -172,9 +200,66 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                                         onSavingsChange(value[0]);
                                                     }
                                                 }}
-                                                className="w-full cursor-pointer"
+                                                className="cursor-pointer"
                                             />
-                                        </>
+                                        </div>
+                                    )}
+                                    {tool.id === "notes" && (
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="">
+                                                    <NotebookPen className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="bg-neutral-900 rounded-lg p-2">
+                                                <div className="w-full h-52 flex flex-col">
+                                                    <Textarea
+                                                        id="noteTextarea"
+                                                        value={noteContent}
+                                                        onChange={(e) => setNoteContent(e.target.value)}
+                                                        className="w-full flex-1 bg-neutral-800 rounded-lg p-2 text-sm text-neutral-200 resize-none focus:outline-none focus:ring-1 focus:ring-neutral-700 mb-2"
+                                                        placeholder="Prenez vos commentaires ici..."
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={handleSaveNotes}
+                                                        className="bg-neutral-800 hover:bg-neutral-700 flex items-center gap-2"
+                                                        disabled={!noteContent}
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                        Sauvegarder
+                                                    </Button>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
+                                    {tool.id === "alerts" && (
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <BellPlus className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="bg-neutral-900 rounded-lg p-2">
+                                                <div className="w-full flex flex-col gap-2">
+                                                    <h4 className="text-sm font-medium">Alertes</h4>
+                                                    <p className="text-xs text-neutral-400">
+                                                        Aucune alerte pour le moment
+                                                    </p>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
+                                    {tool.id === "write" && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {/* Handle drawing */ }}
+
+                                        >
+                                            <Pen className="h-4 w-4" />
+                                        </Button>
                                     )}
                                 </div>
                             ))}
@@ -259,14 +344,24 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                         </div>
                                     )}
                                     {tool.id === "notes" && (
-                                        <div className="w-full h-full">
+                                        <div className="w-full h-full flex flex-col">
                                             <Textarea
                                                 id="noteTextarea"
                                                 value={noteContent}
                                                 onChange={(e) => setNoteContent(e.target.value)}
-                                                className="w-full h-full bg-neutral-800 rounded-lg p-2 text-sm text-neutral-200 resize-none focus:outline-none focus:ring-1 focus:ring-neutral-700"
-                                                placeholder="Prenez vos notes ici..."
+                                                className="w-full flex-1 bg-neutral-800 rounded-lg p-2 text-sm text-neutral-200 resize-none focus:outline-none focus:ring-1 focus:ring-neutral-700 mb-2"
+                                                placeholder="Prenez vos commentaires ici..."
                                             />
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleSaveNotes}
+                                                className="bg-neutral-800 hover:bg-neutral-700 flex items-center gap-2"
+                                                disabled={!noteContent}
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                Sauvegarder
+                                            </Button>
                                         </div>
                                     )}
                                     {tool.id === "alerts" && (
@@ -286,8 +381,8 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                     onClick={() => toggleFavorite(tool.id)}
                                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-neutral-700 p-1 h-auto"
                                 >
-                                    {tool.isFavorite ? 
-                                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /> : 
+                                    {tool.isFavorite ?
+                                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /> :
                                         <StarOff className="h-3 w-3" />
                                     }
                                 </Button>
