@@ -70,16 +70,16 @@ const Batiments = () => {
             <div className="w-full h-full lg:h-1/2 flex flex-col lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
                 <div className="sm:w-full lg:w-1/3 bg-neutral-800 rounded-md border">
                     <div className="h-full">
-                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-4">
-                            <h1 className="text-white text-2xl font-bold mb-3">Analyse des bâtiments</h1>
-                            <div className="relative w-full space-y-4">
+                        <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-3 3xl:space-y-4">
+                            <h1 className="text-white text-2xl font-bold mb-0 3xl:mb-3">Analyse des bâtiments</h1>
+                            <div className="relative w-full space-y-2 3xl:space-y-4">
+                            <AmpyWeather score={efficiencyScore} />
                                 <Score score={efficiencyScore} />
-                                <AmpyWeather score={efficiencyScore} />
                             </div>
 
 
                             <div>
-                                <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold pb-0 lg:-pb-2 mt-2">Sélection des bâtiments</h3>
+                                <h3 className="text-neutral-300 text-sm 3xl:text-lg font-bold pb-0 lg:-pb-2">Sélection des bâtiments</h3>
                                 <div className="flex items-start mt-1 justify-start gap-[0.15rem]">
                                     {["A", "B", "C"].map(building => (
                                         <button
@@ -111,8 +111,8 @@ const Batiments = () => {
                 <motion.div
                     className={cn(
                         "bg-neutral-800 rounded-md relative",
-                        isFullscreen 
-                            ? "fixed md:absolute w-full -top-4 left-0 md:-top-6 md:-left-4 h-screen z-50 m-0 overflow-hidden" 
+                        isFullscreen
+                            ? "fixed md:absolute w-full -top-4 left-0 md:-top-6 md:-left-4 h-screen z-50 m-0 overflow-hidden"
                             : "w-full lg:w-2/3"
 
 
@@ -126,21 +126,21 @@ const Batiments = () => {
                         scale: 1,
                         opacity: 1,
                     }}
-                    transition={{ 
+                    transition={{
                         duration: 0.3,
                         ease: "easeInOut"
                     }}
                 >
                     <FullscreenButton onClick={(e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsFullscreen(!isFullscreen);
-}} />
+                        e.stopPropagation();
+                        setIsFullscreen(!isFullscreen);
+                    }} />
                     <div className="h-full">
                         <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
                             <Batimentgraph2
                                 aggregatedData={aggregatedData}
                                 loading={false}
-                                />
+                            />
                         </div>
                     </div>
                 </motion.div>

@@ -153,39 +153,16 @@ const AmpyWeather: React.FC<AmypWeatherProps> = ({ score }) => {
     if (!messages.length) return null;
 
     return (
-        <div className="flex flex-col gap-">
-            {/* Message météo */}
-            <div className="flex items-center gap-3 text-base text-neutral-400 h-8 mb-3">
-                <Sparkles className="w-5 h-5 text-neutral-500" />
-                <div className="relative h-8 flex-1">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentMessageIndex}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.5 }}
-                            className="w-full"
-                        >
-                            <ShinyText
-                                text={messages[currentMessageIndex] ?? "Chargement..."}
-                                disabled={false}
-                                speed={3}
-                            />
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </div>
-
+        <div className="flex flex-col">
             {/* Section émissions de carbone */}
-            <div className="flex flex-col gap-2 mt-3">
-                <p className="text-lg font-bold text-white">
+            <div className="flex flex-col gap-2 mb-3 3xl:mb-3">
+                <p className="text-md 3xl:text-lg font-bold text-neutral-300">
                     Émissions de carbone (approx.)
                 </p>
-                <div className="flex items-center gap-3">
-                    <Wind className="w-10 h-10 stroke-1 text-neutral-300" />
+                <div className="flex items-center gap-3 -mt-3">
+                    <Wind className="w-7 h-7 3xl:w-10 3xl:h-10 stroke-1 text-neutral-300" />
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-light text-neutral-300">
+                        <span className="text-3xl 3xl:text-4xl font-light text-neutral-300">
                             {currentEmissions.toFixed(0)} gCO₂
                         </span>
                         <div className="flex items-center gap-1">
@@ -205,6 +182,31 @@ const AmpyWeather: React.FC<AmypWeatherProps> = ({ score }) => {
                     </div>
                 </div>
             </div>
+            {/* Message météo */}
+            <div className="flex items-center justify-center mt-0 3xl:mt-3 gap-3 text-base text-neutral-400 h-8">
+                <Sparkles className="w-5 h-5 text-neutral-500" />
+                <div className="relative h-8 flex-1">
+                    <AnimatePresence mode="wait">
+
+                        <motion.div
+                            key={currentMessageIndex}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.5 }}
+                            className="w-fit h-fit text-sm 3xl:text-md"
+                        >
+                            <ShinyText
+                                text={messages[currentMessageIndex] ?? "Chargement..."}
+
+                                disabled={false}
+                                speed={3}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </div>
+
         </div>
     );
 };
