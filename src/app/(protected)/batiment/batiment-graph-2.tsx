@@ -63,103 +63,112 @@ interface ChartOptions {
   displayMode: "combined" | "separate"
 }
 
-const aggregateDataByInterval = (data: any[], interval: string) => {
-  const aggregatedData: { [key: string]: number } = {};
-
-  data.forEach(item => {
-    const date = new Date(item.date);
-    let key: string;
-
-    switch (interval) {
-      case "5min":
-        date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
-        date.setSeconds(0);
-        key = date.toISOString();
-        break;
-      case "1w":
-        date.setHours(0);
-        date.setMinutes(0);
-        date.setSeconds(0);
-        date.setDate(date.getDate() - date.getDay());
-        key = date.toISOString();
-        break;
-      case "1m":
-        date.setHours(0);
-        date.setMinutes(0);
-        date.setSeconds(0);
-        date.setDate(1);
-        key = date.toISOString();
-        break;
-      case "15min":
-        date.setMinutes(Math.floor(date.getMinutes() / 15) * 15);
-        date.setSeconds(0);
-        key = date.toISOString();
-        break;
-      case "30min":
-        date.setMinutes(Math.floor(date.getMinutes() / 30) * 30);
-        date.setSeconds(0);
-        key = date.toISOString();
-        break;
-      case "1h":
-        date.setMinutes(0);
-        date.setSeconds(0);
-        key = date.toISOString();
-        break;
-      case "1d":
-        date.setHours(0);
-        date.setMinutes(0);
-        date.setSeconds(0);
-        key = date.toISOString();
-        break;
-      default: // Par défaut, utiliser 15min
-        date.setMinutes(Math.floor(date.getMinutes() / 15) * 15);
-        date.setSeconds(0);
-        key = date.toISOString();
-    }
-
-    if (!aggregatedData[key]) {
-      aggregatedData[key] = 0;
-    }
-    aggregatedData[key] += item.totalConsumption;
-  });
-
-  return Object.entries(aggregatedData).map(([date, value]) => ({
-    date,
-    totalConsumption: value
-  }));
-};
-
-interface MinMaxPoint {
-  date: string;
-  value: number;
-  building: string;
-  type: 'min' | 'max';
-}
-
-// Nouvelle fonction pour déterminer l'intervalle optimal
-const determineOptimalInterval = (data: any[]): ChartOptions["timeInterval"] => {
-  if (!data || data.length === 0) return "15min";
-
-  const dates = data.map(item => new Date(item.date).getTime());
-  const timeSpanMs = Math.max(...dates) - Math.min(...dates);
-  const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
-
-  if (daysDifference <= 1) {
-    const hoursDifference = timeSpanMs / (1000 * 60 * 60);
-    if (hoursDifference <= 2) return "5min";
-    if (hoursDifference <= 6) return "15min";
-    return "30min";
-  }
-  if (daysDifference <= 7) return "1h";
-  if (daysDifference <= 31) return "1d";
-  if (daysDifference <= 90) return "1w";
-  return "1m";
-};
-
 export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props) {
+  // Ajouter les fonctions utilitaires à l'intérieur du composant
+  const aggregateDataByInterval = (data: any[], interval: string) => {
+    const aggregatedData: { [key: string]: { total: number, count: number } } = {};
+
+    data.forEach(item => {
+      const date = new Date(item.date);
+      let key: string;
+
+      switch (interval) {
+        case "5min":
+          date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
+          date.setSeconds(0);
+          key = date.toISOString();
+          break;
+        case "15min":
+          date.setMinutes(Math.floor(date.getMinutes() / 15) * 15);
+          date.setSeconds(0);
+          key = date.toISOString();
+          break;
+        case "30min":
+          date.setMinutes(Math.floor(date.getMinutes() / 30) * 30);
+          date.setSeconds(0);
+          key = date.toISOString();
+          break;
+        case "1h":
+          date.setMinutes(0);
+          date.setSeconds(0);
+          key = date.toISOString();
+          break;
+        case "1d":
+          date.setHours(0);
+          date.setMinutes(0);
+          date.setSeconds(0);
+          key = date.toISOString();
+          break;
+        case "1w":
+          date.setHours(0);
+          date.setMinutes(0);
+          date.setSeconds(0);
+          date.setDate(date.getDate() - date.getDay());
+          key = date.toISOString();
+          break;
+        case "1m":
+          date.setDate(1);
+          date.setHours(0);
+          date.setMinutes(0);
+          date.setSeconds(0);
+          key = date.toISOString();
+          break;
+        default:
+          key = date.toISOString();
+      }
+
+      if (!aggregatedData[key]) {
+        aggregatedData[key] = { total: 0, count: 0 };
+      }
+      aggregatedData[key]!.total += item.totalConsumption;
+      aggregatedData[key]!.count += 1;
+    });
+
+    return Object.entries(aggregatedData).map(([date, values]) => ({
+      date,
+      totalConsumption: values.total / values.count // Moyenne pour la période
+    }));
+  };
+
+  const determineOptimalInterval = (data: any[]): "5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m" => {
+    if (!data || data.length === 0) return "15min";
+
+    const dates = data.map(item => new Date(item.date).getTime());
+    const timeSpanMs = Math.max(...dates) - Math.min(...dates);
+    const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
+    const pointCount = data.length;
+
+    // Ajustez les seuils en fonction du nombre de points
+    if (pointCount > 1000) {
+      if (daysDifference > 60) return "1m";
+      if (daysDifference > 30) return "1w";
+      if (daysDifference > 7) return "1d";
+      return "1h";
+    }
+
+    if (daysDifference <= 1) {
+      if (pointCount > 200) return "30min";
+      if (pointCount > 100) return "15min";
+      return "5min";
+    }
+
+    if (daysDifference <= 7) return "1h";
+    if (daysDifference <= 31) return "1d";
+    if (daysDifference <= 90) return "1w";
+    return "1m";
+  };
+
+  interface MinMaxPoint {
+    date: string;
+    value: number;
+    building: string;
+    type: 'min' | 'max';
+  }
+
   const [prevTotal, setPrevTotal] = useState(0);
   const [prevMax, setPrevMax] = useState(0);
   const [prevMin, setPrevMin] = useState(0);
+  const [timeInterval, setTimeInterval] = useState<"5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m">("15min");
   const [chartOptions, setChartOptions] = useState<ChartOptions>(() => ({
     curveType: "monotone",
     timeInterval: determineOptimalInterval(Object.values(aggregatedData).flat()),

@@ -232,6 +232,7 @@ const Etages = () => {
 
   // Add new state
   const [isInitialized, setIsInitialized] = useState(false);
+  const [totalEnergy, setTotalEnergy] = useState(0);
 
   // Modify useEffect
   useEffect(() => {
@@ -492,6 +493,8 @@ const Etages = () => {
               <EtageGraph2
                 floorData={floorData}
                 isExpanded={expandedGraph === 2 || expandedGraph === null || isFullscreen}
+                onTotalChange={(total) => setTotalEnergy(total.totalConsumption)}
+                chartData={chartData}
               />
             </div>
           </div>
@@ -533,10 +536,7 @@ const Etages = () => {
           >
             <div className="h-full">
               <EtageCost
-                totalConsumption={Object.values(floorData)
-                  .flat()
-                  .reduce((acc, curr) => acc + curr.totalConsumption, 0)
-                }
+                totalConsumption={totalEnergy}
                 pricePerKwh={pricePerKwh}
                 onPriceChange={setPricePerKwh}
                 isExpanded={expandedGraph === 1}

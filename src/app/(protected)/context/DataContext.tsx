@@ -11,6 +11,17 @@ type ConsumptionData = {
   name: string;
 };
 
+type PanelInfo = {
+  name: string;
+  currentTotalPower: number;
+  status: "active" | "inactive" | "maintenance";
+  startDate: string;
+  productionData?: Array<{
+    date: string;
+    value: number;
+  }>;
+};
+
 type DataContextType = {
   chartData: ConsumptionData[];
   filteredData: ConsumptionData[];
@@ -31,6 +42,7 @@ type DataContextType = {
   unit: string;
   deviceName: string;
   efficiencyScore: number;
+  panelData: PanelInfo[];
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -187,6 +199,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [isTestMode, setIsTestMode] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [efficiencyScore, setEfficiencyScore] = useState<number>(5);
+  const [panelData, setPanelData] = useState<PanelInfo[]>([]);
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -263,6 +276,50 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  const fetchPanelData = async (fromTime: number, toTime: number) => {
+    const panelKeys = [
+      { key: '07314c5b-642a-4051-ab73-5681fd5151a6', name: 'Panneau dynamique 1' },
+      { key: '054f3df8-e287-475f-91d7-fad2347d9940', name: 'Panneau dynamique 2' },
+      { key: '57a1749f-1512-47dd-b6d7-6a8a2be2e033', name: 'Panneau statique 1' },
+      { key: '1f20cdd8-1dce-4749-8790-48a2ca685a1a', name: 'Panneau statique 2' },
+    ];
+
+    try {
+      const panelsData = await Promise.all(
+        panelKeys.map(async (panel) => {
+          const response = await fetch('/api/getDeviceDataByKey', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              device_key: panel.key,
+              from: Math.floor(fromTime),
+              to: Math.floor(toTime)
+            }),
+          });
+          const data = await response.json();
+          
+          // Créer le tableau de données de production
+          const productionData = data.timestamps.map((timestamp: string, index: number) => ({
+            date: timestamp,
+            value: data.values[index] || 0
+          }));
+          
+          return {
+            name: panel.name,
+            currentTotalPower: data.values?.[data.values.length - 1] || 0,
+            status: data.values?.[data.values.length - 1] > 0 ? "active" : "maintenance",
+            startDate: new Date(fromTime * 1000).toISOString().split('T')[0],
+            productionData
+          };
+        })
+      );
+
+      setPanelData(panelsData as PanelInfo[]);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données des panneaux:', error);
+    }
+  };
+
   const fetchData = async () => {
     if (isInitialLoad) {
       setIsLoading(true);
@@ -276,10 +333,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       { key: 'ca8bf525-9259-4cfa-9ebe-856b4356895e', building: 'A', floor: '2e étage', name: 'A2 Mesure 1' },
       { key: '3b36f6d7-8abd-4e79-8154-72ccb92b9273', building: 'A', floor: '3e étage', name: 'A3 Mesure 1' },
 
-      { key: '5ef1fc4b-0bfd-4b13-a174-835d154a0744', building: 'B', floor: 'RDC', name: 'Panneau kibouj 1' },
+      { key: '5ef1fc4b-0bfd-4b13-a174-835d154a0744', building: 'B', floor: 'RDC', name: 'Panneau dynamique 1' },
       { key: '85d14dac-8e5c-477b-a0f8-3e7768fcc8ee', building: 'B', floor: 'RDC', name: 'Panneau statique 1' },
 
-      { key: 'b3195f2e-7071-4729-babd-47ca4f3e252e', building: 'B', floor: 'RDC', name: 'Panneau kibouj 2' },      
+      { key: 'b3195f2e-7071-4729-babd-47ca4f3e252e', building: 'B', floor: 'RDC', name: 'Panneau dynamique 2' },      
       { key: '14ca1560-66ec-417a-99ee-5f7e4ac8e4a1', building: 'B', floor: 'RDC', name: 'Panneau statique 2' },
 
 
@@ -324,6 +381,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       const newScore = calculateEfficiencyScore(currentData, previousData);
       console.log('Score brut:', newScore);
       setEfficiencyScore(newScore);
+
+      // Ajouter l'appel à fetchPanelData
+      await fetchPanelData(fromTime, toTime);
 
     } catch (error) {
       console.error('Erreur:', error);
@@ -373,6 +433,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       unit: '',
       deviceName: '',
       efficiencyScore: Math.max(0, Math.min(10, efficiencyScore)),
+      panelData,
     }}>
       {children}
     </DataContext.Provider>
