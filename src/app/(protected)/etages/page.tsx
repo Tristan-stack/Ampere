@@ -246,6 +246,23 @@ const Etages = () => {
     }
   }, [chartData, availableMeasurements, isInitialized]);
 
+  // Ajouter cette fonction pour calculer la consommation actuelle par bâtiment
+  const getCurrentBuildingData = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) return {};
+
+    const latestData: { [key: string]: number } = {};
+
+    // Grouper les dernières données par bâtiment
+    chartData.forEach(item => {
+      const buildingKey = item.building;
+      if (!latestData[buildingKey] || !latestData[buildingKey]) {
+        latestData[buildingKey] = item.totalConsumption;
+      }
+    });
+
+    return latestData;
+  }, [chartData]);
+
   return (
     <div className="w-full md:w-full h-full flex flex-col lg:flex-row items-center justify-start md:justify-center gap-4 md:mt-16 xl:mt-0">
       {/* Colonne de gauche - Contrôles */}
@@ -517,6 +534,7 @@ const Etages = () => {
                   .flat()
                   .reduce((acc, curr) => acc + curr.totalConsumption, 0)
                 }
+                currentBuildingData={getCurrentBuildingData}
               />
             </div>
           </div>

@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { toast } from 'react-toastify';
 
 interface Tool {
     id: string;
@@ -27,6 +28,14 @@ interface Tool {
     adminOnly?: boolean;
 }
 
+interface Alert {
+    id: string;
+    threshold: number;
+    building: string;
+    isActive: boolean;
+    lastTriggered?: number;
+}
+
 interface EtageToolsProps {
     onSavingsChange: (savings: number) => void;
     onPriceChange: (price: number) => void;
@@ -34,9 +43,12 @@ interface EtageToolsProps {
     onToggleExpand: (event: React.MouseEvent) => void;
     isAdmin?: boolean;
     totalConsumption: number;
+    currentBuildingData?: {
+        [key: string]: number;
+    };
 }
 
-export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPriceChange, isExpanded, onToggleExpand, isAdmin = false, totalConsumption = 0 }) => {
+export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPriceChange, isExpanded, onToggleExpand, isAdmin = false, totalConsumption = 0, currentBuildingData = {} }) => {
     const [savings, setSavings] = useState<number>(0);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -72,6 +84,9 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
             isFavorite: false
         }
     ]);
+    const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [newAlertThreshold, setNewAlertThreshold] = useState<number>(1000);
+    const [selectedBuilding, setSelectedBuilding] = useState<string>('A');
 
     const handleSaveNotes = () => {
         const blob = new Blob([noteContent], { type: 'text/plain' });
@@ -117,6 +132,80 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
 
         const newText = noteContent.substring(0, start) + wrappedText + noteContent.substring(end);
         setNoteContent(newText);
+    };
+
+    const checkAlerts = React.useCallback(() => {
+        alerts.forEach(alert => {
+            if (!alert.isActive) return;
+
+            const buildingConsumption = currentBuildingData[alert.building];
+            if (!buildingConsumption) return;
+
+            const now = Date.now();
+            if (alert.lastTriggered && now - alert.lastTriggered < 5 * 60 * 1000) return;
+
+            if (buildingConsumption >= alert.threshold) {
+                toast.error(
+                    `Le bâtiment ${alert.building} consomme ${buildingConsumption.toFixed(0)}W, dépassant le seuil de ${alert.threshold}W`,
+                    {
+                        position: "bottom-right",
+                        autoClose: 5000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "dark",
+                    }
+                );
+
+                setAlerts(prev => prev.map(a =>
+                    a.id === alert.id ? { ...a, lastTriggered: now } : a
+                ));
+            }
+        });
+    }, [alerts, currentBuildingData]);
+
+    React.useEffect(() => {
+        checkAlerts();
+    }, [currentBuildingData, checkAlerts]);
+
+    const addAlert = () => {
+        const newAlert: Alert = {
+            id: Date.now().toString(),
+            threshold: newAlertThreshold,
+            building: selectedBuilding,
+            isActive: true,
+            lastTriggered: 0
+        };
+        setAlerts(prev => [...prev, newAlert]);
+
+        const buildingConsumption = currentBuildingData[selectedBuilding];
+        if (buildingConsumption && buildingConsumption >= newAlertThreshold) {
+            toast.warning(
+                `Le bâtiment ${selectedBuilding} consomme déjà ${buildingConsumption.toFixed(0)}W, dépassant le seuil de ${newAlertThreshold}W`,
+                {
+                    position: "bottom-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                }
+            );
+        }
+    };
+
+    const removeAlert = (id: string) => {
+        setAlerts(alerts.filter(alert => alert.id !== id));
+    };
+
+    const toggleAlert = (id: string) => {
+        setAlerts(alerts.map(alert =>
+            alert.id === id ? { ...alert, isActive: !alert.isActive } : alert
+        ));
     };
 
     React.useEffect(() => {
@@ -166,16 +255,11 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                             {favoriteTools.map(tool => (
                                 <div
                                     key={tool.id}
-
-
-
                                     className={cn(
                                         "flex flex-col justify-start h-fit gap-2",
                                         favoriteTools.length === 1 ? "w-full" : " flex-1 sm:flex-none"
                                     )}
                                 >
-
-
                                     {tool.id === "savings" && (
                                         <div className="flex flex-col gap-2 w-full  mb-4 relative">
                                             <div className="flex items-center justify-between">
@@ -184,8 +268,6 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                                 </div>
                                             </div>
                                             <Slider
-
-
                                                 value={[savings]}
                                                 max={30}
                                                 step={0.5}
@@ -205,7 +287,6 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                                 {savings.toFixed(1)}%
                                             </span>
                                         </div>
-
                                     )}
                                     {tool.id === "notes" && (
                                         <Popover>
@@ -238,28 +319,95 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                         </Popover>
                                     )}
                                     {tool.id === "alerts" && (
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <BellPlus className="h-4 w-4" />
+                                        <div className="w-full h-full flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Input
+                                                    type="number"
+                                                    value={newAlertThreshold}
+                                                    onChange={(e) => setNewAlertThreshold(Number(e.target.value))}
+                                                    className="w-24 bg-neutral-800 text-sm"
+                                                    placeholder="Seuil (W)"
+                                                />
+                                                <select
+                                                    value={selectedBuilding}
+                                                    onChange={(e) => setSelectedBuilding(e.target.value)}
+                                                    className="bg-neutral-800 text-sm rounded-md px-2 py-1 text-neutral-200"
+                                                >
+                                                    <option value="A">Bâtiment A</option>
+                                                    <option value="B">Bâtiment B</option>
+                                                    <option value="C">Bâtiment C</option>
+                                                </select>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={addAlert}
+                                                    className="bg-neutral-800 hover:bg-neutral-700 ml-auto"
+                                                >
+                                                    <BellPlus className="h-4 w-4 mr-1" />
+                                                    Ajouter
                                                 </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="bg-neutral-900 rounded-lg p-2">
-                                                <div className="w-full flex flex-col gap-2">
-                                                    <h4 className="text-sm font-medium">Alertes</h4>
-                                                    <p className="text-xs text-neutral-400">
-                                                        Aucune alerte pour le moment
-                                                    </p>
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto">
+                                                {alerts.length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center h-full text-neutral-400 text-sm gap-2">
+                                                        <AlertCircle className="h-8 w-8 opacity-50" />
+                                                        <p>Aucune alerte configurée</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {alerts.map(alert => (
+                                                            <div
+                                                                key={alert.id}
+                                                                className={cn(
+                                                                    "flex items-center justify-between p-2 rounded-md transition-colors",
+                                                                    alert.isActive ? "bg-neutral-800" : "bg-neutral-800/50"
+                                                                )}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <div
+                                                                        className={cn(
+                                                                            "w-2 h-2 rounded-full",
+                                                                            alert.isActive ? "bg-green-500" : "bg-neutral-600"
+                                                                        )}
+                                                                    />
+                                                                    <span className="text-sm text-neutral-200">
+                                                                        Bât. {alert.building} - {alert.threshold}W
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => toggleAlert(alert.id)}
+                                                                        className="hover:bg-neutral-700 p-1 h-auto"
+                                                                    >
+                                                                        {alert.isActive ? (
+                                                                            <BellPlus className="h-3 w-3" />
+                                                                        ) : (
+                                                                            <AlertCircle className="h-3 w-3" />
+                                                                        )}
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => removeAlert(alert.id)}
+                                                                        className="text-red-400 hover:text-red-300 hover:bg-neutral-700 p-1 h-auto"
+                                                                    >
+                                                                        ×
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
                                     {tool.id === "write" && (
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => {/* Handle drawing */ }}
-
                                         >
                                             <Pen className="h-4 w-4" />
                                         </Button>
@@ -368,8 +516,88 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                         </div>
                                     )}
                                     {tool.id === "alerts" && (
-                                        <div className="w-full h-full">
-                                            <div className="w-full h-full bg-neutral-800 rounded-lg"></div>
+                                        <div className="w-full h-full flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Input
+                                                    type="number"
+                                                    value={newAlertThreshold}
+                                                    onChange={(e) => setNewAlertThreshold(Number(e.target.value))}
+                                                    className="w-24 bg-neutral-800 text-sm"
+                                                    placeholder="Seuil (W)"
+                                                />
+                                                <select
+                                                    value={selectedBuilding}
+                                                    onChange={(e) => setSelectedBuilding(e.target.value)}
+                                                    className="bg-neutral-800 text-sm rounded-md px-2 py-1 text-neutral-200"
+                                                >
+                                                    <option value="A">Bâtiment A</option>
+                                                    <option value="B">Bâtiment B</option>
+                                                    <option value="C">Bâtiment C</option>
+                                                </select>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={addAlert}
+                                                    className="bg-neutral-800 hover:bg-neutral-700 ml-auto"
+                                                >
+                                                    <BellPlus className="h-4 w-4 mr-1" />
+                                                    Ajouter
+                                                </Button>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto">
+                                                {alerts.length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center h-full text-neutral-400 text-sm gap-2">
+                                                        <AlertCircle className="h-8 w-8 opacity-50" />
+                                                        <p>Aucune alerte configurée</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {alerts.map(alert => (
+                                                            <div
+                                                                key={alert.id}
+                                                                className={cn(
+                                                                    "flex items-center justify-between p-2 rounded-md transition-colors",
+                                                                    alert.isActive ? "bg-neutral-800" : "bg-neutral-800/50"
+                                                                )}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <div
+                                                                        className={cn(
+                                                                            "w-2 h-2 rounded-full",
+                                                                            alert.isActive ? "bg-green-500" : "bg-neutral-600"
+                                                                        )}
+                                                                    />
+                                                                    <span className="text-sm text-neutral-200">
+                                                                        Bât. {alert.building} - {alert.threshold}W
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => toggleAlert(alert.id)}
+                                                                        className="hover:bg-neutral-700 p-1 h-auto"
+                                                                    >
+                                                                        {alert.isActive ? (
+                                                                            <BellPlus className="h-3 w-3" />
+                                                                        ) : (
+                                                                            <AlertCircle className="h-3 w-3" />
+                                                                        )}
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => removeAlert(alert.id)}
+                                                                        className="text-red-400 hover:text-red-300 hover:bg-neutral-700 p-1 h-auto"
+                                                                    >
+                                                                        ×
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                     {tool.id === "write" && (
