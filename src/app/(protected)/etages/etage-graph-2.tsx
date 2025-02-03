@@ -26,6 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSearchParams } from 'next/navigation'
 
 const chartConfig = {
   total: {
@@ -160,6 +161,8 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
   const [brushEndIndex, setBrushEndIndex] = useState<number | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+  const searchParams = useSearchParams()
+  const isHighlighted = searchParams.get('highlight') === 'etage-graph-2'
 
   const togglePoint = (type: 'min' | 'max') => {
     setSelectedPoints(prev =>
@@ -377,7 +380,17 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
   if (!isExpanded) {
     return (
-      <div className="w-full h-full ">
+      <motion.div
+        animate={isHighlighted ? {
+          boxShadow: [
+            "0 0 0 0px rgba(255,255,255,0)",
+            "0 0 0 3px rgba(255,255,255,0.8)",
+            "0 0 0 3px rgba(255,255,255,0)"
+          ]
+        } : {}}
+        transition={{ duration: 1, times: [0, 0.5, 1] }}
+        className="w-full h-full"
+      >
         {!isResizing && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -549,12 +562,22 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
             </div>
           </motion.div>
         )}
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="relative flex flex-col justify-between items-center h-full w-full rounded-md">
+    <motion.div
+      animate={isHighlighted ? {
+        boxShadow: [
+          "0 0 0 0px rgba(255,255,255,0)",
+          "0 0 0 3px rgba(255,255,255,0.8)",
+          "0 0 0 3px rgba(255,255,255,0)"
+        ]
+      } : {}}
+      transition={{ duration: 1, times: [0, 0.5, 1] }}
+      className="relative flex flex-col justify-between items-center h-full w-full rounded-md"
+    >
       {!isResizing ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -898,6 +921,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           {/* Optionnel : Ajouter un indicateur de chargement ici */}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
