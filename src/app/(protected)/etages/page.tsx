@@ -12,8 +12,9 @@ import { EtageGraph2 } from "./etage-graph-2";
 import { useData } from "../context/DataContext";
 import { EtageTools } from "./etage-tools";
 import { EtageCost } from "./etage-cost";
-import { useSearchParams } from 'next/navigation'
+import { Maximize2, Minimize2 } from "lucide-react";
 
+// Add to component state
 type ConsumptionData = {
   id: string;
   date: string;
@@ -46,8 +47,6 @@ type SelectedMeasurement = {
 
 const Etages = () => {
   const { chartData, isLoading } = useData();
-  const searchParams = useSearchParams()
-  const isHighlighted = searchParams.get('highlight') === 'etage-graph-2'
 
   const [selectedMeasurements, setSelectedMeasurements] = useState<SelectedMeasurement[]>([]);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
@@ -57,6 +56,15 @@ const Etages = () => {
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
   const [pricePerKwh, setPricePerKwh] = useState<number>(0.15);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const FullscreenButton = ({ onClick }: { onClick: (event: React.MouseEvent) => void }) => (
+    <button
+      onClick={onClick}
+      className="absolute top-1 right-1 p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors z-10"
+    >
+      {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+    </button>
+  );
   // Obtenir les mesures disponibles pour chaque étage
   const availableMeasurements = React.useMemo(() => {
     if (!chartData || chartData.length === 0) return {};
@@ -269,17 +277,7 @@ const Etages = () => {
       <div className="w-full lg:w-1/3 flex flex-row lg:flex-col space-y-4 h-full md:h-36 lg:h-full">
         {/* Section Bâtiments */}
         <div className="h-36 w-full lg:h-2/4 block justify-start items-start md:flex md:justify-center md:items-center lg:block lg:justify-start lg:items-start lg:space-y-4 space-y-4 md:space-y-0 space-x-0 md:space-x-4 lg:space-x-0">
-          <motion.div
-            animate={isHighlighted ? {
-              boxShadow: [
-                "0 0 0 0px rgba(255,255,255,0)",
-                "0 0 0 3px rgba(255,255,255,0.8)",
-                "0 0 0 3px rgba(255,255,255,0)"
-              ]
-            } : {}}
-            transition={{ duration: 1, times: [0, 0.5, 1] }}
-            className="bg-neutral-800 h-full lg:h-2/4 rounded-md border"
-          >
+          <div className="bg-neutral-800 h-full lg:h-2/4 rounded-md border">
             <div className="w-full h-full bg-neutral-900 rounded-md p-4">
               <h1 className="text-white text-2xl font-bold mb-4">Analyse des étages</h1>
               <div className="flex items-center sm:space-x-0 xl:space-x-4">
@@ -316,7 +314,7 @@ const Etages = () => {
                 })}
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Section Étages et Mesures */}
           <div className="h-36 lg:h-2/4 w-full bg-neutral-800 rounded-md border">
@@ -482,32 +480,39 @@ const Etages = () => {
       {/* Colonne de droite - Visualisations */}
       <div className="w-full lg:w-2/3 mt-36 md:mt-0 pt-4 md:pt-0 flex flex-col space-y-4 h-full overflow-visible md:overflow-hidden">
         {/* Graphique principal */}
-        <div
+        <motion.div
           className={cn(
-            "bg-neutral-800 rounded-md border transition-all",
-            expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-2/4 md:h-1/4 cursor-pointer" : "h-96 md:h-3/4"
+            "bg-neutral-800 rounded-md border transition-all relative",
+            isFullscreen ? "w-full h-screen absolute top-0 left-0 -mt-6 z-50 overflow-hidden" : expandedGraph === 2 ? "h-full" : expandedGraph !== null ? "h-2/4 md:h-1/4 cursor-pointer" : "h-96 md:h-3/4"
           )}
-          onClick={() => handleGraphClick(2)}
+
+
+          onClick={() => !isFullscreen && handleGraphClick(2)}
+          initial={false}
+          animate={isFullscreen ? {
+            scale: 1,
+            opacity: 1,
+          } : {
+            scale: 1,
+            opacity: 1,
+          }}
+          transition={{ duration: 0.2 }}
         >
+          <FullscreenButton 
+  onClick={(event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsFullscreen(!isFullscreen);
+  }} 
+/>
           <div className="h-full">
-            <motion.div
-              animate={isHighlighted ? {
-                boxShadow: [
-                  "0 0 0 0px rgba(255,255,255,0)",
-                  "0 0 0 3px rgba(255,255,255,0.8)",
-                  "0 0 0 3px rgba(255,255,255,0)"
-                ]
-              } : {}}
-              transition={{ duration: 1, times: [0, 0.5, 1] }}
-              className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center"
-            >
+            <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
               <EtageGraph2
                 floorData={floorData}
-                isExpanded={expandedGraph === 2 || expandedGraph === null}
+                isExpanded={expandedGraph === 2 || expandedGraph === null || isFullscreen}
               />
-            </motion.div>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Graphiques secondaires */}
         <div className={cn(" space-x-4 transition-all hidden md:flex", expandedGraph !== null ? "h-full md:h-3/4" : "h-1/4")}>

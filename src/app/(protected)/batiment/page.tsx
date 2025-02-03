@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Batimentgraph2 } from "./batiment-graph-2";
 import Batimentgraph4 from "./batiment-graph-4";
 import { BatimentgraphTable } from "./batiment-graph-tableau";
@@ -8,9 +8,10 @@ import Squares from "@/components/squares";
 import Score from "@/components/score";
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Info } from "lucide-react"
+import { Info, Maximize2, Minimize2 } from "lucide-react"
 import { useData } from '../context/DataContext';
 import AmpyWeather from "@/components/ampy-weather";
+import { motion } from "framer-motion";
 
 type ConsumptionData = {
     id: string;
@@ -39,7 +40,15 @@ const Batiments = () => {
         setSelectedBuildings,
         efficiencyScore
     } = useData();
-
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const FullscreenButton = ({ onClick }: { onClick: (e: React.MouseEvent) => void }) => (
+        <button
+            onClick={onClick}
+            className="absolute top-1 right-1 p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors z-10"
+        >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+    );
     const items = ["A", "B", "C"];
     const handleBuildingSelection = (building: string) => {
         setSelectedBuildings((prevBuildings: string[]) => {
@@ -99,13 +108,43 @@ const Batiments = () => {
                         </div>
                     </div>
                 </div>
-                <div className="w-full lg:w-2/3 bg-neutral-800 rounded-md">
+                <motion.div
+                    className={cn(
+                        "bg-neutral-800 rounded-md relative",
+                        isFullscreen 
+                            ? "fixed md:absolute w-full -top-4 left-0 md:-top-6 md:-left-4 h-screen z-50 m-0 overflow-hidden" 
+                            : "w-full lg:w-2/3"
+
+
+
+                    )}
+                    initial={false}
+                    animate={isFullscreen ? {
+                        scale: 1,
+                        opacity: 1,
+                    } : {
+                        scale: 1,
+                        opacity: 1,
+                    }}
+                    transition={{ 
+                        duration: 0.3,
+                        ease: "easeInOut"
+                    }}
+                >
+                    <FullscreenButton onClick={(e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsFullscreen(!isFullscreen);
+}} />
                     <div className="h-full">
                         <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
-                            <Batimentgraph2 aggregatedData={aggregatedData} loading={false} />
+                            <Batimentgraph2
+                                aggregatedData={aggregatedData}
+                                loading={false}
+                                />
                         </div>
                     </div>
-                </div>
+                </motion.div>
+
             </div>
             <div className="w-full h-full pt-32 md:pt-0 lg:h-1/2 flex flex-col lg:flex-row space-x-0  lg:space-x-4">
                 <div className="w-full lg:w-1/3 rounded-md">

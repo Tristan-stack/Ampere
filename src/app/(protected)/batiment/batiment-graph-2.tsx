@@ -489,6 +489,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 duration={0.1}
                 className="count-up-text"
               />
+              <span className="text-xs text-muted-foreground ml-1">W</span>
             </span>
           </div>
           <div
@@ -506,9 +507,11 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 duration={0.1}
                 className="count-up-text"
               />
+              <span className="text-xs text-muted-foreground ml-1">W</span>
             </span>
           </div>
           <div
+
             className={`flex flex-1 flex-col justify-center gap-1 border-t md:px-6 md:py-4 text-left even:border-l sm:border-l sm:border-t-0 px-2 py-1 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('min') ? 'bg-accent/50' : ''
               }`}
             onClick={() => togglePoint('min')}
@@ -523,10 +526,12 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 duration={0.1}
                 className="count-up-text"
               />
+              <span className="text-xs text-muted-foreground ml-1">W</span>
             </span>
           </div>
         </div>
       </div>
+
       <div className="h-full w-full">
         <ChartContainer
           config={chartConfig}
