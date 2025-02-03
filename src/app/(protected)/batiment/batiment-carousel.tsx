@@ -32,38 +32,35 @@ export const Highlight = ({
 const CARDS = [
   {
     id: 0,
-    name: "Manu Arora",
-    designation: "Senior Software Engineer",
+    name: "Gestion de l'éclairage",
+    designation: "Conseil d'économie",
     content: (
       <p>
-        These cards are amazing, <Highlight>I want to use them</Highlight> in my
-        project. Framer motion is a godsend ngl tbh fam 🙏
+        Installez des <Highlight>détecteurs de présence</Highlight> dans les zones communes et
+        remplacez les ampoules traditionnelles par des <Highlight>LED</Highlight>. Cela peut
+        réduire la consommation d'éclairage jusqu'à 80%.
       </p>
     ),
   },
   {
     id: 1,
-    name: "Elon Musk",
-    designation: "Senior Shitposter",
+    name: "Isolation thermique",
+    designation: "Amélioration énergétique",
     content: (
       <p>
-        I dont like this Twitter thing,{" "}
-        <Highlight>deleting it right away</Highlight> because yolo. Instead, I
-        would like to call it <Highlight>X.com</Highlight>
+        Une bonne <Highlight>isolation des murs</Highlight> et des <Highlight>fenêtres double vitrage</Highlight> peuvent
+        réduire les pertes de chaleur de 25 à 30%. Pensez à vérifier l'étanchéité des portes et fenêtres.
       </p>
     ),
   },
   {
     id: 2,
-    name: "Tyler Durden",
-    designation: "Manager Project Mayhem",
+    name: "Systèmes intelligents",
+    designation: "Innovation énergétique",
     content: (
       <p>
-        The first rule of
-        <Highlight>Fight Club</Highlight> is that you do not talk about fight
-        club. The second rule of
-        <Highlight>Fight club</Highlight> is that you DO NOT TALK about fight
-        club.
+        L'installation d'un <Highlight>système de gestion intelligente</Highlight> du bâtiment permet
+        d'optimiser automatiquement le chauffage et la climatisation selon <Highlight>l'occupation réelle</Highlight>.
       </p>
     ),
   },

@@ -102,7 +102,7 @@ export function SearchBar() {
             <span className="text-sm">Rechercher un graphique...</span>
 
             <kbd className="pointer-events-none absolute right-2 top-1.4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                <span className="text-xs">⌘</span>K
+                <span className="text-xs">Ctrl</span>K
             </kbd>
         </button>
     )
@@ -124,13 +124,13 @@ export function SearchBar() {
                 </SidebarMenuItem>
             ) : (
                 <SidebarMenuItem key="Rechercher">
-                    <SidebarMenuButton asChild tooltip={'Rechercher'} className="hover:bg-zinc-400/10 rounded-md">
+                        <SidebarMenuButton asChild tooltip={'Rechercher'} className="bg-black hover:bg-zinc-400/10 rounded-md duration-300">
                         {button}
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             )}
             <CommandDialog open={open} onOpenChange={setOpen}>
-                <CommandInput placeholder="Rechercher un graphique..." />
+                <CommandInput placeholder="Rechercher un graphique..." className="" />
                 <ScrollArea className="h-[300px] overflow-y-auto scrollbar-thin">
                     <CommandList>
                         <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>

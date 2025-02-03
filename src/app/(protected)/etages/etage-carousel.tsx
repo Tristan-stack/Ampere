@@ -32,38 +32,37 @@ export const Highlight = ({
 const CARDS = [
   {
     id: 0,
-    name: "Manu Arora",
-    designation: "Senior Software Engineer",
+    name: "Bonnes pratiques",
+    designation: "Conseils quotidiens",
     content: (
       <p>
-        These cards are amazing, <Highlight>I want to use them</Highlight> in my
-        project. Framer motion is a godsend ngl tbh fam 🙏
+        Éteignez les <Highlight>appareils en veille</Highlight> en fin de journée et
+        privilégiez la <Highlight>lumière naturelle</Highlight>. Ces petits gestes peuvent
+        réduire votre consommation de 10%.
       </p>
     ),
   },
   {
     id: 1,
-    name: "Elon Musk",
-    designation: "Senior Shitposter",
+    name: "Confort thermique",
+    designation: "Gestion de la température",
     content: (
       <p>
-        I dont like this Twitter thing,{" "}
-        <Highlight>deleting it right away</Highlight> because yolo. Instead, I
-        would like to call it <Highlight>X.com</Highlight>
+        Maintenez une température de <Highlight>19°C</Highlight> dans les bureaux et
+        <Highlight>16°C</Highlight> dans les zones de circulation. Chaque degré en moins
+        c'est 7% d'économie !
       </p>
     ),
   },
   {
     id: 2,
-    name: "Tyler Durden",
-    designation: "Manager Project Mayhem",
+    name: "Équipements de bureau",
+    designation: "Optimisation énergétique",
     content: (
       <p>
-        The first rule of
-        <Highlight>Fight Club</Highlight> is that you do not talk about fight
-        club. The second rule of
-        <Highlight>Fight club</Highlight> is that you DO NOT TALK about fight
-        club.
+        Configurez la <Highlight>mise en veille automatique</Highlight> des ordinateurs après
+        15 minutes d'inactivité et utilisez des <Highlight>multiprises à interrupteur</Highlight>
+        pour faciliter leur extinction.
       </p>
     ),
   },

@@ -15,7 +15,7 @@ if (!global.__socketHandlerStarted) {
 
     console.log("Socket handler initialisé.");
 
-    // Initialiser le client socket
+    // La connexion socket est établie une seule fois ici
     const socket = io("wss://socket.allegre.ens.mmi-unistra.fr", {
         transports: ["websocket"],
     });
@@ -101,7 +101,7 @@ if (!global.__socketHandlerStarted) {
         dataBuffer = [];
     };
 
-    // Définir un intervalle pour enregistrer les données toutes les 5 minutes (300000 millisecondes)
+    // L'intervalle utilise la connexion existante
     setInterval(saveLatestData, 300000);
 
     // Gestion des données reçues du socket
