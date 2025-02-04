@@ -13,6 +13,8 @@ import { useData } from "../context/DataContext";
 import { EtageTools } from "./etage-tools";
 import { EtageCost } from "./etage-cost";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "react-toastify";
 
 // Add to component state
 type ConsumptionData = {
@@ -47,6 +49,7 @@ type SelectedMeasurement = {
 
 const Etages = () => {
   const { chartData, isLoading } = useData();
+  const { user } = useUser();
 
   const [selectedMeasurements, setSelectedMeasurements] = useState<SelectedMeasurement[]>([]);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
@@ -128,27 +131,34 @@ const Etages = () => {
     'C': 'hsl(var(--chart-3))'
   } as const;
 
-  const handleMeasurementSelect = (building: string, floor: string, measurementId: string) => {
-    setSelectedMeasurements(prev => {
-      const isSelected = prev.some(m => m.id === measurementId);
+  const handleMeasurementSelect = async (building: string, floor: string, measurementId: string) => {
+    const isSelected = selectedMeasurements.some(m => m.id === measurementId);
+    let newSelectedMeasurements: SelectedMeasurement[];
 
-      if (isSelected) {
-        return prev.filter(m => m.id !== measurementId);
-      }
-
+    if (isSelected) {
+      newSelectedMeasurements = selectedMeasurements.filter(m => m.id !== measurementId);
+    } else {
       const measurementNumber = [...(availableMeasurements[building]?.[floor] || [])].indexOf(measurementId) + 1;
-
-      return [...prev, {
+      newSelectedMeasurements = [...selectedMeasurements, {
         id: measurementId,
         building,
         floor,
         measurementNumber
       }];
-    });
+    }
+
+    // Log des mesures sélectionnées
+    console.log('Mesures sélectionnées:', newSelectedMeasurements);
+
+    // Mettre à jour l'état local
+    setSelectedMeasurements(newSelectedMeasurements);
+
+    // Sauvegarder la nouvelle configuration
+    await saveConfiguration(newSelectedMeasurements);
   };
 
-  // Ajout des nouvelles fonctions de gestion des doubles clics
-  const handleBuildingDoubleClick = (building: keyof BuildingFloors) => {
+  // Modifier handleBuildingDoubleClick pour sauvegarder la configuration
+  const handleBuildingDoubleClick = async (building: keyof BuildingFloors) => {
     const allMeasurements: SelectedMeasurement[] = [];
 
     buildingFloors[building].forEach(floor => {
@@ -169,14 +179,21 @@ const Etages = () => {
       selectedMeasurements.some(sm => sm.id === m.id)
     );
 
-    if (allSelected) {
-      setSelectedMeasurements(prev => prev.filter(m => m.building !== building));
-    } else {
-      setSelectedMeasurements(allMeasurements);
-    }
+    const newSelectedMeasurements = allSelected
+      ? selectedMeasurements.filter(m => m.building !== building)
+      : allMeasurements;
+
+    setSelectedMeasurements(newSelectedMeasurements);
+    await saveConfiguration(newSelectedMeasurements);
+
+    toast.success(allSelected
+      ? `Mesures du bâtiment ${building} désélectionnées`
+      : `Mesures du bâtiment ${building} sélectionnées`
+    );
   };
 
-  const handleFloorDoubleClick = (building: string, floor: string) => {
+  // Modifier handleFloorDoubleClick pour sauvegarder la configuration
+  const handleFloorDoubleClick = async (building: string, floor: string) => {
     const measurements = availableMeasurements[building]?.[floor] || new Set();
     const floorMeasurements = [...measurements].map((measurementId, index) => ({
       id: measurementId,
@@ -190,26 +207,35 @@ const Etages = () => {
       selectedMeasurements.some(sm => sm.id === m.id)
     );
 
-    if (allSelected) {
-      setSelectedMeasurements(prev => prev.filter(m => m.building !== building || m.floor !== floor));
-    } else {
-      setSelectedMeasurements(prev => {
-        const otherMeasurements = prev.filter(m => m.building !== building || m.floor !== floor);
-        return [...otherMeasurements, ...floorMeasurements];
-      });
-    }
+    const newSelectedMeasurements = allSelected
+      ? selectedMeasurements.filter(m => m.building !== building || m.floor !== floor)
+      : [...selectedMeasurements.filter(m => m.building !== building || m.floor !== floor), ...floorMeasurements];
+
+    setSelectedMeasurements(newSelectedMeasurements);
+    await saveConfiguration(newSelectedMeasurements);
+
+    toast.success(allSelected
+      ? `Mesures de l'étage ${floor} du bâtiment ${building} désélectionnées`
+      : `Mesures de l'étage ${floor} du bâtiment ${building} sélectionnées`
+    );
   };
 
-  const handleMeasurementDoubleClick = (building: string, floor: string, measurementId: string) => {
+  // Modifier handleMeasurementDoubleClick pour sauvegarder la configuration
+  const handleMeasurementDoubleClick = async (building: string, floor: string, measurementId: string) => {
     const measurements = availableMeasurements[building]?.[floor] || new Set();
     const measurementNumber = [...measurements].indexOf(measurementId) + 1;
 
-    setSelectedMeasurements([{
+    const newSelectedMeasurements = [{
       id: measurementId,
       building,
       floor,
       measurementNumber
-    }]);
+    }];
+
+    setSelectedMeasurements(newSelectedMeasurements);
+    await saveConfiguration(newSelectedMeasurements);
+
+    toast.success('Mesure sélectionnée uniquement');
   };
 
   const handleBuildingTabClick = (building: keyof BuildingFloors) => {
@@ -270,6 +296,114 @@ const Etages = () => {
 
     return latestData;
   }, [chartData]);
+
+  // Modifier le useEffect existant pour le chargement de la configuration
+  React.useEffect(() => {
+    const loadDefaultConfiguration = async () => {
+      const userEmail = user?.emailAddresses[0]?.emailAddress;
+      if (!userEmail || !chartData?.length || !availableMeasurements['A']) return;
+
+      try {
+        const response = await fetch('/api/etageConfig', {
+          headers: {
+            'user-email': userEmail
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Erreur lors du chargement');
+        }
+
+        const data = await response.json();
+        const defaultConfig = data.configs.find((c: any) => c.isDefault);
+
+        if (defaultConfig?.selectedMeasures) {
+          console.log('Configuration chargée:', defaultConfig.selectedMeasures);
+          setSelectedMeasurements(defaultConfig.selectedMeasures);
+          setIsInitialized(true);
+          toast.success('Configuration chargée avec succès');
+        } else if (!isInitialized) {
+          const allMeasurements: SelectedMeasurement[] = [];
+          buildingFloors['A'].forEach(floor => {
+            const measurements = availableMeasurements['A']?.[floor] || new Set();
+            measurements.forEach(measurementId => {
+              const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+              allMeasurements.push({
+                id: measurementId,
+                building: 'A',
+                floor,
+                measurementNumber
+              });
+            });
+          });
+          setSelectedMeasurements(allMeasurements);
+          setIsInitialized(true);
+          await saveConfiguration(allMeasurements);
+          toast.info('Configuration initiale créée');
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la configuration:', error);
+        toast.error('Erreur lors du chargement de la configuration');
+      }
+    };
+
+    loadDefaultConfiguration();
+  }, [user?.emailAddresses[0]?.emailAddress, isInitialized]);
+
+  // Ajouter un useEffect séparé pour surveiller les données du graphique
+  React.useEffect(() => {
+    if (chartData?.length && availableMeasurements['A'] && !isInitialized) {
+      const allMeasurements: SelectedMeasurement[] = [];
+      buildingFloors['A'].forEach(floor => {
+        const measurements = availableMeasurements['A']?.[floor] || new Set();
+        measurements.forEach(measurementId => {
+          const measurementNumber = [...measurements].indexOf(measurementId) + 1;
+          allMeasurements.push({
+            id: measurementId,
+            building: 'A',
+            floor,
+            measurementNumber
+          });
+        });
+      });
+      setSelectedMeasurements(allMeasurements);
+      setIsInitialized(true);
+    }
+  }, [chartData?.length, availableMeasurements['A'], isInitialized]);
+
+  // Modifier la fonction saveConfiguration pour ajouter des toasts plus détaillés
+  const saveConfiguration = async (measures: SelectedMeasurement[]) => {
+    const userEmail = user?.emailAddresses[0]?.emailAddress;
+    if (!userEmail) {
+      toast.error('Utilisateur non connecté');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/etageConfig', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-email': userEmail
+        },
+        body: JSON.stringify({
+          selectedMeasures: measures,
+          isDefault: true,
+          name: 'Configuration par défaut'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      console.log('Configuration sauvegardée avec succès');
+      toast.success('Configuration sauvegardée');
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde de la configuration');
+    }
+  };
 
   return (
     <div className="w-full md:w-full h-full flex flex-col lg:flex-row items-center justify-start md:justify-center gap-4 md:mt-16 xl:mt-0">
@@ -410,7 +544,7 @@ const Etages = () => {
                                             isSelected ? "bg-green-500" : "bg-neutral-600"
                                           )}
                                         />
-                                        {matchingData?.name /* Removed fallback "Mesure X" */}
+                                        {matchingData?.name}
                                       </div>
                                     </button>
                                   );

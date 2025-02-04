@@ -24,8 +24,10 @@ model User {
   credits Int    @default(350)
   role    String @default("étudiant")
 
-  dashboardConfig DashboardConfig?
-  alerts          Alert[]
+  dashboardConfig     DashboardConfig?
+  alerts              Alert[]
+  etageConfigurations EtageConfiguration[]
+  batimentConfig      BatimentConfig?
 }
 
 model DashboardConfig {
@@ -78,6 +80,31 @@ model Alert {
   measureName   String?
   isActive      Boolean   @default(true)
   lastTriggered DateTime?
+
+  @@index([userId])
+}
+
+model EtageConfiguration {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  selectedMeasures Json // Stocke les mesures sélectionnées
+  name             String? // Nom optionnel de la configuration
+  isDefault        Boolean @default(false)
+
+  @@index([userId])
+}
+
+model BatimentConfig {
+  id     String @id @default(cuid())
+  userId String @unique
+  config Json
+
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
