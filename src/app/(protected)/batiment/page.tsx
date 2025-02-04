@@ -63,14 +63,14 @@ const Batiments = () => {
         </button>
     );
     const items = ["A", "B", "C"];
-    const handleBuildingSelection = (building: string) => {
+    const handleBuildingSelection = React.useCallback((building: string) => {
         setSelectedBuildings((prevBuildings: string[]) => {
             if (prevBuildings.includes(building)) {
                 return prevBuildings.filter((b: string) => b !== building);
             }
             return [...prevBuildings, building];
         });
-    };
+    }, [setSelectedBuildings]);
 
     const buildingColors = {
         'A': 'hsl(var(--chart-1))',
@@ -226,6 +226,27 @@ const Batiments = () => {
         };
     }, [configLoading, isEditing]);
 
+    const floorData = React.useMemo(() => {
+        if (!chartData || chartData.length === 0) return {};
+
+        const filteredData = chartData.filter(item =>
+            selectedBuildings.includes(item.building)
+        );
+
+        const groupedByMeasurement: { [key: string]: typeof chartData } = {};
+
+        filteredData.forEach(item => {
+            const measurementId = item.id.split('-')[0];
+            const key = `${measurementId}-${item.building}-${item.floor}`;
+            if (!groupedByMeasurement[key]) {
+                groupedByMeasurement[key] = [];
+            }
+            groupedByMeasurement[key].push(item);
+        });
+
+        return groupedByMeasurement;
+    }, [chartData, selectedBuildings]);
+
     return (
         <div className="w-full space-y-4 flex flex-col justify-start lg:justify-center  pt-8 md:pt-0 mx-auto items-center md:mt-10 xl:mt-0">
             <div className="flex justify-between items-center w-full">
@@ -351,7 +372,10 @@ const Batiments = () => {
                     <div className="w-full lg:w-1/2 bg-neutral-900 rounded-md" data-swapy-slot="c">
                         <div className="h-72 md:h-96 lg:h-full" data-swapy-item="c">
                             <div className="w-full h-full bg-neutral-900 rounded-md relative">
-                                <BatimentgraphTable filteredData={filteredData} loading={false} />
+                                <BatimentgraphTable 
+                                    floorData={floorData} 
+                                    loading={false} 
+                                />
                             </div>
                         </div>
                     </div>

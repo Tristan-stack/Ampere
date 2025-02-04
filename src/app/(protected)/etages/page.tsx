@@ -47,9 +47,63 @@ type SelectedMeasurement = {
   measurementNumber: number;  // Numéro de la mesure pour cet étage
 };
 
+const useOptimizedChartData = (rawData: any[]) => {
+  return React.useMemo(() => {
+    if (!rawData || rawData.length === 0) return [];
+    
+    // Réduire la fréquence des points si nécessaire
+    const maxPoints = 500;
+    if (rawData.length > maxPoints) {
+      const step = Math.ceil(rawData.length / maxPoints);
+      return rawData.filter((_, index) => index % step === 0);
+    }
+    
+    return rawData;
+  }, [rawData]);
+};
+
+// Créer un composant séparé pour les mesures
+const MeasurementButton = React.memo(({ 
+  measurementId, 
+  isSelected, 
+  matchingData,
+  onSelect,
+  onDoubleClick
+}: {
+  measurementId: string;
+  isSelected: boolean;
+  matchingData: any;
+  onSelect: () => void;
+  onDoubleClick: () => void;
+}) => (
+  <button
+    onClick={onSelect}
+    onDoubleClick={onDoubleClick}
+    className={cn(
+      "flex items-center gap-2 px-3 py-1.5 rounded-md",
+      "text-xs transition-all duration-200",
+      isSelected
+        ? "bg-neutral-700 text-white shadow-lg shadow-neutral-900/50"
+        : "bg-neutral-800/50 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800",
+      "border border-neutral-700/50"
+    )}
+  >
+    <div className="flex items-center gap-1.5">
+      <div
+        className={cn(
+          "w-2 h-2 rounded-full",
+          isSelected ? "bg-green-500" : "bg-neutral-600"
+        )}
+      />
+      {matchingData?.name}
+    </div>
+  </button>
+));
+
 const Etages = () => {
-  const { chartData, isLoading } = useData();
+  const { chartData: rawChartData, isLoading } = useData();
   const { user } = useUser();
+  const optimizedChartData = useOptimizedChartData(rawChartData);
 
   const [selectedMeasurements, setSelectedMeasurements] = useState<SelectedMeasurement[]>([]);
   const [activeBuilding, setActiveBuilding] = useState<keyof BuildingFloors>('A');
@@ -70,11 +124,11 @@ const Etages = () => {
   );
   // Obtenir les mesures disponibles pour chaque étage
   const availableMeasurements = React.useMemo(() => {
-    if (!chartData || chartData.length === 0) return {};
+    if (!optimizedChartData || optimizedChartData.length === 0) return {};
 
     const measurements: Record<string, Record<string, Set<string>>> = {};
 
-    chartData.forEach(item => {
+    optimizedChartData.forEach(item => {
       const buildingKey = item.building as keyof BuildingFloors;
       measurements[buildingKey] ??= {};
       measurements[buildingKey][item.floor] ??= new Set<string>();
@@ -83,21 +137,21 @@ const Etages = () => {
     });
 
     return measurements;
-  }, [chartData]);
+  }, [optimizedChartData]);
 
   // Préparer les données pour le graphique
   const floorData = React.useMemo(() => {
-    if (!chartData || chartData.length === 0) return {};
+    if (!optimizedChartData || optimizedChartData.length === 0) return {};
 
     // Filtrer les données pour les mesures sélectionnées
-    const filteredData = chartData.filter(item =>
+    const filteredData = optimizedChartData.filter(item =>
       selectedMeasurements.some(
         m => item.id.startsWith(m.id)
       )
     );
 
     // Grouper par mesure individuelle
-    const groupedByMeasurement: { [key: string]: typeof chartData } = {};
+    const groupedByMeasurement: { [key: string]: typeof optimizedChartData } = {};
 
     filteredData.forEach(item => {
       const measurementId = item.id.split('-')[0];
@@ -113,7 +167,7 @@ const Etages = () => {
     });
 
     return groupedByMeasurement;
-  }, [chartData, selectedMeasurements, savingsPercentage]);
+  }, [optimizedChartData, selectedMeasurements, savingsPercentage]);
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -258,10 +312,11 @@ const Etages = () => {
 
   // Add new state
   const [isInitialized, setIsInitialized] = useState(false);
+  const [totalEnergy, setTotalEnergy] = useState(0);
 
   // Modify useEffect
   useEffect(() => {
-    if (!isInitialized && chartData && chartData.length > 0) {
+    if (!isInitialized && optimizedChartData && optimizedChartData.length > 0) {
       const allMeasurements: SelectedMeasurement[] = [];
       buildingFloors['A'].forEach(floor => {
         const measurements = availableMeasurements['A']?.[floor] || new Set();
@@ -278,7 +333,7 @@ const Etages = () => {
       setSelectedMeasurements(allMeasurements);
       setIsInitialized(true);
     }
-  }, [chartData, availableMeasurements, isInitialized]);
+  }, [optimizedChartData, availableMeasurements, isInitialized]);
 
   // Ajouter cette fonction pour calculer la consommation actuelle par bâtiment
   const getCurrentBuildingData = React.useMemo(() => {
@@ -520,13 +575,15 @@ const Etages = () => {
                               <div className="flex flex-wrap gap-2 mt-1">
                                 {[...measurements].map((measurementId) => {
                                   const isSelected = selectedMeasurements.some(m => m.id === measurementId);
-                                  const matchingData = chartData.find(item => item.id.startsWith(measurementId));
+                                  const matchingData = optimizedChartData.find(item => item.id.startsWith(measurementId));
 
-                                  console.log('Full chartData:', chartData.filter(item => item.id.startsWith(measurementId)));
                                   return (
-                                    <button
+                                    <MeasurementButton
                                       key={measurementId}
-                                      onClick={() => handleMeasurementSelect(activeBuilding, floor, measurementId)}
+                                      measurementId={measurementId}
+                                      isSelected={isSelected}
+                                      matchingData={matchingData}
+                                      onSelect={() => handleMeasurementSelect(activeBuilding, floor, measurementId)}
                                       onDoubleClick={() => handleMeasurementDoubleClick(activeBuilding, floor, measurementId)}
                                       className={cn(
                                         "flex items-center gap-2 px-3 py-1.5 rounded-md",
@@ -643,6 +700,8 @@ const Etages = () => {
               <EtageGraph2
                 floorData={floorData}
                 isExpanded={expandedGraph === 2 || expandedGraph === null || isFullscreen}
+                onTotalChange={(total) => setTotalEnergy(total.totalConsumption)}
+                chartData={optimizedChartData}
               />
             </div>
           </div>
@@ -688,10 +747,7 @@ const Etages = () => {
           >
             <div className="h-full">
               <EtageCost
-                totalConsumption={Object.values(floorData)
-                  .flat()
-                  .reduce((acc, curr) => acc + curr.totalConsumption, 0)
-                }
+                totalConsumption={totalEnergy}
                 pricePerKwh={pricePerKwh}
                 onPriceChange={setPricePerKwh}
                 isExpanded={expandedGraph === 1}

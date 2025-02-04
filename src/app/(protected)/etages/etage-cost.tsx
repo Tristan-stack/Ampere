@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 
 interface EtageCostProps {
-    totalConsumption: number; // En Watts
+    totalConsumption: number; // En kWh, calculé par intégration de la puissance sur le temps
     pricePerKwh: number;
     onPriceChange: (price: number) => void;
     isExpanded: boolean;
@@ -21,7 +21,7 @@ interface EtageCostProps {
 }
 
 export const EtageCost: React.FC<EtageCostProps> = ({
-    totalConsumption,
+    totalConsumption, // Cette valeur est maintenant l'énergie totale correcte
     pricePerKwh,
     onPriceChange,
     isExpanded,
@@ -30,10 +30,13 @@ export const EtageCost: React.FC<EtageCostProps> = ({
 }) => {
     const [isResizing, setIsResizing] = React.useState(false);
 
-    // Conversion W vers kWh (sur une heure)
-    const calculateHourlyCost = (wattsPerHour: number, pricePerKwh: number) => {
-        return (wattsPerHour * pricePerKwh) / 1000; // Convert W to kW and multiply by price
-    };
+    // Calcul direct du coût total
+    const totalCost = totalConsumption * pricePerKwh;
+    
+    // Moyennes estimées
+    const hourlyCost = totalCost / (24 * 30); // Moyenne sur un mois
+    const dailyCost = totalCost / 30; // Moyenne sur un mois
+    const monthlyCost = totalCost; // Coût total considéré comme mensuel
 
     const handlePriceChange = (value: string) => {
         const newPrice = parseFloat(value);
@@ -41,11 +44,6 @@ export const EtageCost: React.FC<EtageCostProps> = ({
             onPriceChange(newPrice);
         }
     };
-
-    // Calculate costs
-    const hourlyCost = calculateHourlyCost(totalConsumption, pricePerKwh);
-    const dailyCost = hourlyCost * 24;
-    const monthlyCost = dailyCost * 30;
 
     React.useEffect(() => {
         setIsResizing(true);
@@ -125,7 +123,7 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                                     </div>
                                 </div>
                                 <div className="text-xs text-neutral-400 text-center pt-2 border-t border-neutral-800">
-                                    Basé sur {totalConsumption.toFixed(0)} W
+                                    Basé sur une consommation totale de {totalConsumption.toFixed(2)} kWh
                                 </div>
                             </div>
                         </motion.div>
@@ -260,39 +258,44 @@ export const EtageCost: React.FC<EtageCostProps> = ({
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="text-center">
-                                <div className="text-xs text-neutral-400 mb-1">Par heure</div>
+                                <div className="text-xs text-neutral-400 mb-1">Coût moyen horaire</div>
                                 <div className="text-2xl font-bold text-neutral-200">
                                     <CountUp
                                         from={0}
                                         to={hourlyCost}
+                                        decimals={2}
                                     />
                                     <span className="text-muted-foreground"> €</span>
                                 </div>
                             </div>
                             <div className="text-center">
-                                <div className="text-xs text-neutral-400 mb-1">Par jour</div>
+                                <div className="text-xs text-neutral-400 mb-1">Coût moyen journalier</div>
                                 <div className="text-2xl font-bold text-neutral-200">
                                     <CountUp
                                         from={0}
                                         to={dailyCost}
+                                        decimals={2}
                                     />
                                     <span className="text-muted-foreground"> €</span>
                                 </div>
                             </div>
                             <div className="text-center">
-                                <div className="text-xs text-neutral-400 mb-1">Par mois</div>
+                                <div className="text-xs text-neutral-400 mb-1">Coût total</div>
                                 <div className="text-2xl font-bold text-neutral-200">
                                     <CountUp
                                         from={0}
                                         to={monthlyCost}
+                                        decimals={2}
                                     />
                                     <span className="text-muted-foreground"> €</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="text-center pt-2 border-t border-neutral-800 -mx-4">
-                            <div className="text-xs text-neutral-400 leading-none whitespace-nowrap pt-2">
-                                Basé sur une consommation de {totalConsumption.toFixed(0)} W
+                        <div className="text-center pt-4 border-t border-neutral-800">
+                            <div className="text-xs text-neutral-400 mt-2">
+                                Basé sur une consommation de {Math.round(totalConsumption)} kWh
+                                <br />
+                                au tarif de {pricePerKwh.toFixed(3)} €/kWh
                             </div>
                         </div>
                     </div>

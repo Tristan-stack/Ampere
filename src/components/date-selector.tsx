@@ -41,10 +41,14 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
     const savedRange = getCookie('dateRange');
     if (savedRange) {
       const parsedRange = JSON.parse(savedRange);
+      const fromDate = new Date(parsedRange.from);
+      const toDate = new Date(parsedRange.to);
       setDateRange({
-        from: new Date(parsedRange.from),
-        to: new Date(parsedRange.to),
+        from: fromDate,
+        to: toDate,
       });
+      setCustomFrom(fromDate.toISOString().split('T')[0] || '');
+      setCustomTo(toDate.toISOString().split('T')[0] || '');
     }
   }, []);
 
@@ -56,6 +60,12 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
 
   const handleSelect = (range: DateRange | undefined) => {
     setTempDateRange(range);
+    if (range?.from) {
+      setCustomFrom(range.from.toISOString().split('T')[0] || '');
+    }
+    if (range?.to) {
+      setCustomTo(range.to.toISOString().split('T')[0] || '');
+    }
     setIsDirty(true);
   };
 
@@ -143,7 +153,14 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
           <input
             type="date"
             value={customFrom}
-            onChange={(e) => setCustomFrom(e.target.value)}
+            onChange={(e) => {
+              setCustomFrom(e.target.value);
+              if (e.target.value && customTo) {
+                const from = new Date(e.target.value);
+                const to = new Date(customTo);
+                handleSelect({ from, to });
+              }
+            }}
             className="rounded border px-1 py-1 text-white bg-neutral-800"
           />
         </div>
@@ -152,7 +169,14 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
           <input
             type="date"
             value={customTo}
-            onChange={(e) => setCustomTo(e.target.value)}
+            onChange={(e) => {
+              setCustomTo(e.target.value);
+              if (customFrom && e.target.value) {
+                const from = new Date(customFrom);
+                const to = new Date(e.target.value);
+                handleSelect({ from, to });
+              }
+            }}
             className="rounded border px-1 py-1 text-white bg-neutral-800"
           />
         </div>
@@ -201,13 +225,6 @@ const DateSelector: React.FC<DateSelectorProps> = ({ width, onDateRangeChange })
           )}
         </AnimatePresence>
       </div>
-      {dateRange && (
-        <div className="mt-4 text-lg">
-          <p>Période sélectionnée :</p>
-          <p>Du : {dateRange.from?.toLocaleDateString('fr-FR')}</p>
-          <p>Au : {dateRange.to?.toLocaleDateString('fr-FR')}</p>
-        </div>
-      )}
     </div>
   );
 };
