@@ -11,53 +11,73 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  imageUrl     String?
-  firstName    String
-  lastName     String
+  imageUrl  String?
+  firstName String
+  lastName  String
 
-  emailAddress String   @unique
+  emailAddress String @unique
 
-  credits      Int      @default(350)
-  role         String   @default("étudiant")
+  credits Int    @default(350)
+  role    String @default("étudiant")
 
   dashboardConfig DashboardConfig?
+  alerts          Alert[]
 }
 
 model DashboardConfig {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  config       Json
+  id     String @id @default(cuid())
+  userId String @unique
+  config Json
 
-  user         User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
 
 model Devices {
-  id            String           @id @default(cuid())
-  device_key    String           @unique
-  name          String
-  unit          String
-  device_id     String?
-  device_name   String?
-  address_ip    String
+  id          String  @id @default(cuid())
+  device_key  String  @unique
+  name        String
+  unit        String
+  device_id   String?
+  device_name String?
+  address_ip  String
 
   devices_values Devices_values[] @relation("DeviceValues")
 }
 
 model Devices_values {
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   device_key String
-  value     String
-  unit      String
-  quality   String
-  timestamp DateTime @default(now())
+  value      String
+  unit       String
+  quality    String
+  timestamp  DateTime @default(now())
 
   device Devices @relation("DeviceValues", fields: [device_key], references: [device_key])
 
   @@index([device_key])
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  threshold     Float
+  building      String
+  floor         String?
+  measureId     String?
+  measureName   String?
+  isActive      Boolean   @default(true)
+  lastTriggered DateTime?
+
+  @@index([userId])
 }

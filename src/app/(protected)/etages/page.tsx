@@ -498,12 +498,12 @@ const Etages = () => {
           }}
           transition={{ duration: 0.2 }}
         >
-          <FullscreenButton 
-  onClick={(event: React.MouseEvent) => {
-    event.stopPropagation();
-    setIsFullscreen(!isFullscreen);
-  }} 
-/>
+          <FullscreenButton
+            onClick={(event: React.MouseEvent) => {
+              event.stopPropagation();
+              setIsFullscreen(!isFullscreen);
+            }}
+          />
           <div className="h-full">
             <div className="w-full h-full bg-neutral-900 rounded-md flex items-center justify-center">
               <EtageGraph2
@@ -540,6 +540,9 @@ const Etages = () => {
                   .reduce((acc, curr) => acc + curr.totalConsumption, 0)
                 }
                 currentBuildingData={getCurrentBuildingData}
+                selectedMeasurements={selectedMeasurements}
+                availableMeasurements={availableMeasurements}
+                chartData={chartData}
               />
             </div>
           </div>

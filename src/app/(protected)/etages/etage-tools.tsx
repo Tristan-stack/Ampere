@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import CountUp from "@/components/countup";
-import { ArrowDownLeft, ArrowUpRight, Star, StarOff, Calculator, NotebookPen, Bold, Italic, Underline, BellPlus, Pen, Download, PenTool, AlertCircle } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Star, StarOff, Calculator, NotebookPen, Bold, Italic, Underline, BellPlus, Pen, Download, PenTool, AlertCircle, Building2, Info } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -18,6 +18,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'react-toastify';
+import { useUser } from "@clerk/nextjs";
 
 interface Tool {
     id: string;
@@ -34,6 +35,16 @@ interface Alert {
     building: string;
     isActive: boolean;
     lastTriggered?: number;
+    measureId?: string;
+    measureName?: string;
+}
+
+interface MeasureSelection {
+    id: string;
+    building: string;
+    floor: string;
+    measurementNumber: number;
+    isSelected?: boolean;
 }
 
 interface EtageToolsProps {
@@ -46,9 +57,25 @@ interface EtageToolsProps {
     currentBuildingData?: {
         [key: string]: number;
     };
+    selectedMeasurements?: {
+        id: string;
+        building: string;
+        floor: string;
+        measurementNumber: number;
+    }[];
+    availableMeasurements?: {
+        [building: string]: {
+            [floor: string]: Set<string>;
+        };
+    };
+    chartData?: {
+        id: string;
+        name: string;
+        totalConsumption: number;
+    }[];
 }
 
-export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPriceChange, isExpanded, onToggleExpand, isAdmin = false, totalConsumption = 0, currentBuildingData = {} }) => {
+export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPriceChange, isExpanded, onToggleExpand, isAdmin = false, totalConsumption = 0, currentBuildingData = {}, selectedMeasurements = [], availableMeasurements = {}, chartData = [] }) => {
     const [savings, setSavings] = useState<number>(0);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -87,6 +114,11 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [newAlertThreshold, setNewAlertThreshold] = useState<number>(1000);
     const [selectedBuilding, setSelectedBuilding] = useState<string>('A');
+    const [selectedMeasure, setSelectedMeasure] = useState<string>('');
+    const [isSelectingMeasure, setIsSelectingMeasure] = useState(false);
+    const [activeSelectBuilding, setActiveSelectBuilding] = useState<string>('A');
+    const [selectedMeasureForAlert, setSelectedMeasureForAlert] = useState<MeasureSelection | null>(null);
+    const { user } = useUser();
 
     const handleSaveNotes = () => {
         const blob = new Blob([noteContent], { type: 'text/plain' });
@@ -138,74 +170,240 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
         alerts.forEach(alert => {
             if (!alert.isActive) return;
 
-            const buildingConsumption = currentBuildingData[alert.building];
-            if (!buildingConsumption) return;
+            const consumption = alert.measureId ?
+                chartData?.find(item => item.id.startsWith(alert.measureId || ''))?.totalConsumption :
+                currentBuildingData[alert.building];
 
-            const now = Date.now();
-            if (alert.lastTriggered && now - alert.lastTriggered < 5 * 60 * 1000) return;
+            if (!consumption) return;
 
-            if (buildingConsumption >= alert.threshold) {
-                toast.error(
-                    `Le bâtiment ${alert.building} consomme ${buildingConsumption.toFixed(0)}W, dépassant le seuil de ${alert.threshold}W`,
-                    {
-                        position: "bottom-right",
-                        autoClose: 5000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        theme: "dark",
-                    }
-                );
-
+            if (consumption >= alert.threshold && !alert.lastTriggered) {
                 setAlerts(prev => prev.map(a =>
-                    a.id === alert.id ? { ...a, lastTriggered: now } : a
+                    a.id === alert.id ? { ...a, lastTriggered: Date.now() } : a
+                ));
+            } else if (consumption < alert.threshold && alert.lastTriggered) {
+                setAlerts(prev => prev.map(a =>
+                    a.id === alert.id ? { ...a, lastTriggered: null } : a
                 ));
             }
         });
-    }, [alerts, currentBuildingData]);
+    }, [alerts, currentBuildingData, chartData]);
 
     React.useEffect(() => {
-        checkAlerts();
-    }, [currentBuildingData, checkAlerts]);
+        const timer = setInterval(checkAlerts, 5000);
+        return () => clearInterval(timer);
+    }, [checkAlerts]);
 
-    const addAlert = () => {
-        const newAlert: Alert = {
-            id: Date.now().toString(),
-            threshold: newAlertThreshold,
-            building: selectedBuilding,
-            isActive: true,
-            lastTriggered: 0
-        };
-        setAlerts(prev => [...prev, newAlert]);
+    const formatMeasureName = (measurement: MeasureSelection) => {
+        const measureData = chartData.find(item => item.id.startsWith(measurement.id));
+        return `${measureData?.name || `Mesure ${measurement.measurementNumber}`}`;
+    };
 
-        const buildingConsumption = currentBuildingData[selectedBuilding];
-        if (buildingConsumption && buildingConsumption >= newAlertThreshold) {
-            toast.warning(
-                `Le bâtiment ${selectedBuilding} consomme déjà ${buildingConsumption.toFixed(0)}W, dépassant le seuil de ${newAlertThreshold}W`,
-                {
-                    position: "bottom-right",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    theme: "dark",
-                }
+    const MeasureSelector = () => {
+        // Fonction pour vérifier si une mesure a déjà une alerte
+        const hasExistingAlert = (measureId: string, building: string) => {
+            return alerts.some(alert =>
+                alert.measureId === measureId &&
+                alert.building === building
             );
+        };
+
+        return (
+            <Popover
+                open={isSelectingMeasure}
+                onOpenChange={setIsSelectingMeasure}
+            >
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        className="bg-neutral-800 text-sm rounded-md px-2 py-1 text-neutral-200 flex-1 justify-start"
+                    >
+                        {selectedMeasureForAlert && !alerts.some(a => a.measureId === selectedMeasureForAlert.id) ? (
+                            `${selectedMeasureForAlert.building} - ${selectedMeasureForAlert.floor} - ${formatMeasureName(selectedMeasureForAlert)}`
+                        ) : (
+                            "Sélectionner une mesure"
+                        )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                    className="w-96 p-0 bg-neutral-900 border-neutral-800"
+                    onInteractOutside={(e) => e.preventDefault()}
+                >
+                    <div className="p-4">
+                        <Tabs value={activeSelectBuilding} onValueChange={setActiveSelectBuilding}>
+                            <TabsList className="grid w-full grid-cols-3 mb-4">
+                                {Object.keys(availableMeasurements).map((building) => (
+                                    <TabsTrigger
+                                        key={building}
+                                        value={building}
+                                        className="text-sm"
+                                    >
+                                        Bâtiment {building}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+
+                            <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
+                                {Object.entries(availableMeasurements[activeSelectBuilding] || {}).map(([floor, measurements]) => (
+                                    <div key={floor} className="space-y-1">
+                                        <h3 className="text-sm text-neutral-400 flex items-center gap-2">
+                                            <Building2 className="h-4 w-4" />
+                                            {floor}
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[...measurements].map((measureId) => {
+                                                const measureData = chartData.find(item => item.id.startsWith(measureId));
+                                                const isSelected = selectedMeasureForAlert?.id === measureId;
+                                                const hasAlert = hasExistingAlert(measureId, activeSelectBuilding);
+
+                                                return (
+                                                    <button
+                                                        key={measureId}
+                                                        onClick={() => {
+                                                            setSelectedMeasureForAlert({
+                                                                id: measureId,
+                                                                building: activeSelectBuilding,
+                                                                floor,
+                                                                measurementNumber: [...measurements].indexOf(measureId) + 1
+                                                            });
+                                                            setIsSelectingMeasure(false);
+                                                        }}
+                                                        className={cn(
+                                                            "flex items-center gap-2 px-3 py-1.5 rounded-md",
+                                                            "text-xs transition-all duration-200",
+                                                            isSelected || hasAlert
+                                                                ? "bg-neutral-700 text-white shadow-lg shadow-neutral-900/50"
+                                                                : "bg-neutral-800/50 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800",
+                                                            "border border-neutral-700/50"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div
+                                                                className={cn(
+                                                                    "w-2 h-2 rounded-full",
+                                                                    isSelected || hasAlert ? "bg-green-500" : "bg-neutral-600"
+                                                                )}
+                                                            />
+                                                            {measureData?.name || `Mesure ${[...measurements].indexOf(measureId) + 1}`}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Tabs>
+                    </div>
+                </PopoverContent>
+            </Popover>
+        );
+    };
+
+    const addAlert = async () => {
+        // Vérifier si l'utilisateur est connecté et a un email
+        if (!user) {
+            toast.error("Vous devez être connecté pour créer une alerte");
+            return;
+        }
+
+        const userEmail = user.emailAddresses[0]?.emailAddress;
+
+        if (!selectedMeasureForAlert || !userEmail) {
+            console.log("Données manquantes:", { selectedMeasureForAlert, userEmail });
+            toast.error("Erreur : informations manquantes");
+            return;
+        }
+
+        const measureData = chartData.find(item =>
+            item.id.startsWith(selectedMeasureForAlert.id)
+        );
+
+        const newAlert = {
+            threshold: newAlertThreshold,
+            building: selectedMeasureForAlert.building,
+            floor: selectedMeasureForAlert.floor,
+            measureId: selectedMeasureForAlert.id,
+            measureName: measureData?.name,
+            isActive: true,
+            lastTriggered: null
+        };
+
+        try {
+            const response = await fetch('/api/alerts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'user-email': userEmail
+                },
+                body: JSON.stringify({
+                    ...newAlert,
+                    userEmail
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Erreur serveur:", errorData);
+                toast.error('Erreur lors de la création de l\'alerte');
+                return;
+            }
+
+            const data = await response.json();
+            if (data.alert) {
+                setAlerts(prev => [...prev, data.alert]);
+                setSelectedMeasureForAlert(null);
+                setNewAlertThreshold(1000);
+                toast.success('Alerte créée avec succès');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde de l\'alerte:', error);
+            toast.error('Erreur lors de la création de l\'alerte');
         }
     };
 
-    const removeAlert = (id: string) => {
-        setAlerts(alerts.filter(alert => alert.id !== id));
+    const removeAlert = async (id: string) => {
+        if (!user?.primaryEmailAddress?.emailAddress) return;
+
+        try {
+            await fetch(`/api/alerts/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'user-email': user.primaryEmailAddress.emailAddress
+                }
+            });
+            setAlerts(prev => prev.filter(alert => alert.id !== id));
+        } catch (error) {
+            console.error('Erreur lors de la suppression de l\'alerte:', error);
+            toast.error('Erreur lors de la suppression de l\'alerte');
+        }
     };
 
-    const toggleAlert = (id: string) => {
-        setAlerts(alerts.map(alert =>
-            alert.id === id ? { ...alert, isActive: !alert.isActive } : alert
-        ));
+    const toggleAlert = async (id: string) => {
+        if (!user?.primaryEmailAddress?.emailAddress) return;
+
+        try {
+            const alert = alerts.find(a => a.id === id);
+            if (!alert) return;
+
+            const response = await fetch(`/api/alerts/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userEmail: user.primaryEmailAddress.emailAddress,
+                    isActive: !alert.isActive,
+                }),
+            });
+
+            const updatedAlert = await response.json();
+            setAlerts(prev => prev.map(a =>
+                a.id === id ? updatedAlert.alert : a
+            ));
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de l\'alerte:', error);
+            toast.error('Erreur lors de la mise à jour de l\'alerte');
+        }
     };
 
     React.useEffect(() => {
@@ -217,6 +415,30 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
     }, [isExpanded]);
 
     const visibleTools = tools;
+
+    // Charger les alertes au montage du composant
+    React.useEffect(() => {
+        const loadAlerts = async () => {
+            const userEmail = user?.primaryEmailAddress?.emailAddress;
+            if (!userEmail) return;
+
+            try {
+                const response = await fetch('/api/alerts', {
+                    headers: {
+                        'user-email': userEmail
+                    }
+                });
+                const data = await response.json();
+                if (data.alerts) {
+                    setAlerts(data.alerts);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des alertes:', error);
+            }
+        };
+
+        loadAlerts();
+    }, [user?.primaryEmailAddress?.emailAddress]);
 
     if (!isExpanded) {
         const favoriteTools = visibleTools.filter(tool => tool.isFavorite);
@@ -319,87 +541,127 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                         </Popover>
                                     )}
                                     {tool.id === "alerts" && (
-                                        <div className="w-full h-full flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Input
-                                                    type="number"
-                                                    value={newAlertThreshold}
-                                                    onChange={(e) => setNewAlertThreshold(Number(e.target.value))}
-                                                    className="w-24 bg-neutral-800 text-sm"
-                                                    placeholder="Seuil (W)"
-                                                />
-                                                <select
-                                                    value={selectedBuilding}
-                                                    onChange={(e) => setSelectedBuilding(e.target.value)}
-                                                    className="bg-neutral-800 text-sm rounded-md px-2 py-1 text-neutral-200"
-                                                >
-                                                    <option value="A">Bâtiment A</option>
-                                                    <option value="B">Bâtiment B</option>
-                                                    <option value="C">Bâtiment C</option>
-                                                </select>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={addAlert}
-                                                    className="bg-neutral-800 hover:bg-neutral-700 ml-auto"
-                                                >
-                                                    <BellPlus className="h-4 w-4 mr-1" />
-                                                    Ajouter
-                                                </Button>
+                                        <div className="w-full flex flex-col gap-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-neutral-400">{tool.name}</span>
                                             </div>
-                                            <div className="flex-1 overflow-y-auto">
-                                                {alerts.length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center h-full text-neutral-400 text-sm gap-2">
-                                                        <AlertCircle className="h-8 w-8 opacity-50" />
-                                                        <p>Aucune alerte configurée</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        {alerts.map(alert => (
-                                                            <div
-                                                                key={alert.id}
-                                                                className={cn(
-                                                                    "flex items-center justify-between p-2 rounded-md transition-colors",
-                                                                    alert.isActive ? "bg-neutral-800" : "bg-neutral-800/50"
-                                                                )}
-                                                            >
-                                                                <div className="flex items-center gap-2">
+                                            <div className="flex flex-col gap-2 bg-neutral-900/50 p-2 rounded-lg border border-neutral-800">
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        type="number"
+                                                        value={newAlertThreshold}
+                                                        onChange={(e) => setNewAlertThreshold(Number(e.target.value))}
+                                                        className="w-20 bg-neutral-800 text-xs h-7 rounded-md"
+                                                        placeholder="Seuil (W)"
+                                                    />
+                                                    <MeasureSelector />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (selectedMeasureForAlert) {
+                                                                addAlert();
+                                                            }
+                                                        }}
+                                                        className="bg-neutral-800 hover:bg-neutral-700 h-7 w-7 p-0 rounded-md flex items-center justify-center shrink-0"
+                                                        disabled={!selectedMeasureForAlert}
+                                                    >
+                                                        <BellPlus className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                                <div className="h-[120px] overflow-y-auto scrollbar-thin bg-neutral-800/50 rounded-lg p-1">
+                                                    {alerts.length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center h-full text-neutral-400 text-xs gap-1">
+                                                            <AlertCircle className="h-4 w-4 opacity-50" />
+                                                            <p>Aucune alerte</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-1 pr-2">
+                                                            {alerts.map(alert => {
+                                                                const currentConsumption = alert.measureId ?
+                                                                    chartData?.find(item => item.id.startsWith(alert.measureId || ''))?.totalConsumption :
+                                                                    currentBuildingData[alert.building];
+
+                                                                const isExceedingThreshold = currentConsumption && currentConsumption >= alert.threshold;
+
+                                                                return (
                                                                     <div
+                                                                        key={alert.id}
                                                                         className={cn(
-                                                                            "w-2 h-2 rounded-full",
-                                                                            alert.isActive ? "bg-green-500" : "bg-neutral-600"
+                                                                            "flex items-center justify-between p-1.5 rounded-md transition-colors border",
+                                                                            isExceedingThreshold
+                                                                                ? "bg-red-950/50 border-red-900/50 text-red-200"
+                                                                                : alert.isActive
+                                                                                    ? "bg-neutral-800 border-neutral-700"
+                                                                                    : "bg-neutral-800/50 border-neutral-700/50"
                                                                         )}
-                                                                    />
-                                                                    <span className="text-sm text-neutral-200">
-                                                                        Bât. {alert.building} - {alert.threshold}W
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => toggleAlert(alert.id)}
-                                                                        className="hover:bg-neutral-700 p-1 h-auto"
                                                                     >
-                                                                        {alert.isActive ? (
-                                                                            <BellPlus className="h-3 w-3" />
-                                                                        ) : (
-                                                                            <AlertCircle className="h-3 w-3" />
-                                                                        )}
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => removeAlert(alert.id)}
-                                                                        className="text-red-400 hover:text-red-300 hover:bg-neutral-700 p-1 h-auto"
-                                                                    >
-                                                                        ×
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <div
+                                                                                className={cn(
+                                                                                    "w-1.5 h-1.5 rounded-full",
+                                                                                    isExceedingThreshold
+                                                                                        ? "bg-red-500"
+                                                                                        : alert.isActive
+                                                                                            ? "bg-green-500"
+                                                                                            : "bg-neutral-600"
+                                                                                )}
+                                                                            />
+                                                                            <span className="text-xs text-neutral-200 truncate max-w-[120px]">
+                                                                                {alert.measureId ? (
+                                                                                    `${alert.measureName}`
+                                                                                ) : (
+                                                                                    `Bât. ${alert.building}`
+                                                                                )}
+                                                                            </span>
+                                                                            {isExceedingThreshold && (
+                                                                                <TooltipProvider>
+                                                                                    <Tooltip>
+                                                                                        <TooltipTrigger>
+                                                                                            <Info className="h-3 w-3 text-red-400" />
+                                                                                        </TooltipTrigger>
+                                                                                        <TooltipContent className="bg-neutral-900 border-red-900/50">
+                                                                                            <p className="text-xs">
+                                                                                                {`La mesure ${alert.measureName} du bâtiment ${alert.building} consomme ${currentConsumption?.toFixed(0)}W, `}
+                                                                                                <br />
+                                                                                                {`dépassant le seuil d'alerte fixé à ${alert.threshold}W`}
+                                                                                            </p>
+                                                                                        </TooltipContent>
+                                                                                    </Tooltip>
+                                                                                </TooltipProvider>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-0.5">
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => toggleAlert(alert.id)}
+                                                                                className={cn(
+                                                                                    "hover:bg-neutral-700 p-1 h-auto",
+                                                                                    isExceedingThreshold && "text-red-400 hover:text-red-300"
+                                                                                )}
+                                                                            >
+                                                                                {alert.isActive ? (
+                                                                                    <BellPlus className="h-2.5 w-2.5" />
+                                                                                ) : (
+                                                                                    <AlertCircle className="h-2.5 w-2.5" />
+                                                                                )}
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => removeAlert(alert.id)}
+                                                                                className="text-red-400 hover:text-red-300 hover:bg-neutral-700 p-1 h-auto"
+                                                                            >
+                                                                                ×
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -516,87 +778,127 @@ export const EtageTools: React.FC<EtageToolsProps> = ({ onSavingsChange, onPrice
                                         </div>
                                     )}
                                     {tool.id === "alerts" && (
-                                        <div className="w-full h-full flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Input
-                                                    type="number"
-                                                    value={newAlertThreshold}
-                                                    onChange={(e) => setNewAlertThreshold(Number(e.target.value))}
-                                                    className="w-24 bg-neutral-800 text-sm"
-                                                    placeholder="Seuil (W)"
-                                                />
-                                                <select
-                                                    value={selectedBuilding}
-                                                    onChange={(e) => setSelectedBuilding(e.target.value)}
-                                                    className="bg-neutral-800 text-sm rounded-md px-2 py-1 text-neutral-200"
-                                                >
-                                                    <option value="A">Bâtiment A</option>
-                                                    <option value="B">Bâtiment B</option>
-                                                    <option value="C">Bâtiment C</option>
-                                                </select>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={addAlert}
-                                                    className="bg-neutral-800 hover:bg-neutral-700 ml-auto"
-                                                >
-                                                    <BellPlus className="h-4 w-4 mr-1" />
-                                                    Ajouter
-                                                </Button>
+                                        <div className="w-full flex flex-col gap-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-neutral-400">{tool.name}</span>
                                             </div>
-                                            <div className="flex-1 overflow-y-auto">
-                                                {alerts.length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center h-full text-neutral-400 text-sm gap-2">
-                                                        <AlertCircle className="h-8 w-8 opacity-50" />
-                                                        <p>Aucune alerte configurée</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        {alerts.map(alert => (
-                                                            <div
-                                                                key={alert.id}
-                                                                className={cn(
-                                                                    "flex items-center justify-between p-2 rounded-md transition-colors",
-                                                                    alert.isActive ? "bg-neutral-800" : "bg-neutral-800/50"
-                                                                )}
-                                                            >
-                                                                <div className="flex items-center gap-2">
+                                            <div className="flex flex-col gap-2 bg-neutral-900/50 p-2 rounded-lg border border-neutral-800">
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        type="number"
+                                                        value={newAlertThreshold}
+                                                        onChange={(e) => setNewAlertThreshold(Number(e.target.value))}
+                                                        className="w-20 bg-neutral-800 text-xs h-7 rounded-md"
+                                                        placeholder="Seuil (W)"
+                                                    />
+                                                    <MeasureSelector />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (selectedMeasureForAlert) {
+                                                                addAlert();
+                                                            }
+                                                        }}
+                                                        className="bg-neutral-800 hover:bg-neutral-700 h-7 w-7 p-0 rounded-md flex items-center justify-center shrink-0"
+                                                        disabled={!selectedMeasureForAlert}
+                                                    >
+                                                        <BellPlus className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                                <div className="h-[120px] overflow-y-auto scrollbar-thin bg-neutral-800/50 rounded-lg p-1">
+                                                    {alerts.length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center h-full text-neutral-400 text-xs gap-1">
+                                                            <AlertCircle className="h-4 w-4 opacity-50" />
+                                                            <p>Aucune alerte</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-1 pr-2">
+                                                            {alerts.map(alert => {
+                                                                const currentConsumption = alert.measureId ?
+                                                                    chartData?.find(item => item.id.startsWith(alert.measureId || ''))?.totalConsumption :
+                                                                    currentBuildingData[alert.building];
+
+                                                                const isExceedingThreshold = currentConsumption && currentConsumption >= alert.threshold;
+
+                                                                return (
                                                                     <div
+                                                                        key={alert.id}
                                                                         className={cn(
-                                                                            "w-2 h-2 rounded-full",
-                                                                            alert.isActive ? "bg-green-500" : "bg-neutral-600"
+                                                                            "flex items-center justify-between p-1.5 rounded-md transition-colors border",
+                                                                            isExceedingThreshold
+                                                                                ? "bg-red-950/50 border-red-900/50 text-red-200"
+                                                                                : alert.isActive
+                                                                                    ? "bg-neutral-800 border-neutral-700"
+                                                                                    : "bg-neutral-800/50 border-neutral-700/50"
                                                                         )}
-                                                                    />
-                                                                    <span className="text-sm text-neutral-200">
-                                                                        Bât. {alert.building} - {alert.threshold}W
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => toggleAlert(alert.id)}
-                                                                        className="hover:bg-neutral-700 p-1 h-auto"
                                                                     >
-                                                                        {alert.isActive ? (
-                                                                            <BellPlus className="h-3 w-3" />
-                                                                        ) : (
-                                                                            <AlertCircle className="h-3 w-3" />
-                                                                        )}
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => removeAlert(alert.id)}
-                                                                        className="text-red-400 hover:text-red-300 hover:bg-neutral-700 p-1 h-auto"
-                                                                    >
-                                                                        ×
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <div
+                                                                                className={cn(
+                                                                                    "w-1.5 h-1.5 rounded-full",
+                                                                                    isExceedingThreshold
+                                                                                        ? "bg-red-500"
+                                                                                        : alert.isActive
+                                                                                            ? "bg-green-500"
+                                                                                            : "bg-neutral-600"
+                                                                                )}
+                                                                            />
+                                                                            <span className="text-xs text-neutral-200 truncate max-w-[120px]">
+                                                                                {alert.measureId ? (
+                                                                                    `${alert.measureName}`
+                                                                                ) : (
+                                                                                    `Bât. ${alert.building}`
+                                                                                )}
+                                                                            </span>
+                                                                            {isExceedingThreshold && (
+                                                                                <TooltipProvider>
+                                                                                    <Tooltip>
+                                                                                        <TooltipTrigger>
+                                                                                            <Info className="h-3 w-3 text-red-400" />
+                                                                                        </TooltipTrigger>
+                                                                                        <TooltipContent className="bg-neutral-900 border-red-900/50">
+                                                                                            <p className="text-xs text-white">
+                                                                                                {`La mesure ${alert.measureName} du bâtiment ${alert.building} consomme ${currentConsumption?.toFixed(0)}W, `}
+                                                                                                <br />
+                                                                                                {`dépassant le seuil d'alerte fixé à ${alert.threshold}W`}
+                                                                                            </p>
+                                                                                        </TooltipContent>
+                                                                                    </Tooltip>
+                                                                                </TooltipProvider>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-0.5">
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => toggleAlert(alert.id)}
+                                                                                className={cn(
+                                                                                    "hover:bg-neutral-700 p-1 h-auto",
+                                                                                    isExceedingThreshold && "text-red-400 hover:text-red-300"
+                                                                                )}
+                                                                            >
+                                                                                {alert.isActive ? (
+                                                                                    <BellPlus className="h-2.5 w-2.5" />
+                                                                                ) : (
+                                                                                    <AlertCircle className="h-2.5 w-2.5" />
+                                                                                )}
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => removeAlert(alert.id)}
+                                                                                className="text-red-400 hover:text-red-300 hover:bg-neutral-700 p-1 h-auto"
+                                                                            >
+                                                                                ×
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
