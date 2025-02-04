@@ -39,7 +39,6 @@ export type ConsumptionData = {
   date: string
   totalConsumption: number
   emissions: number
-  name: string
 }
 
 export const columns: ColumnDef<ConsumptionData>[] = [
@@ -89,23 +88,6 @@ export const columns: ColumnDef<ConsumptionData>[] = [
     ),
     cell: ({ row }) => (
       <div className="capitalize">{row.getValue("floor")}</div>
-    ),
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="flex items-center text-xs w-fit h-fit px-1"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Nom
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="text-left">
-        {row.getValue("name")}
-      </div>
     ),
   },
   {
@@ -188,7 +170,6 @@ export function BatimentgraphTable({ floorData, loading }: BatimentgraphTablePro
           building: item.building,
           floor: item.floor,
           date: item.date,
-          name: item.floor,
           totalConsumption: Number(totalConsumption.toFixed(3)),
           emissions: Number(totalEmissions.toFixed(3))
         };

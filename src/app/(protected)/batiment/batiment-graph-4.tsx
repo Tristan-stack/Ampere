@@ -17,8 +17,8 @@ interface PanelInfo {
 
 const statusColors = {
   active: "bg-green-500",
+  inactive: "bg-yellow-500",
   maintenance: "bg-yellow-500",
-  inactive: "bg-red-500",
 };
 
 const calculateTotalPower = (panels: PanelInfo[]) => {
@@ -98,10 +98,12 @@ const PanelSummary: React.FC<{ panels: PanelInfo[] }> = ({ panels }) => {
 };
 
 const PanelCard: React.FC<{ panel: PanelInfo }> = ({ panel }) => {
-  // Récupérer la dernière valeur de puissance
   const currentPower = panel.productionData && panel.productionData.length > 0
     ? panel.productionData[panel.productionData.length - 1]?.value || 0
     : 0;
+
+  // Déterminer le statut d'affichage en fonction de la production
+  const displayStatus = currentPower === 0 ? "inactive" : panel.status;
 
   return (
     <div className="p-4 border rounded-xl h-full shadow-md bg-background/30">
@@ -114,8 +116,8 @@ const PanelCard: React.FC<{ panel: PanelInfo }> = ({ panel }) => {
           Début: <span className="text-white">{panel.startDate}</span>
         </p>
         <div className="flex items-center gap-2 mt-2">
-          <div className={`w-3 h-3 rounded-full ${statusColors[panel.status]}`} />
-          <span className="text-xs 3xl:text-sm text-gray-300 capitalize">{panel.status}</span>
+          <div className={`w-3 h-3 rounded-full ${statusColors[displayStatus]}`} />
+          <span className="text-xs 3xl:text-sm text-gray-300 capitalize">{displayStatus}</span>
         </div>
       </div>
     </div>
@@ -125,19 +127,19 @@ const PanelCard: React.FC<{ panel: PanelInfo }> = ({ panel }) => {
 const chartConfig = {
   "Panneau dynamique 1": {
     label: "Panneau dynamique 1",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--chart-2) / 1)",
   },
   "Panneau dynamique 2": {
     label: "Panneau dynamique 2",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-2) / 0.8)",
   },
   "Panneau statique 1": {
     label: "Panneau statique 1",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--chart-2) / 0.6)",
   },
   "Panneau statique 2": {
     label: "Panneau statique 2",
-    color: "hsl(var(--chart-4))",
+    color: "hsl(var(--chart-2) / 0.4)",
   },
 } satisfies ChartConfig
 

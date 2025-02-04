@@ -245,6 +245,14 @@ const determineOptimalInterval = (data: any[]): "5min" | "15min" | "30min" | "1h
 // Ajouter la constante pour l'absorption des arbres
 const TREE_CO2_ABSORPTION = 22; // kg de CO2 par arbre par an
 
+// Ajouter ces types après les imports
+interface MinMaxPoint {
+  date: string;
+  value: number;
+  building: string;
+  type: 'min' | 'max';
+}
+
 export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded, isAdmin = false, onTotalChange, chartData }) => {
   const [prevTotal, setPrevTotal] = useState(0);
   const [prevMax, setPrevMax] = useState(0);
@@ -318,7 +326,50 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
       .map(date => dataByDate[date]);
   }, [processedData.data]);
 
-  // 2. Optimiser le rendu des lignes
+  // Modifier findMinMaxPoints pour utiliser les données agrégées
+  const findMinMaxPoints = React.useMemo(() => {
+    let maxPoint = { date: '', value: -Infinity, building: '', type: 'max' as const };
+    let minPoint = { date: '', value: Infinity, building: '', type: 'min' as const };
+
+    // Utiliser les données agrégées au lieu des données brutes
+    Object.entries(processedData.data).forEach(([key, data]) => {
+      data.forEach((point: any) => {
+        Object.entries(point).forEach(([dataKey, value]) => {
+          // Ignorer la propriété 'date'
+          if (dataKey === 'date' || typeof value !== 'number') return;
+          
+          if (value > maxPoint.value) {
+            maxPoint = {
+              date: point.date,
+              value: value,
+              building: key,
+              type: 'max'
+            };
+          }
+          if (value < minPoint.value) {
+            minPoint = {
+              date: point.date,
+              value: value,
+              building: key,
+              type: 'min'
+            };
+          }
+        });
+      });
+    });
+
+    // Si aucune donnée n'a été trouvée, réinitialiser les points
+    if (minPoint.value === Infinity) {
+      minPoint = { date: '', value: 0, building: '', type: 'min' };
+    }
+    if (maxPoint.value === -Infinity) {
+      maxPoint = { date: '', value: 0, building: '', type: 'max' };
+    }
+
+    return { maxPoint, minPoint };
+  }, [processedData.data]);
+
+  // Maintenant renderLines peut utiliser findMinMaxPoints
   const renderLines = React.useMemo(() => {
     return Object.entries(processedData.data).map(([key, data]) => {
       const parts = key.split("-");
@@ -327,7 +378,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
       
       const measureData = Object.values(floorData)
         .flat()
-        .find(item => item.name.startsWith(parts[0]));
+        .find(item => item.id.startsWith(parts[0]));
 
       const displayName = `${measureData?.name}`;
 
@@ -339,13 +390,76 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           stroke={lineColor}
           strokeWidth={2}
           name={displayName}
-          dot={false}
+          dot={(props) => {
+            // Vérifier que les coordonnées sont valides
+            if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
+                isNaN(props.cx) || isNaN(props.cy) || 
+                props.value === undefined || props.payload?.date === undefined) {
+              return null;
+            }
+
+            const isMinPoint = selectedPoints.includes('min') && 
+              props.payload.date === findMinMaxPoints.minPoint.date && 
+              Math.abs(props.value - findMinMaxPoints.minPoint.value) < 0.01;
+            
+            const isMaxPoint = selectedPoints.includes('max') && 
+              props.payload.date === findMinMaxPoints.maxPoint.date && 
+              Math.abs(props.value - findMinMaxPoints.maxPoint.value) < 0.01;
+
+            if (isMinPoint || isMaxPoint) {
+              // Récupérer la couleur de la ligne correspondante
+              const pointBuilding = isMaxPoint ? findMinMaxPoints.maxPoint.building : findMinMaxPoints.minPoint.building;
+              const pointColor = getMeasureColor(
+                pointBuilding.split('-')[1] as keyof typeof buildingColors,
+                pointBuilding,
+                processedData.data
+              );
+
+              return (
+                <g>
+                  {/* Cercle d'animation */}
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={12}
+                    fill={pointColor}
+                    opacity={0.2}
+                  >
+                    <animate
+                      attributeName="r"
+                      from="8"
+                      to="12"
+                      dur="1.5s"
+                      repeatCount="indefinite"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      from="0.6"
+                      to="0"
+                      dur="1.5s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                  {/* Point principal */}
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={6}
+                    fill={pointColor}
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                </g>
+              );
+            }
+            return null;
+          }}
           isAnimationActive={false}
           connectNulls
         />
       );
     });
-  }, [processedData.data, chartOptions.curveType, floorData]);
+  }, [processedData.data, chartOptions.curveType, floorData, selectedPoints, findMinMaxPoints]);
 
   const total = React.useMemo(() => {
     const allData = Object.values(floorData).flat();
@@ -522,39 +636,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
       }
     };
   }, [isExpanded]); // Se déclenche quand le graphique est redimensionné
-
-  const findMinMaxPoints = React.useMemo(() => {
-    let maxPoint = { date: '', value: 0, building: '', type: 'max' as const };
-    let minPoint = { date: '', value: Infinity, building: '', type: 'min' as const };
-
-    Object.entries(floorData).forEach(([building, data]) => {
-      data.forEach(point => {
-        if (point.totalConsumption > maxPoint.value) {
-          maxPoint = {
-            date: point.date,
-            value: point.totalConsumption,
-            building,
-            type: 'max'
-          };
-        }
-        if (point.totalConsumption < minPoint.value) {
-          minPoint = {
-            date: point.date,
-            value: point.totalConsumption,
-            building,
-            type: 'min'
-          };
-        }
-      });
-    });
-
-    // Si aucune donnée n'a été trouvée, réinitialiser minPoint
-    if (minPoint.value === Infinity) {
-      minPoint = { date: '', value: 0, building: '', type: 'min' };
-    }
-
-    return { maxPoint, minPoint };
-  }, [floorData]);
 
   // Simplifier la fonction handleBrushChange
   const handleBrushChange = (brushData: any) => {
