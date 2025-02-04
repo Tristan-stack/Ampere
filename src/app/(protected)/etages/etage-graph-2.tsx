@@ -77,6 +77,7 @@ const chartColors = {
 
 interface ChartOptions {
   curveType: "linear" | "monotone";
+  groupByBuilding: boolean;
 }
 
 const W_TO_KWH = 1 / 1000; // Conversion W vers kWh (diviser par 1000)
@@ -260,6 +261,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
   const [timeInterval, setTimeInterval] = useState<"5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m">("15min");
   const [chartOptions, setChartOptions] = useState<ChartOptions>({
     curveType: "monotone",
+    groupByBuilding: false,
   });
   const [selectedPoints, setSelectedPoints] = useState<('min' | 'max')[]>([]);
   const [brushStartIndex, setBrushStartIndex] = useState<number | null>(null);
@@ -304,27 +306,92 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     const allDates = new Set<string>();
     const dataByDate: { [key: string]: any } = {};
 
-    // Pré-allouer les dates pour éviter les réallocations
+    // Pré-allouer les dates
     Object.values(processedData.data).forEach(data => {
       data.forEach(item => allDates.add(item.date));
     });
 
-    // Initialiser toutes les dates d'un coup
+    // Initialiser toutes les dates
     allDates.forEach(date => {
       dataByDate[date] = { date };
     });
 
-    // Remplir les données en une seule passe
-    Object.entries(processedData.data).forEach(([key, data]) => {
-      data.forEach(item => {
-        dataByDate[item.date][key] = item.totalConsumption;
+    if (chartOptions.groupByBuilding) {
+      // Grouper par bâtiment
+      const buildingData: { [building: string]: { 
+        [date: string]: number,
+        lastKnownValue: number 
+      } } = {};
+      
+      // Initialiser les données par bâtiment
+      Object.entries(processedData.data).forEach(([key, data]) => {
+        const building = key.split("-")[1];
+        if (!buildingData[building]) {
+          buildingData[building] = { lastKnownValue: 0 };
+        }
       });
-    });
+
+      // Trier les dates pour assurer un traitement chronologique
+      const sortedDates = Array.from(allDates).sort();
+
+      // Pour chaque date, calculer la somme par bâtiment
+      sortedDates.forEach(date => {
+        Object.keys(buildingData).forEach(building => {
+          let sumForBuilding = 0;
+          let hasNewValue = false;
+
+          // Parcourir toutes les mesures de ce bâtiment
+          Object.entries(processedData.data).forEach(([key, data]) => {
+            if (key.split("-")[1] === building) {
+              const measure = data.find(item => item.date === date);
+              if (measure) {
+                sumForBuilding += measure.totalConsumption;
+                hasNewValue = true;
+              } else {
+                // Si pas de nouvelle valeur, utiliser la dernière valeur connue
+                const lastValue = data.reduce((last, item) => {
+                  if (new Date(item.date) <= new Date(date)) {
+                    return item.totalConsumption;
+                  }
+                  return last;
+                }, buildingData[building]?.lastKnownValue || 0);
+                sumForBuilding += lastValue;
+              }
+            }
+          });
+
+          // Mettre à jour la dernière valeur connue si on a une nouvelle mesure
+          if (hasNewValue) {
+            buildingData[building]!.lastKnownValue = sumForBuilding;
+          }
+
+          // Stocker la valeur dans dataByDate
+          dataByDate[date][`building-${building}`] = sumForBuilding;
+        });
+      });
+    } else {
+      // Comportement normal, sans groupement
+      // Garder une trace de la dernière valeur connue pour chaque mesure
+      const lastKnownValues: { [key: string]: number } = {};
+
+      Array.from(allDates).sort().forEach(date => {
+        Object.entries(processedData.data).forEach(([key, data]) => {
+          const measure = data.find(item => item.date === date);
+          if (measure) {
+            dataByDate[date][key] = measure.totalConsumption;
+            lastKnownValues[key] = measure.totalConsumption;
+          } else if (lastKnownValues[key] !== undefined) {
+            // Utiliser la dernière valeur connue
+            dataByDate[date][key] = lastKnownValues[key];
+          }
+        });
+      });
+    }
 
     return Array.from(allDates)
       .sort()
       .map(date => dataByDate[date]);
-  }, [processedData.data]);
+  }, [processedData.data, chartOptions.groupByBuilding]);
 
   // Modifier findMinMaxPoints pour utiliser les données agrégées
   const findMinMaxPoints = React.useMemo(() => {
@@ -371,6 +438,90 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
   // Maintenant renderLines peut utiliser findMinMaxPoints
   const renderLines = React.useMemo(() => {
+    if (chartOptions.groupByBuilding) {
+      // Rendu des lignes groupées par bâtiment
+      return Object.keys(buildingColors).map(building => {
+        const key = `building-${building}`;
+        return (
+          <Line
+            key={key}
+            type={chartOptions.curveType}
+            dataKey={key}
+            stroke={buildingColors[building as keyof typeof buildingColors]}
+            strokeWidth={2}
+            name={`Bâtiment ${building}`}
+            dot={(props: any) => {
+              // Vérifier que les coordonnées sont valides
+              if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
+                  isNaN(props.cx) || isNaN(props.cy) || 
+                  props.value === undefined || props.payload?.date === undefined) {
+                return null;
+              }
+
+              const isMinPoint = selectedPoints.includes('min') && 
+                props.payload.date === findMinMaxPoints.minPoint.date && 
+                Math.abs(props.value - findMinMaxPoints.minPoint.value) < 0.01;
+              
+              const isMaxPoint = selectedPoints.includes('max') && 
+                props.payload.date === findMinMaxPoints.maxPoint.date && 
+                Math.abs(props.value - findMinMaxPoints.maxPoint.value) < 0.01;
+
+              if (isMinPoint || isMaxPoint) {
+                // Récupérer la couleur de la ligne correspondante
+                const pointBuilding = isMaxPoint ? findMinMaxPoints.maxPoint.building : findMinMaxPoints.minPoint.building;
+                const pointColor = getMeasureColor(
+                  pointBuilding.split('-')[1] as keyof typeof buildingColors,
+                  pointBuilding,
+                  processedData.data
+                );
+
+                return (
+                  <g>
+                    {/* Cercle d'animation */}
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={12}
+                      fill={pointColor}
+                      opacity={0.2}
+                    >
+                      <animate
+                        attributeName="r"
+                        from="8"
+                        to="12"
+                        dur="1.5s"
+                        repeatCount="indefinite"
+                      />
+                      <animate
+                        attributeName="opacity"
+                        from="0.6"
+                        to="0"
+                        dur="1.5s"
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                    {/* Point principal */}
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={6}
+                      fill={pointColor}
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                  </g>
+                );
+              }
+              return null;
+            }}
+            isAnimationActive={false}
+            connectNulls
+          />
+        );
+      });
+    }
+
+    // Rendu normal des lignes
     return Object.entries(processedData.data).map(([key, data]) => {
       const parts = key.split("-");
       const building = parts[1] as keyof typeof buildingColors;
@@ -390,7 +541,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
           stroke={lineColor}
           strokeWidth={2}
           name={displayName}
-          dot={(props) => {
+          dot={(props: any) => {
             // Vérifier que les coordonnées sont valides
             if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
                 isNaN(props.cx) || isNaN(props.cy) || 
@@ -459,7 +610,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
         />
       );
     });
-  }, [processedData.data, chartOptions.curveType, floorData, selectedPoints, findMinMaxPoints]);
+  }, [processedData.data, chartOptions.curveType, floorData, selectedPoints, findMinMaxPoints, chartOptions.groupByBuilding]);
 
   const total = React.useMemo(() => {
     const allData = Object.values(floorData).flat();
@@ -910,6 +1061,18 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                       <div className="flex items-center justify-between w-full">
                         Ligne droite
                         {chartOptions.curveType === "linear" && <Check className="h-4 w-4" />}
+                      </div>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuLabel className="text-xs">Groupement</DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={() => setChartOptions(prev => ({ ...prev, groupByBuilding: !prev.groupByBuilding }))}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        Grouper par bâtiment
+                        {chartOptions.groupByBuilding && <Check className="h-4 w-4" />}
                       </div>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
