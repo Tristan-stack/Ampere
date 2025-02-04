@@ -147,12 +147,15 @@ const fetchPreviousWeekData = async (fromTime: number, toTime: number): Promise<
   }
 };
 
-const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: string, floor: string, name: string }>, fromTime: number, toTime: number): Promise<ConsumptionData[]> => {
+const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: string, floor: string, name: string }>, fromTime: number, toTime: number, onProgress?: (progress: number) => void): Promise<ConsumptionData[]> => {
   const allData: ConsumptionData[] = [];
 
   try {
-    const promises = deviceKeys.map(device =>
-      fetch('/api/getDeviceDataByKey', {
+    const totalDevices = deviceKeys.length;
+    let completedDevices = 0;
+
+    const promises = deviceKeys.map(async device => {
+      const response = await fetch('/api/getDeviceDataByKey', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,22 +165,27 @@ const fetchDataForPeriod = async (deviceKeys: Array<{ key: string, building: str
           from: Math.floor(fromTime),
           to: Math.floor(toTime)
         }),
-      }).then(res => res.json())
-        .then(data => {
-          if (data.values && data.timestamps) {
-            return data.timestamps.map((timestamp: string, idx: number) => ({
-              id: `${device.key}-${idx}`,
-              date: timestamp,
-              building: device.building,
-              floor: device.floor,
-              totalConsumption: data.values[idx],
-              emissions: data.values[idx] * 50,
-              name: device.name,
-            }));
-          }
-          return [];
-        })
-    );
+      });
+      const data = await response.json();
+      
+      completedDevices++;
+      if (onProgress) {
+        onProgress((completedDevices / totalDevices) * 80); // 80% pour le chargement des données principales
+      }
+
+      if (data.values && data.timestamps) {
+        return data.timestamps.map((timestamp: string, idx: number) => ({
+          id: `${device.key}-${idx}`,
+          date: timestamp,
+          building: device.building,
+          floor: device.floor,
+          totalConsumption: data.values[idx],
+          emissions: data.values[idx] * 50,
+          name: device.name,
+        }));
+      }
+      return [];
+    });
 
     const results = await Promise.all(promises);
     results.forEach(deviceData => allData.push(...deviceData));
@@ -366,30 +374,38 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       const fromTime = new Date(from).getTime() / 1000;
       const toTime = new Date(to).getTime() / 1000;
 
-      // Fetch des données actuelles
-      const currentData = await fetchDataForPeriod(deviceKeys, fromTime, toTime);
+      // Fetch des données actuelles avec progression
+      const currentData = await fetchDataForPeriod(
+        deviceKeys, 
+        fromTime, 
+        toTime, 
+        (progress) => setLoadingProgress(progress)
+      );
 
       // Fetch des données de la semaine précédente
       const previousFromTime = fromTime - 7 * 24 * 60 * 60;
       const previousToTime = toTime - 7 * 24 * 60 * 60;
-      const previousData = await fetchDataForPeriod(deviceKeys, previousFromTime, previousToTime);
+      const previousData = await fetchDataForPeriod(
+        deviceKeys, 
+        previousFromTime, 
+        previousToTime,
+        (progress) => setLoadingProgress(80 + progress * 0.1) // 10% supplémentaires
+      );
 
       setChartData(currentData);
       updateFilteredAndAggregatedData(currentData, selectedBuildings);
 
-      // Calculer et mettre à jour le score
       const newScore = calculateEfficiencyScore(currentData, previousData);
-      console.log('Score brut:', newScore);
       setEfficiencyScore(newScore);
 
-      // Ajouter l'appel à fetchPanelData
+      // Fetch des données des panneaux avec progression finale
       await fetchPanelData(fromTime, toTime);
+      setLoadingProgress(100);
 
     } catch (error) {
       console.error('Erreur:', error);
       setEfficiencyScore(5);
     } finally {
-      setLoadingProgress(100);
       setTimeout(() => {
         setIsLoading(false);
       }, 1500);
