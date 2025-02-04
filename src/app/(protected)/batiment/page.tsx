@@ -50,20 +50,41 @@ const Batiments = () => {
         </button>
     );
     const items = ["A", "B", "C"];
-    const handleBuildingSelection = (building: string) => {
+    const handleBuildingSelection = React.useCallback((building: string) => {
         setSelectedBuildings((prevBuildings: string[]) => {
             if (prevBuildings.includes(building)) {
                 return prevBuildings.filter((b: string) => b !== building);
             }
             return [...prevBuildings, building];
         });
-    };
+    }, [setSelectedBuildings]);
 
     const buildingColors = {
         'A': 'hsl(var(--chart-1))',
         'B': 'hsl(var(--chart-2))',
         'C': 'hsl(var(--chart-3))'
     } as const;
+
+    const floorData = React.useMemo(() => {
+        if (!chartData || chartData.length === 0) return {};
+
+        const filteredData = chartData.filter(item =>
+            selectedBuildings.includes(item.building)
+        );
+
+        const groupedByMeasurement: { [key: string]: typeof chartData } = {};
+
+        filteredData.forEach(item => {
+            const measurementId = item.id.split('-')[0];
+            const key = `${measurementId}-${item.building}-${item.floor}`;
+            if (!groupedByMeasurement[key]) {
+                groupedByMeasurement[key] = [];
+            }
+            groupedByMeasurement[key].push(item);
+        });
+
+        return groupedByMeasurement;
+    }, [chartData, selectedBuildings]);
 
     return (
         <div className="w-full space-y-4 flex flex-col justify-start lg:justify-center  pt-8 md:pt-0 mx-auto items-center md:mt-10 xl:mt-0">
@@ -167,7 +188,10 @@ const Batiments = () => {
                     <div className="w-full lg:w-1/2 bg-neutral-800 rounded-md">
                         <div className="h-72 md:h-96 lg:h-full">
                             <div className="w-full h-full bg-neutral-900 rounded-md relative">
-                                <BatimentgraphTable filteredData={filteredData} loading={false} />
+                                <BatimentgraphTable 
+                                    floorData={floorData} 
+                                    loading={false} 
+                                />
                             </div>
                         </div>
                     </div>

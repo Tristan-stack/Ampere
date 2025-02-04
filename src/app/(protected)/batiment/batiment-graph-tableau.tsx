@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import BounceLoader from "react-spinners/BounceLoader"
 
 import { Button } from "@/components/ui/button"
@@ -36,8 +36,10 @@ export type ConsumptionData = {
   id: string
   building: string
   floor: string
+  date: string
   totalConsumption: number
   emissions: number
+  name: string
 }
 
 export const columns: ColumnDef<ConsumptionData>[] = [
@@ -90,6 +92,23 @@ export const columns: ColumnDef<ConsumptionData>[] = [
     ),
   },
   {
+    accessorKey: "name",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        className="flex items-center text-xs w-fit h-fit px-1"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Nom
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <div className="text-left">
+        {row.getValue("name")}
+      </div>
+    ),
+  },
+  {
     accessorKey: "totalConsumption",
     header: ({ column }) => (
       <Button
@@ -97,13 +116,14 @@ export const columns: ColumnDef<ConsumptionData>[] = [
         className="flex items-center text-xs w-fit h-fit px-1"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Consommation Totale (Wh)
+        Consommation
       </Button>
     ),
-    cell: ({ row }) => {
-      const totalConsumption = row.getValue("totalConsumption")
-      return <div className="text-right font-medium">{String(totalConsumption || 0)}</div>
-    },
+    cell: ({ row }) => (
+      <div className="text-right">
+        {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(row.getValue("totalConsumption"))} kWh
+      </div>
+    ),
   },
   {
     accessorKey: "emissions",
@@ -113,29 +133,78 @@ export const columns: ColumnDef<ConsumptionData>[] = [
         className="flex items-center text-xs w-fit h-fit px-1"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Émissions (gCO₂)
+        Émissions
       </Button>
     ),
-    cell: ({ row }) => {
-      const emissions = row.getValue("emissions")
-      return <div className="text-right font-medium">{String(emissions || 0)}</div>
-    },
+    cell: ({ row }) => (
+      <div className="text-right">
+        {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(row.getValue("emissions"))} kgCO₂
+      </div>
+    ),
   },
 ]
 
 type BatimentgraphTableProps = {
-  filteredData: ConsumptionData[]
+  floorData: { [key: string]: ConsumptionData[] }
   loading: boolean
 }
 
-export function BatimentgraphTable({ filteredData, loading }: BatimentgraphTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'totalConsumption', desc: true }])
+export function BatimentgraphTable({ floorData, loading }: BatimentgraphTableProps) {
+  const tableData = React.useMemo(() => {
+    const groupedByFloor: { [key: string]: ConsumptionData } = {};
+
+    Object.values(floorData).flat().forEach(item => {
+      const floorKey = `${item.building}-${item.floor}`;
+      
+      if (!groupedByFloor[floorKey]) {
+        // Compter le nombre de mesures pour cet étage
+        const floorMeasures = Object.values(floorData).flat().filter(d => 
+          d.building === item.building && d.floor === item.floor
+        );
+
+        // Calculer la consommation totale pour cet étage
+        let totalConsumption = 0;
+        let totalEmissions = 0;
+
+        floorMeasures.forEach((measure, index) => {
+          if (index > 0) {
+            const currentTime = new Date(measure.date).getTime();
+            const previousTime = new Date(floorMeasures[index - 1]?.date ?? measure.date).getTime();
+            const timeInterval = (currentTime - previousTime) / (1000 * 60 * 60); // en heures
+            
+            // Calculer la consommation pour cet intervalle (conversion W -> kW)
+            const avgPower = (measure.totalConsumption + (floorMeasures[index - 1]?.totalConsumption ?? 0)) / 2 / 1000;
+            totalConsumption += avgPower * timeInterval;
+            
+            // Convertir les émissions de la même manière (g -> kg)
+            const avgEmissions = (measure.emissions + (floorMeasures[index - 1]?.emissions ?? 0)) / 2 / 1000;
+            totalEmissions += avgEmissions * timeInterval;
+          }
+        });
+
+        // Arrondir les résultats à 3 décimales
+        groupedByFloor[floorKey] = {
+          id: floorKey,
+          building: item.building,
+          floor: item.floor,
+          date: item.date,
+          name: item.floor,
+          totalConsumption: Number(totalConsumption.toFixed(3)),
+          emissions: Number(totalEmissions.toFixed(3))
+        };
+      }
+    });
+
+    return Object.values(groupedByFloor);
+  }, [floorData]);
+
+  const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({ emissions: false })
   const [rowSelection, setRowSelection] = useState({})
 
   const table = useReactTable({
-    data: filteredData,
+    data: tableData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -151,7 +220,7 @@ export function BatimentgraphTable({ filteredData, loading }: BatimentgraphTable
       rowSelection,
     },
   })
-
+  console.log(floorData)
   return (
     <div className="h-full pb-12 w-full p-2 border rounded-md">
       <div className="flex items-center pb-2">

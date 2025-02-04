@@ -1,4 +1,4 @@
-import type React from "react";
+import * as React from "react"
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,54 @@ const statusColors = {
   inactive: "bg-red-500",
 };
 
-const calculateTotalPower = (panels: PanelInfo[]) => 
-  panels.reduce((sum, panel) => sum + panel.currentTotalPower, 0);
+const calculateTotalPower = (panels: PanelInfo[]) => {
+  let totalPower = 0;
+
+  panels.forEach(panel => {
+    if (panel.productionData && panel.productionData.length > 0) {
+      // Ajouter la dernière valeur de puissance de chaque panneau
+      const lastMeasure = panel.productionData[panel.productionData.length - 1];
+      totalPower += lastMeasure?.value || 0;
+    }
+  });
+
+
+  return Number(totalPower.toFixed(1));
+};
+
+const calculatePanelEnergy = (panel: PanelInfo) => {
+  let totalEnergy = 0;
+
+  if (panel.productionData && panel.productionData.length > 0) {
+    panel.productionData.forEach((measure, index) => {
+      if (index > 0) {
+        const currentTime = new Date(measure.date).getTime();
+        const previousTime = new Date(panel.productionData![index - 1]?.date ?? measure.date).getTime();
+        const timeInterval = (currentTime - previousTime) / (1000 * 60 * 60); // en heures
+        
+        const avgPower = (measure.value + (panel.productionData![index - 1]?.value ?? 0)) / 2;
+        totalEnergy += avgPower * timeInterval;
+      }
+    });
+  }
+
+  return Number(totalEnergy.toFixed(3));
+};
 
 const countPanelsByStatus = (panels: PanelInfo[]) => 
   panels.reduce((acc, panel) => ({
     ...acc,
     [panel.status]: (acc[panel.status] || 0) + 1
   }), {} as Record<string, number>);
+
+const calculatePanelPower = (panel: PanelInfo) => {
+  // Retourner la dernière valeur de production du panneau
+  if (panel.productionData && panel.productionData.length > 0) {
+    const lastMeasure = panel.productionData[panel.productionData.length - 1];
+    return Number(lastMeasure?.value.toFixed(1) || 0);
+  }
+  return 0;
+};
 
 const PanelSummary: React.FC<{ panels: PanelInfo[] }> = ({ panels }) => {
   const totalPower = calculateTotalPower(panels);
@@ -38,8 +78,8 @@ const PanelSummary: React.FC<{ panels: PanelInfo[] }> = ({ panels }) => {
     <div className="bg-background/20 w-full p-2 px-4 3xl:p-4 rounded-xl mb-2">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-sm text-gray-400">Production Totale</h3>
-          <p className="text-lg 3xl:text-2xl font-bold text-white">{totalPower.toFixed(1)} kW</p>
+          <h3 className="text-sm text-gray-400">Production Instantanée</h3>
+          <p className="text-lg 3xl:text-2xl font-bold text-white">{totalPower} W</p>
         </div>
         <div>
           <h3 className="text-sm text-gray-400">État des panneaux</h3>
@@ -57,38 +97,45 @@ const PanelSummary: React.FC<{ panels: PanelInfo[] }> = ({ panels }) => {
   );
 };
 
-const PanelCard: React.FC<{ panel: PanelInfo }> = ({ panel }) => (
-  <div className="p-4 border rounded-xl h-full shadow-md bg-background/30">
-    <h3 className="text-sm 3xl:text-md font-semibold text-white">{panel.name}</h3>
-    <div className="mt-2 space-y-1">
-      <p className="text-xs 3xl:text-sm text-gray-400">
-        Production: <span className="text-white">{panel.currentTotalPower} kW</span>
-      </p>
-      <p className="text-xs 3xl:text-sm hidden 3xl:block text-gray-400">
-        Début: <span className="text-white">{panel.startDate}</span>
-      </p>
-      <div className="flex items-center gap-2 mt-2">
-        <div className={`w-3 h-3 rounded-full ${statusColors[panel.status]}`} />
-        <span className="text-xs 3xl:text-sm text-gray-300 capitalize">{panel.status}</span>
+const PanelCard: React.FC<{ panel: PanelInfo }> = ({ panel }) => {
+  // Récupérer la dernière valeur de puissance
+  const currentPower = panel.productionData && panel.productionData.length > 0
+    ? panel.productionData[panel.productionData.length - 1]?.value || 0
+    : 0;
+
+  return (
+    <div className="p-4 border rounded-xl h-full shadow-md bg-background/30">
+      <h3 className="text-sm 3xl:text-md font-semibold text-white">{panel.name}</h3>
+      <div className="mt-2 space-y-1">
+        <p className="text-xs 3xl:text-sm text-gray-400">
+          Production: <span className="text-white">{currentPower.toFixed(1)} W</span>
+        </p>
+        <p className="text-xs 3xl:text-sm hidden 3xl:block text-gray-400">
+          Début: <span className="text-white">{panel.startDate}</span>
+        </p>
+        <div className="flex items-center gap-2 mt-2">
+          <div className={`w-3 h-3 rounded-full ${statusColors[panel.status]}`} />
+          <span className="text-xs 3xl:text-sm text-gray-300 capitalize">{panel.status}</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const chartConfig = {
-  panneauDynamique1: {
+  "Panneau dynamique 1": {
     label: "Panneau dynamique 1",
     color: "hsl(var(--chart-1))",
   },
-  panneauDynamique2: {
+  "Panneau dynamique 2": {
     label: "Panneau dynamique 2",
     color: "hsl(var(--chart-2))",
   },
-  panneauStatique1: {
+  "Panneau statique 1": {
     label: "Panneau statique 1",
     color: "hsl(var(--chart-3))",
   },
-  panneauStatique2: {
+  "Panneau statique 2": {
     label: "Panneau statique 2",
     color: "hsl(var(--chart-4))",
   },
@@ -100,42 +147,128 @@ const chartColors = {
   axis: 'hsl(var(--border))'
 } as const;
 
+// Ajouter la fonction d'agrégation
+const aggregateDataByInterval = (data: { date: string; value: number }[], interval: string) => {
+  const aggregatedData: { [key: string]: { total: number, count: number } } = {};
+
+  data.forEach(item => {
+    const date = new Date(item.date);
+    let key: string;
+
+    switch (interval) {
+      case "5min":
+        date.setMinutes(Math.floor(date.getMinutes() / 5) * 5);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "15min":
+        date.setMinutes(Math.floor(date.getMinutes() / 15) * 15);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "30min":
+        date.setMinutes(Math.floor(date.getMinutes() / 30) * 30);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "1h":
+        date.setMinutes(0);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      case "1d":
+        date.setHours(0);
+        date.setMinutes(0);
+        date.setSeconds(0);
+        key = date.toISOString();
+        break;
+      default:
+        key = date.toISOString();
+    }
+
+    if (!aggregatedData[key]) {
+      aggregatedData[key] = { total: 0, count: 0 };
+    }
+    aggregatedData[key]!.total += item.value;
+    aggregatedData[key]!.count += 1;
+  });
+
+  return Object.entries(aggregatedData).map(([date, values]) => ({
+    date,
+    value: values.total / values.count // Moyenne pour la période
+  }));
+};
 const Batimentgraph4: React.FC = () => {
   const [isFirstDisplay, setIsFirstDisplay] = useState(true);
   const { panelData } = useData();
-  
-  const toggleDisplay = () => {
-    setIsFirstDisplay(!isFirstDisplay);
-  };
+  const [timeInterval, setTimeInterval] = useState<"5min" | "15min" | "30min" | "1h" | "1d">("15min");
+  console.log('panelData', panelData)
+  // Déterminer l'intervalle optimal
+  const determineOptimalInterval = React.useCallback((data: PanelInfo[]) => {
+    const allData = data.flatMap(panel => panel.productionData || []);
+    if (!allData || allData.length === 0) return "15min";
 
-  // Modifier la fonction pour préparer les données du graphique
-  const prepareChartData = (data: PanelInfo[]) => {
+    const dates = allData.map(item => new Date(item.date).getTime());
+    const timeSpanMs = Math.max(...dates) - Math.min(...dates);
+    const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
+    const pointCount = allData.length;
+
+    if (pointCount > 500) {
+      if (daysDifference > 14) return "1d";
+      if (daysDifference > 7) return "1h";
+      return "1h";
+    }
+
+    if (daysDifference <= 1) {
+      if (pointCount > 200) return "30min";
+      if (pointCount > 100) return "15min";
+      return "5min";
+    }
+
+    return "1h";
+  }, []);
+
+  // Mettre à jour l'intervalle automatiquement
+  React.useEffect(() => {
+    const optimalInterval = determineOptimalInterval(panelData);
+    setTimeInterval(optimalInterval);
+  }, [panelData, determineOptimalInterval]);
+
+  const prepareChartData = React.useCallback((data: PanelInfo[]) => {
     const allDates = new Set<string>();
     const dataByPanel: { [key: string]: { date: string; value: number }[] } = {};
-    
-    // Initialiser les tableaux pour chaque panneau
+
+    // Agréger les données pour chaque panneau
     data.forEach(panel => {
-      dataByPanel[panel.name] = [];
+      if (panel.productionData) {
+        // Convertir les valeurs de W en kW avant l'agrégation
+        const normalizedData = panel.productionData.map(item => ({
+          date: item.date,
+          value: item.value > 100000 ? item.value / 1000 : item.value // Si la valeur est anormalement élevée, la diviser par 1000
+        }));
+        
+        const aggregatedPanelData = aggregateDataByInterval(normalizedData, timeInterval);
+        aggregatedPanelData.forEach(item => {
+          allDates.add(item.date);
+        });
+        dataByPanel[panel.name] = aggregatedPanelData;
+      }
     });
 
-    // Récupérer toutes les dates uniques
-    data.forEach(panel => {
-      const dates = panel.productionData?.map(d => d.date) || [];
-      dates.forEach(date => allDates.add(date));
-    });
-
-    // Créer les points de données pour chaque panneau
+    // Créer les points de données pour le graphique
     const sortedDates = Array.from(allDates).sort();
-    const chartData = sortedDates.map(date => {
+    return sortedDates.map(date => {
       const point: any = { date };
-      data.forEach(panel => {
-        const production = panel.productionData?.find(d => d.date === date)?.value || 0;
-        point[panel.name.replace(/\s+/g, '')] = production;
+      Object.entries(dataByPanel).forEach(([panelName, panelData]) => {
+        const measure = panelData.find(d => d.date === date);
+        point[panelName] = measure?.value || null;
       });
       return point;
     });
+  }, [timeInterval]);
 
-    return chartData;
+  const toggleDisplay = () => {
+    setIsFirstDisplay(!isFirstDisplay);
   };
 
   return (
@@ -240,7 +373,8 @@ const Batimentgraph4: React.FC = () => {
                       tick={{ fill: chartColors.text }}
                       axisLine={{ stroke: chartColors.axis }}
                       tickLine={{ stroke: chartColors.axis }}
-                      tickFormatter={(value) => `${value} kW`}
+                      tickFormatter={(value) => `${value} W`}
+                      domain={['auto', 'auto']}
                     />
                     <ChartTooltip
                       content={

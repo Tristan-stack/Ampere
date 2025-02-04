@@ -289,36 +289,67 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     setTimeInterval(processedData.interval);
   }, [processedData.interval]);
 
-  // Modifier prepareChartData pour utiliser les données traitées
+  // 1. Optimiser la préparation des données avec useMemo
   const prepareChartData = React.useMemo(() => {
     if (!processedData.data || Object.keys(processedData.data).length === 0) return [];
 
     const allDates = new Set<string>();
     const dataByDate: { [key: string]: any } = {};
 
+    // Pré-allouer les dates pour éviter les réallocations
+    Object.values(processedData.data).forEach(data => {
+      data.forEach(item => allDates.add(item.date));
+    });
+
+    // Initialiser toutes les dates d'un coup
+    allDates.forEach(date => {
+      dataByDate[date] = { date };
+    });
+
+    // Remplir les données en une seule passe
     Object.entries(processedData.data).forEach(([key, data]) => {
       data.forEach(item => {
-        allDates.add(item.date);
-        if (!dataByDate[item.date]) {
-          dataByDate[item.date] = { date: item.date };
-        }
         dataByDate[item.date][key] = item.totalConsumption;
       });
     });
 
     return Array.from(allDates)
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .sort()
       .map(date => dataByDate[date]);
   }, [processedData.data]);
 
+  // 2. Optimiser le rendu des lignes
+  const renderLines = React.useMemo(() => {
+    return Object.entries(processedData.data).map(([key, data]) => {
+      const parts = key.split("-");
+      const building = parts[1] as keyof typeof buildingColors;
+      const lineColor = getMeasureColor(building, key, processedData.data);
+      
+      const measureData = Object.values(floorData)
+        .flat()
+        .find(item => item.name.startsWith(parts[0]));
+
+      const displayName = `${measureData?.name}`;
+
+      return (
+        <Line
+          key={key}
+          type={chartOptions.curveType}
+          dataKey={key}
+          stroke={lineColor}
+          strokeWidth={2}
+          name={displayName}
+          dot={false}
+          isAnimationActive={false}
+          connectNulls
+        />
+      );
+    });
+  }, [processedData.data, chartOptions.curveType, floorData]);
+
   const total = React.useMemo(() => {
-    console.log('-------- Début du calcul de l\'énergie totale --------');
-    
     const allData = Object.values(floorData).flat();
-    console.log(`Nombre total de mesures: ${allData.length}`);
-    
     if (allData.length === 0) {
-      console.log('❌ Aucune donnée disponible');
       return {
         totalConsumption: 0,
         maxConsumption: 0,
@@ -345,12 +376,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     const startDate = new Date(validMeasures[0].date);
     const endDate = new Date(validMeasures[validMeasures.length - 1]?.date || new Date());
     const periodHours = (endDate.getTime() - startDate.getTime()) / (1000 * 3600);
-
-    console.log('Période de mesure:', {
-      début: startDate.toLocaleString('fr-FR'),
-      fin: endDate.toLocaleString('fr-FR'),
-      durée: `${periodHours.toFixed(2)} heures`
-    });
 
     // Calcul de l'énergie totale
     let totalEnergy = 0;
@@ -385,17 +410,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     const averageCO2Coefficient = calculateAverageCO2Coefficient();
     const emissions = totalEnergyKWh * (averageCO2Coefficient / 1000); // Division par 1000 pour convertir MWh en kWh
     
-    console.log('-------- Résultats --------');
-    console.log({
-      energieTotale: `${totalEnergyKWh} kWh`,
-      puissanceMoyenne: `${averagePower.toLocaleString('fr-FR')} W`,
-      puissanceMax: `${maxConsumption.toLocaleString('fr-FR')} W`,
-      puissanceMin: `${minConsumption.toLocaleString('fr-FR')} W`,
-      nombreMesures: validMeasures.length,
-      coefficientMoyen: `${averageCO2Coefficient.toFixed(2)} kg CO2/MWh`,
-      emissionsCO2: `${emissions.toFixed(2)} kg CO2`
-    });
-  
     return {
       totalConsumption: totalEnergyKWh,
       maxConsumption: Number(maxConsumption.toFixed(2)),
@@ -898,7 +912,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={prepareChartData}
-                  margin={{ top: 0, right: 50, left: -10, bottom: 0 }}
+                  margin={{ top: 0, right: 50, left: -10, bottom: 10 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -925,7 +939,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                         className="w-fit transition-all duration-300"
                         nameKey="views"
                         labelFormatter={(value) => {
-                          return new Date(value).toLocaleDateString("fr-FR", {
+                          return new Date(value).toLocaleString("fr-FR", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
@@ -933,70 +947,22 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                             minute: "2-digit"
                           })
                         }}
-                        
                       />
                     }
                   />
-                  {Object.entries(processedData.data).map(([key, data]) => {
-                    const parts = key.split("-");
-                    const building = parts[1] as keyof typeof buildingColors;
-                    const lineColor = getMeasureColor(building, key, processedData.data);
-                    
-                    // Trouver le nom de la mesure dans les données originales
-                    const measureData = Object.values(floorData)
-                      .flat()
-                      .find(item => item.id.startsWith(parts[0]));
-
-                    // Créer le nom qui sera affiché dans le tooltip
-                    const displayName = `${measureData?.name}`;
-
-                    return (
-                      <Line
-                        key={key}
-                        type={chartOptions.curveType}
-                        dataKey={key}
-                        stroke={lineColor}
-                        strokeWidth={2}
-                        name={displayName}
-                        dot={false}
-                        isAnimationActive={false}
-                        connectNulls
-                      />
-                    );
-                  })}
-                  {prepareChartData.length > 0 && brushStartIndex !== null && brushEndIndex !== null && (
-                    <Brush
-                      data={prepareChartData}
-                      dataKey="date"
-                      startIndex={brushStartIndex}
-                      endIndex={brushEndIndex}
-                      onChange={handleBrushChange}
-                      fill="rgba(0, 0, 0, 0.2)"
-                      tickFormatter={(value) => {
-                        const dateStr = new Date(value).toLocaleDateString();
-                        return dateStr;
-                      }}
-                    >
-                      <LineChart>
-                        {Object.entries(floorData).map(([key, data]) => {
-                          const parts = key.split("-");
-                          const building = parts[1] as keyof typeof buildingColors;
-                          const lineColor = getMeasureColor(building, key, floorData);
-
-                          return (
-                            <Line
-                              key={key}
-                              type={chartOptions.curveType}
-                              dataKey={`${key}`}
-                              stroke={lineColor}
-                              strokeWidth={2}
-                              dot={false}
-                            />
-                          );
-                        })}
-                      </LineChart>
-                    </Brush>
-                  )}
+                  {renderLines}
+                  <Brush
+                    dataKey="date"
+                    height={50}
+                    stroke="hsl(var(--border))"
+                    fill="rgba(0, 0, 0, 0.4)"
+                    startIndex={brushStartIndex}
+                    endIndex={brushEndIndex}
+                    onChange={handleBrushChange}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                    travellerWidth={10}
+                    gap={1}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </ChartContainer>

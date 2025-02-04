@@ -10,7 +10,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { useState, useEffect } from "react"
-import { Settings2, Check } from "lucide-react"
+import { Settings2, Check, Info } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,40 @@ import { Button } from "@/components/ui/button"
 import BounceLoader from "react-spinners/BounceLoader"
 import { motion } from "framer-motion"
 import { useSearchParams } from 'next/navigation'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const EMISSION_COEFFICIENTS = {
+  charbon: 0.986, // t CO2/MWh
+  fioul: 0.777,   // t CO2/MWh
+  gazTAC: 0.486,  // t CO2/MWh (turbine à combustion)
+  gazCC: 0.352,   // t CO2/MWh (co-génération et cycle combiné)
+  gazAutre: 0.583,// t CO2/MWh (autres installations gaz)
+  dechets: 0.494  // t CO2/MWh (déchets ménagers)
+} as const;
+
+// Mix énergétique moyen en France
+const ENERGY_MIX = {
+  charbon: 0.01,    // 1%
+  fioul: 0.01,      // 1%
+  gazTAC: 0.02,     // 2%
+  gazCC: 0.06,      // 6%
+  gazAutre: 0.02,   // 2%
+  dechets: 0.02     // 2%
+} as const;
+
+// Fonction pour calculer le coefficient moyen d'émission
+const calculateAverageCO2Coefficient = () => {
+  let coefficient = 0;
+  Object.entries(ENERGY_MIX).forEach(([source, percentage]) => {
+    coefficient += EMISSION_COEFFICIENTS[source as keyof typeof EMISSION_COEFFICIENTS] * percentage;
+  });
+  return coefficient * 1000; // Conversion en kg CO2/MWh
+};
 
 const chartConfig = {
   total: {
@@ -63,9 +97,84 @@ interface ChartOptions {
   displayMode: "combined" | "separate"
 }
 
+// Ajouter la fonction determineIntervalFromTimeRange
+const determineIntervalFromTimeRange = (startDate: Date, endDate: Date): "5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m" => {
+  const timeSpanMs = endDate.getTime() - startDate.getTime();
+  const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
+
+  if (daysDifference <= 0.5) return "5min";  // 12h ou moins
+  if (daysDifference <= 1) return "15min";   // 1 jour ou moins
+  if (daysDifference <= 3) return "30min";   // 3 jours ou moins
+  if (daysDifference <= 7) return "1h";      // 1 semaine ou moins
+  if (daysDifference <= 14) return "1d";    // 2 semaines ou moins
+  if (daysDifference <= 31) return "1w";     // 1 mois ou moins
+  if (daysDifference <= 90) return "1m";     // 3 mois ou moins
+  return "1m";                               // Plus de 3 mois
+};
+
+// Modifier la fonction determineOptimalInterval
+const determineOptimalInterval = (data: any[]): "5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m" => {
+  if (!data || data.length === 0) return "15min";
+
+  const dates = data.map(item => new Date(item.date).getTime());
+  const timeSpanMs = Math.max(...dates) - Math.min(...dates);
+  const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
+  const pointCount = data.length;
+
+  // Ajuster les seuils pour réduire le nombre de points
+  if (pointCount > 500) {
+    if (daysDifference > 60) return "1m";
+    if (daysDifference > 14) return "1d";
+    if (daysDifference > 7) return "1h";
+    return "1h";
+  }
+
+  if (daysDifference <= 1) {
+    if (pointCount > 200) return "30min";
+    if (pointCount > 100) return "15min";
+    return "5min";
+  }
+
+  if (daysDifference <= 7) return "1h";
+  if (daysDifference <= 31) return "1d";
+  return "1m";
+};
+
+interface MinMaxPoint {
+  date: string;
+  value: number;
+  building: string;
+  type: 'min' | 'max';
+}
+
 export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props) {
+  // Déplacer les hooks ici
+  const [prevTotal, setPrevTotal] = useState(0);
+  const [prevMax, setPrevMax] = useState(0);
+  const [prevMin, setPrevMin] = useState(0);
+  const [timeInterval, setTimeInterval] = useState<"5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m">("15min");
+  const [chartOptions, setChartOptions] = useState<ChartOptions>(() => {
+    const allData = Object.values(aggregatedData).flat();
+    return {
+      curveType: "monotone",
+      timeInterval: determineOptimalInterval(allData),
+      displayMode: "separate"
+    };
+  });
+  const [selectedPoints, setSelectedPoints] = useState<('min' | 'max')[]>([]);
+  const searchParams = useSearchParams();
+  const isHighlighted = searchParams.get('highlight') === 'batiment-graph-2';
+
+  const togglePoint = (type: 'min' | 'max') => {
+    setSelectedPoints(prev =>
+      prev.includes(type)
+        ? prev.filter(p => p !== type)
+        : [...prev, type]
+    );
+  };
+
   // Ajouter les fonctions utilitaires à l'intérieur du composant
-  const aggregateDataByInterval = (data: any[], interval: string) => {
+  const aggregateDataByInterval = React.useCallback((data: any[], interval: string) => {
     const aggregatedData: { [key: string]: { total: number, count: number } } = {};
 
     data.forEach(item => {
@@ -128,130 +237,13 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
       date,
       totalConsumption: values.total / values.count // Moyenne pour la période
     }));
-  };
-
-  const determineOptimalInterval = (data: any[]): "5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m" => {
-    if (!data || data.length === 0) return "15min";
-
-    const dates = data.map(item => new Date(item.date).getTime());
-    const timeSpanMs = Math.max(...dates) - Math.min(...dates);
-    const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
-    const pointCount = data.length;
-
-    // Ajustez les seuils en fonction du nombre de points
-    if (pointCount > 1000) {
-      if (daysDifference > 60) return "1m";
-      if (daysDifference > 30) return "1w";
-      if (daysDifference > 7) return "1d";
-      return "1h";
-    }
-
-    if (daysDifference <= 1) {
-      if (pointCount > 200) return "30min";
-      if (pointCount > 100) return "15min";
-      return "5min";
-    }
-
-    if (daysDifference <= 7) return "1h";
-    if (daysDifference <= 31) return "1d";
-    if (daysDifference <= 90) return "1w";
-    return "1m";
-  };
-
-  interface MinMaxPoint {
-    date: string;
-    value: number;
-    building: string;
-    type: 'min' | 'max';
-  }
-
-  const [prevTotal, setPrevTotal] = useState(0);
-  const [prevMax, setPrevMax] = useState(0);
-  const [prevMin, setPrevMin] = useState(0);
-  const [timeInterval, setTimeInterval] = useState<"5min" | "15min" | "30min" | "1h" | "1d" | "1w" | "1m">("15min");
-  const [chartOptions, setChartOptions] = useState<ChartOptions>(() => ({
-    curveType: "monotone",
-    timeInterval: determineOptimalInterval(Object.values(aggregatedData).flat()),
-    displayMode: "separate"
-  }));
-  const [selectedPoints, setSelectedPoints] = useState<('min' | 'max')[]>([]);
-  const searchParams = useSearchParams()
-  const isHighlighted = searchParams.get('highlight') === 'batiment-graph-2'
-
-  const togglePoint = (type: 'min' | 'max') => {
-    setSelectedPoints(prev =>
-      prev.includes(type)
-        ? prev.filter(p => p !== type)
-        : [...prev, type]
-    );
-  };
-
-  // Trouver les points min et max
-  const findMinMaxPoints = React.useMemo(() => {
-    let maxPoint: MinMaxPoint = { date: '', value: 0, building: '', type: 'max' };
-    let minPoint: MinMaxPoint = { date: '', value: 0, building: '', type: 'min' };
-
-    const allValues = Object.entries(aggregatedData).flatMap(([building, data]) =>
-      data.map(point => ({
-        date: point.date,
-        value: point.totalConsumption,
-        building,
-      }))
-    ).filter(point => point.value !== null && !isNaN(point.value));
-
-    if (allValues.length > 0) {
-      const maxValue = allValues.reduce((max, point) =>
-        point.value > (max?.value ?? 0) ? point : max
-        , allValues[0]);
-
-      const minValue = allValues.reduce((min, point) =>
-        point.value < (min?.value ?? 0) ? point : min
-        , allValues[0]);
-
-      maxPoint = {
-        date: maxValue?.date || '',
-        value: maxValue?.value || 0,
-        building: maxValue?.building || '',
-        type: 'max'
-      };
-      minPoint = {
-        date: minValue?.date || '',
-        value: minValue?.value || 0,
-        building: minValue?.building || '',
-        type: 'min'
-      };
-    }
-
-    return { maxPoint, minPoint };
-  }, [aggregatedData]);
-
-  const total = React.useMemo(
-    () => ({
-      totalConsumption: Object.values(aggregatedData).flat().reduce((acc, curr) => acc + curr.totalConsumption, 0),
-      maxConsumption: findMinMaxPoints.maxPoint.value,
-      minConsumption: findMinMaxPoints.minPoint.value,
-      emissions: Object.values(aggregatedData).flat().reduce((acc, curr) => acc + curr.emissions, 0),
-    }),
-    [aggregatedData, findMinMaxPoints]
-  );
-
-  console.log((aggregatedData))
-
-  useEffect(() => {
-    setPrevTotal(total.totalConsumption);
-    setPrevMax(total.maxConsumption);
-    setPrevMin(total.minConsumption);
-  }, [total]);
-
-  // Fonction pour trier les données par date
-  const sortDataByDate = (data: any[]) => {
-    return data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  };
+  }, []);
 
   // Préparer les données pour le graphique
-  const prepareChartData = () => {
-    const allDates = new Set<string>();
+  const prepareChartData = React.useCallback(() => {
+    // Déplacer la logique d'intervalle optimal en dehors de cette fonction
     const dataByDate: { [key: string]: ChartDataPoint } = {};
+    const allDates = new Set<string>();
 
     Object.entries(aggregatedData).forEach(([building, data]) => {
       const aggregatedBuildingData = aggregateDataByInterval(data, chartOptions.timeInterval);
@@ -268,29 +260,152 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
 
         if (chartOptions.displayMode === "combined") {
           dataByDate[item.date]!.totalConsumption += item.totalConsumption;
+        } else {
+          dataByDate[item.date]![`consumption${building}`] = item.totalConsumption;
         }
-
-        dataByDate[item.date]!.totalConsumption += item.totalConsumption;
-        dataByDate[item.date]![`consumption${building}`] = item.totalConsumption;
       });
     });
 
-    return sortDataByDate(Object.values(dataByDate));
-  };
+    return Object.values(dataByDate);
+  }, [aggregatedData, chartOptions.timeInterval, chartOptions.displayMode]);
 
-  const chartData = React.useMemo(() => prepareChartData(), [aggregatedData, chartOptions.timeInterval]);
+  // 2. Optimiser le calcul de l'intervalle optimal
+  const optimalInterval = React.useMemo(() => {
+    const allData = Object.values(aggregatedData).flat();
+    const dates = allData.map(item => new Date(item.date));
+    const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    
+    return determineIntervalFromTimeRange(startDate, endDate);
+  }, [aggregatedData]);
 
-  // Modifier le formatage des dates selon l'intervalle
+  // 3. Mettre à jour l'intervalle de manière optimisée
+  React.useEffect(() => {
+    if (optimalInterval !== chartOptions.timeInterval) {
+      setChartOptions(prev => ({ ...prev, timeInterval: optimalInterval }));
+    }
+  }, [optimalInterval, chartOptions.timeInterval]);
+
+  // 4. Optimiser le calcul des données du graphique
+  const chartData = React.useMemo(() => prepareChartData(), [prepareChartData]);
+
+  // Modifier la fonction findMinMaxPoints
+  const findMinMaxPoints = React.useMemo(() => {
+    let maxPoint: MinMaxPoint = { date: '', value: 0, building: '', type: 'max' };
+    let minPoint: MinMaxPoint = { date: '', value: 0, building: '', type: 'min' };
+
+    if (chartData.length > 0) {
+      if (chartOptions.displayMode === "combined") {
+        // Pour le mode combiné, chercher dans totalConsumption
+        const validPoints = chartData.filter(point => 
+          typeof point.totalConsumption === 'number' && 
+          !isNaN(point.totalConsumption)
+        );
+
+        if (validPoints.length > 0) {
+          const maxValue = validPoints.reduce((max, point) => 
+            point.totalConsumption > (max?.totalConsumption ?? 0) ? point : max
+          , validPoints[0]);
+
+          const minValue = validPoints.reduce((min, point) => 
+            point.totalConsumption < (min?.totalConsumption ?? 0) ? point : min
+          , validPoints[0]);
+
+          maxPoint = {
+            date: maxValue?.date ?? '',
+            value: maxValue?.totalConsumption ?? 0,
+            building: 'total',
+            type: 'max'
+          };
+
+          minPoint = {
+            date: minValue?.date ?? '',
+            value: minValue?.totalConsumption ?? 0,
+            building: 'total',
+            type: 'min'
+          };
+        }
+      } else {
+        // Pour le mode séparé, chercher dans chaque bâtiment
+        let globalMax = { value: -Infinity, point: null as any };
+        let globalMin = { value: Infinity, point: null as any };
+
+        // Filtrer les points valides pour chaque bâtiment
+        chartData.forEach(point => {
+          Object.entries(point).forEach(([key, value]) => {
+            if (key.startsWith('consumption') && 
+                typeof value === 'number' && 
+                !isNaN(value) && 
+                value !== 0) { // Ignorer les valeurs nulles
+              const building = key.replace('consumption', '');
+              
+              if (value > globalMax.value) {
+                globalMax = {
+                  value,
+                  point: {
+                    date: point.date,
+                    value,
+                    building,
+                    type: 'max'
+                  }
+                };
+              }
+              
+              if (value < globalMin.value) {
+                globalMin = {
+                  value,
+                  point: {
+                    date: point.date,
+                    value,
+                    building,
+                    type: 'min'
+                  }
+                };
+              }
+            }
+          });
+        });
+
+        if (globalMax.point) maxPoint = globalMax.point;
+        if (globalMin.point) minPoint = globalMin.point;
+      }
+    }
+
+    return { maxPoint, minPoint };
+  }, [chartData, chartOptions.displayMode]);
+
+  // Modifier la fonction getDateFormatter
   const getDateFormatter = (interval: string) => {
+    // Détermine si on doit afficher l'heure en fonction de l'intervalle
+    const shouldShowTime = (interval: string) => {
+      return ["5min", "15min", "30min", "1h"].includes(interval);
+    };
+
     switch (interval) {
       case "5min":
       case "15min":
       case "30min":
+      case "1h":
         return (value: string) => {
           const date = new Date(value);
-          return date.toLocaleString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit"
+          return shouldShowTime(interval) 
+            ? date.toLocaleString("fr-FR", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit"
+              })
+            : date.toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "short"
+              });
+        };
+      case "1d":
+        return (value: string) => {
+          const date = new Date(value);
+          return date.toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short"
           });
         };
       case "1w":
@@ -303,7 +418,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
           const date = new Date(value);
           return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
         };
-      case "1d":
+      default:
         return (value: string) => {
           const date = new Date(value);
           return date.toLocaleDateString("fr-FR", {
@@ -311,23 +426,90 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             month: "short"
           });
         };
-      case "1h":
-        return (value: string) => {
-          const date = new Date(value);
-          return date.toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit"
-          });
-        };
-      default:
-        return (value: string) => {
-          const date = new Date(value);
-          return date.toLocaleString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit"
-          });
-        };
+    };
+  };
+
+  const total = React.useMemo(() => {
+    
+    const allData = Object.values(aggregatedData).flat();
+    
+    if (allData.length === 0) {
+      return {
+        totalConsumption: 0,
+        maxConsumption: 0,
+        minConsumption: 0,
+        emissions: 0,
+      };
     }
+
+    // Filtrer et trier les mesures valides par date
+    const validMeasures = allData
+      .filter(item => typeof item.totalConsumption === 'number' && !isNaN(item.totalConsumption))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Vérifier que les mesures et leurs dates existent
+    if (!validMeasures[0]?.date || !validMeasures[validMeasures.length - 1]?.date) {
+      return {
+        totalConsumption: 0,
+        maxConsumption: 0,
+        minConsumption: 0,
+        emissions: 0,
+      };
+    }
+
+    const startDate = new Date(validMeasures[0].date);
+    const endDate = new Date(validMeasures[validMeasures.length - 1]?.date || new Date());
+    const periodHours = (endDate.getTime() - startDate.getTime()) / (1000 * 3600);
+
+    // Calcul de l'énergie totale
+    let totalEnergy = 0;
+    for (let i = 0; i < validMeasures.length - 1; i++) {
+      const currentMeasure = validMeasures[i];
+      const nextMeasure = validMeasures[i + 1];
+      
+      if (!currentMeasure?.date || !nextMeasure?.date) continue;
+      
+      // Durée entre deux mesures en heures
+      const duration = (new Date(nextMeasure.date).getTime() - new Date(currentMeasure.date).getTime()) / (1000 * 3600);
+      
+      if (!currentMeasure?.totalConsumption || !nextMeasure?.totalConsumption) continue;
+      
+      // Puissance moyenne sur l'intervalle (en W)
+      const avgPower = (currentMeasure.totalConsumption + nextMeasure.totalConsumption) / 2;
+      
+      // Énergie en Wh pour cet intervalle
+      const intervalEnergy = avgPower * duration;
+      totalEnergy += intervalEnergy;
+    }
+
+    // Conversion en kWh
+    const totalEnergyKWh = Math.round(totalEnergy / 1000);
+
+    // Calculs statistiques sur la puissance
+    const maxConsumption = Math.max(...validMeasures.map(item => item.totalConsumption));
+    const minConsumption = Math.min(...validMeasures.map(item => item.totalConsumption));
+    const averagePower = validMeasures.reduce((sum, item) => sum + item.totalConsumption, 0) / validMeasures.length;
+    
+    // Calcul des émissions avec le mix énergétique
+    const averageCO2Coefficient = calculateAverageCO2Coefficient();
+    const emissions = totalEnergyKWh * (averageCO2Coefficient / 1000); // Division par 1000 pour convertir MWh en kWh
+    
+    return {
+      totalConsumption: totalEnergyKWh,
+      maxConsumption: Number(maxConsumption.toFixed(2)),
+      minConsumption: Number(minConsumption.toFixed(2)),
+      emissions: Number(emissions.toFixed(2)),
+    };
+  }, [aggregatedData]);
+
+  useEffect(() => {
+    setPrevTotal(total.totalConsumption);
+    setPrevMax(total.maxConsumption);
+    setPrevMin(total.minConsumption);
+  }, [total]);
+  // Fonction pour trier les données par date
+  const sortDataByDate = (data: any[]) => {
+    return data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
 
   return (
@@ -370,7 +552,6 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                   className="cursor-pointer"
                   onClick={() => setChartOptions(prev => ({ ...prev, displayMode: "combined" }))}
                 >
-
                   <div className="flex items-center justify-between w-full">
                     Combiné
                     {chartOptions.displayMode === "combined" && <Check className="h-4 w-4" />}
@@ -380,103 +561,19 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs">Type de courbe</DropdownMenuLabel>
                 <DropdownMenuItem
-                  className="cursor-pointer"
                   onClick={() => setChartOptions(prev => ({ ...prev, curveType: "monotone" }))}
                 >
                   <div className="flex items-center justify-between w-full">
-
                     Courbe lisse
                     {chartOptions.curveType === "monotone" && <Check className="h-4 w-4" />}
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="cursor-pointer"
                   onClick={() => setChartOptions(prev => ({ ...prev, curveType: "linear" }))}
                 >
                   <div className="flex items-center justify-between w-full">
                     Ligne droite
-
                     {chartOptions.curveType === "linear" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Intervalle temporel</DropdownMenuLabel>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "5min" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    5 minutes
-
-                    {chartOptions.timeInterval === "5min" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "15min" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    15 minutes
-
-                    {chartOptions.timeInterval === "15min" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "30min" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    30 minutes
-
-                    {chartOptions.timeInterval === "30min" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "1h" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    1 heure
-
-                    {chartOptions.timeInterval === "1h" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "1d" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    1 jour
-
-                    {chartOptions.timeInterval === "1d" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "1w" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    1 semaine
-
-                    {chartOptions.timeInterval === "1w" && <Check className="h-4 w-4" />}
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setChartOptions(prev => ({ ...prev, timeInterval: "1m" }))}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    1 mois
-
-                    {chartOptions.timeInterval === "1m" && <Check className="h-4 w-4" />}
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -488,18 +585,32 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
         </div>
         <div className="flex">
           <div className="flex flex-1 flex-col justify-center gap-1 border-t md:px-6 md:py-4 text-left even:border-l sm:border-l sm:border-t-0 px-2 py-1">
-            <span className="text-xs text-muted-foreground">Total</span>
-            <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
-              <CountUp
-                from={prevTotal}
-                to={total.totalConsumption}
-                separator=" "
-                direction="up"
-                duration={0.1}
-                className="count-up-text"
-              />
-              <span className="text-xs text-muted-foreground ml-1">W</span>
-            </span>
+          <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground text-nowrap pr-1">Énergie totale</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-neutral-500" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[300px]">
+                        <p>Énergie totale consommée sur la période.</p>
+                        <p className="mt-1">Calculée en intégrant la puissance sur le temps.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
+                  <CountUp
+                    from={prevTotal}
+                    to={total.totalConsumption}
+                    separator=" "
+                    direction="up"
+                    decimals={0}
+                    duration={0.1}
+                    className="count-up-text"
+                  />
+                  <span className="text-xs text-muted-foreground ml-1">kWh</span>
+                </span>
           </div>
           <div
             className={`flex flex-1 flex-col justify-center gap-1 border-t border-r md:border-r-0 md:px-6 md:py-4 text-left even:border-l sm:border- sm:border-t-0 px-2 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${selectedPoints.includes('max') ? 'bg-accent/50' : ''
@@ -510,7 +621,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
               <CountUp
                 from={prevMax}
-                to={total.maxConsumption}
+                to={findMinMaxPoints.maxPoint.value}
                 separator=" "
                 direction="up"
                 duration={0.1}
@@ -529,7 +640,7 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
             <span className="text-xl font-bold leading-none 3xl:text-3xl whitespace-nowrap">
               <CountUp
                 from={prevMin}
-                to={total.minConsumption}
+                to={findMinMaxPoints.minPoint.value}
                 separator=" "
                 direction="up"
                 duration={0.1}
@@ -614,14 +725,20 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                         dot={(props) => {
                           const isMinPoint = selectedPoints.includes('min') &&
                             props.payload.date === findMinMaxPoints.minPoint.date &&
-                            `consumption${findMinMaxPoints.minPoint.building}` === props.dataKey;
+                            (chartOptions.displayMode === "combined" 
+                              ? props.dataKey === "totalConsumption"
+                              : findMinMaxPoints.minPoint.building === building);
+
                           const isMaxPoint = selectedPoints.includes('max') &&
                             props.payload.date === findMinMaxPoints.maxPoint.date &&
-                            `consumption${findMinMaxPoints.maxPoint.building}` === props.dataKey;
+                            (chartOptions.displayMode === "combined" 
+                              ? props.dataKey === "totalConsumption"
+                              : findMinMaxPoints.maxPoint.building === building);
 
                           if (!isMinPoint && !isMaxPoint) return false;
 
                           const pointType = isMinPoint ? 'min' : 'max';
+                          const value = props.payload[props.dataKey];
                           const uniqueKey = `${building}-${props.payload.date}-${pointType}`;
 
                           return (
@@ -629,26 +746,24 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                               <circle
                                 cx={props.cx}
                                 cy={props.cy}
-                                r={isMinPoint || isMaxPoint ? 6 : 4}
+                                r={6}
                                 fill="white"
                                 stroke={buildingColors[building as keyof typeof buildingColors]}
-                                strokeWidth={isMinPoint || isMaxPoint ? 3 : 2}
+                                strokeWidth={3}
                               />
-                              {(isMinPoint || isMaxPoint) && (
-                                <text
-                                  x={props.cx + 15}
-                                  y={props.cy + 4}
-                                  textAnchor="start"
-                                  fill="white"
-                                  fontSize="12"
-                                  fontWeight="normal"
-                                  stroke={buildingColors[building as keyof typeof buildingColors]}
-                                  strokeWidth={3}
-                                  paintOrder="stroke"
-                                >
-                                  {isMinPoint ? 'MIN' : 'MAX'}
-                                </text>
-                              )}
+                              <text
+                                x={props.cx + 15}
+                                y={props.cy + 4}
+                                textAnchor="start"
+                                fill="white"
+                                fontSize="12"
+                                fontWeight="normal"
+                                stroke={buildingColors[building as keyof typeof buildingColors]}
+                                strokeWidth={3}
+                                paintOrder="stroke"
+                              >
+                                {`${pointType.toUpperCase()} (${Math.round(value)}W)`}
+                              </text>
                             </g>
                           ) as any;
                         }}
