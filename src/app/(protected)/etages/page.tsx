@@ -50,22 +50,22 @@ type SelectedMeasurement = {
 const useOptimizedChartData = (rawData: any[]) => {
   return React.useMemo(() => {
     if (!rawData || rawData.length === 0) return [];
-    
+
     // Réduire la fréquence des points si nécessaire
     const maxPoints = 500;
     if (rawData.length > maxPoints) {
       const step = Math.ceil(rawData.length / maxPoints);
       return rawData.filter((_, index) => index % step === 0);
     }
-    
+
     return rawData;
   }, [rawData]);
 };
 
 // Créer un composant séparé pour les mesures
-const MeasurementButton = React.memo(({ 
-  measurementId, 
-  isSelected, 
+const MeasurementButton = React.memo(({
+  measurementId,
+  isSelected,
   matchingData,
   onSelect,
   onDoubleClick
@@ -202,7 +202,7 @@ const Etages = () => {
     }
 
     // Log des mesures sélectionnées
-    console.log('Mesures sélectionnées:', newSelectedMeasurements);
+    // console.log('Mesures sélectionnées:', newSelectedMeasurements);
 
     // Mettre à jour l'état local
     setSelectedMeasurements(newSelectedMeasurements);
@@ -335,14 +335,14 @@ const Etages = () => {
     }
   }, [optimizedChartData, availableMeasurements, isInitialized]);
 
-  // Ajouter cette fonction pour calculer la consommation actuelle par bâtiment
+  // Remplacer la fonction getCurrentBuildingData
   const getCurrentBuildingData = React.useMemo(() => {
-    if (!chartData || chartData.length === 0) return {};
+    if (!optimizedChartData || optimizedChartData.length === 0) return {};
 
     const latestData: { [key: string]: number } = {};
 
     // Grouper les dernières données par bâtiment
-    chartData.forEach(item => {
+    optimizedChartData.forEach(item => {
       const buildingKey = item.building;
       if (!latestData[buildingKey] || !latestData[buildingKey]) {
         latestData[buildingKey] = item.totalConsumption;
@@ -350,13 +350,13 @@ const Etages = () => {
     });
 
     return latestData;
-  }, [chartData]);
+  }, [optimizedChartData]);
 
-  // Modifier le useEffect existant pour le chargement de la configuration
+  // Modifier le useEffect pour le chargement de la configuration
   React.useEffect(() => {
     const loadDefaultConfiguration = async () => {
       const userEmail = user?.emailAddresses[0]?.emailAddress;
-      if (!userEmail || !chartData?.length || !availableMeasurements['A']) return;
+      if (!userEmail || !optimizedChartData?.length || !availableMeasurements['A']) return;
 
       try {
         const response = await fetch('/api/etageConfig', {
@@ -403,11 +403,11 @@ const Etages = () => {
     };
 
     loadDefaultConfiguration();
-  }, [user?.emailAddresses[0]?.emailAddress, isInitialized]);
+  }, [user?.emailAddresses[0]?.emailAddress, isInitialized, optimizedChartData]);
 
-  // Ajouter un useEffect séparé pour surveiller les données du graphique
+  // Modifier le useEffect pour la surveillance des données
   React.useEffect(() => {
-    if (chartData?.length && availableMeasurements['A'] && !isInitialized) {
+    if (optimizedChartData?.length && availableMeasurements['A'] && !isInitialized) {
       const allMeasurements: SelectedMeasurement[] = [];
       buildingFloors['A'].forEach(floor => {
         const measurements = availableMeasurements['A']?.[floor] || new Set();
@@ -424,7 +424,7 @@ const Etages = () => {
       setSelectedMeasurements(allMeasurements);
       setIsInitialized(true);
     }
-  }, [chartData?.length, availableMeasurements['A'], isInitialized]);
+  }, [optimizedChartData?.length, availableMeasurements['A'], isInitialized]);
 
   // Modifier la fonction saveConfiguration pour ajouter des toasts plus détaillés
   const saveConfiguration = async (measures: SelectedMeasurement[]) => {
@@ -585,25 +585,7 @@ const Etages = () => {
                                       matchingData={matchingData}
                                       onSelect={() => handleMeasurementSelect(activeBuilding, floor, measurementId)}
                                       onDoubleClick={() => handleMeasurementDoubleClick(activeBuilding, floor, measurementId)}
-                                      className={cn(
-                                        "flex items-center gap-2 px-3 py-1.5 rounded-md",
-                                        "text-xs transition-all duration-200",
-                                        isSelected
-                                          ? "bg-neutral-700 text-white shadow-lg shadow-neutral-900/50"
-                                          : "bg-neutral-800/50 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800",
-                                        "border border-neutral-700/50"
-                                      )}
-                                    >
-                                      <div className="flex items-center gap-1.5">
-                                        <div
-                                          className={cn(
-                                            "w-2 h-2 rounded-full",
-                                            isSelected ? "bg-green-500" : "bg-neutral-600"
-                                          )}
-                                        />
-                                        {matchingData?.name}
-                                      </div>
-                                    </button>
+                                    />
                                   );
                                 })}
                               </div>
@@ -735,7 +717,7 @@ const Etages = () => {
                 currentBuildingData={getCurrentBuildingData}
                 selectedMeasurements={selectedMeasurements}
                 availableMeasurements={availableMeasurements}
-                chartData={chartData}
+                chartData={optimizedChartData}
               />
             </div>
           </div>

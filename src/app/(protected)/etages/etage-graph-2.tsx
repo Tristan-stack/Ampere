@@ -326,8 +326,8 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
       // Initialiser les données par bâtiment
       Object.entries(processedData.data).forEach(([key, data]) => {
         const building = key.split("-")[1];
-        if (!buildingData[building]) {
-          buildingData[building] = { lastKnownValue: 0 };
+        if (!buildingData[building || '']) {
+          buildingData[building || ''] = { lastKnownValue: 0 };
         }
       });
 
