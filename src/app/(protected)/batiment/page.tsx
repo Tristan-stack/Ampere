@@ -1,4 +1,5 @@
 "use client";
+import dynamic from 'next/dynamic';
 import React, { useState, useRef, useEffect } from "react";
 import { Batimentgraph2 } from "./batiment-graph-2";
 import Batimentgraph4 from "./batiment-graph-4";
@@ -13,7 +14,6 @@ import { useData } from '../context/DataContext';
 import AmpyWeather from "@/components/ampy-weather";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
-import { createSwapy } from "swapy";
 import { toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -48,11 +48,11 @@ const Batiments = () => {
         setIsEditing
     } = useData();
     const { user } = useUser();
-    const swapy = useRef<ReturnType<typeof createSwapy> | null>(null);
     const container = useRef<HTMLDivElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [configLoading, setConfigLoading] = useState(true);
     const [config, setConfig] = useState<string[] | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
 
     const FullscreenButton = ({ onClick }: { onClick: (e: React.MouseEvent) => void }) => (
         <button
@@ -78,37 +78,10 @@ const Batiments = () => {
         'C': 'hsl(var(--chart-3))'
     } as const;
 
-    // Ajoutez les fonctions de gestion de la configuration
-    const getSwapyConfig = () => {
-        if (!container.current) return [];
-        const items = Array.from(
-            container.current.querySelectorAll<HTMLDivElement>("[data-swapy-item]")
-        );
-        return items.map((item) => item.getAttribute("data-swapy-item") || "");
-    };
-
-    const setSwapyConfig = (config: string[]) => {
-        const currentContainer = container.current;
-        if (!currentContainer) return;
-
-        const slots = Array.from(
-            currentContainer.querySelectorAll<HTMLDivElement>("[data-swapy-slot]")
-        );
-
-        slots.forEach((slot, index) => {
-            const itemId = config[index];
-            const item = currentContainer.querySelector<HTMLDivElement>(
-                `[data-swapy-item="${itemId}"]`
-            );
-
-            if (item && slot) {
-                slot.appendChild(item);
-            }
-        });
-    };
-
     // Ajoutez les fonctions de sauvegarde locale
     const saveConfigToLocal = (config: string[]) => {
+        if (!isMounted) return;
+        
         if (user?.primaryEmailAddress?.emailAddress) {
             const key = `${CONFIG_STORAGE_KEY_PREFIX}${user.primaryEmailAddress.emailAddress}`;
             localStorage.setItem(key, JSON.stringify(config));
@@ -116,6 +89,8 @@ const Batiments = () => {
     };
 
     const loadConfigFromLocal = (): string[] | null => {
+        if (!isMounted) return null;
+        
         if (user?.primaryEmailAddress?.emailAddress) {
             const key = `${CONFIG_STORAGE_KEY_PREFIX}${user.primaryEmailAddress.emailAddress}`;
             const configString = localStorage.getItem(key);
@@ -131,7 +106,6 @@ const Batiments = () => {
                     const localConfig = loadConfigFromLocal();
                     if (localConfig) {
                         setConfig(localConfig);
-                        setSwapyConfig(localConfig);
                     }
                     const response = await fetch("/api/getBatimentConfig", {
                         method: "POST",
@@ -147,7 +121,6 @@ const Batiments = () => {
                     if (data.config) {
                         setConfig(data.config);
                         saveConfigToLocal(data.config);
-                        setSwapyConfig(data.config);
                     }
                 } catch (error) {
                     console.error("Erreur lors de la récupération de la configuration :", error);
@@ -163,9 +136,9 @@ const Batiments = () => {
     }, [user]);
 
     const handleSaveConfig = async () => {
-        if (!user?.primaryEmailAddress?.emailAddress || !swapy.current) return;
+        if (!user?.primaryEmailAddress?.emailAddress) return;
 
-        const currentConfig = getSwapyConfig();
+        const currentConfig = config || [];
         try {
             await fetch("/api/saveBatimentConfig", {
                 method: "POST",
@@ -199,24 +172,8 @@ const Batiments = () => {
     };
 
     useEffect(() => {
-        if (config && !configLoading) {
-            setSwapyConfig(config);
-        }
-    }, [config, configLoading]);
-
-    useEffect(() => {
-        if (isEditing && container.current) {
-            swapy.current = createSwapy(container.current, {});
-            swapy.current.enable(true);
-        }
-
-        return () => {
-            if (swapy.current) {
-                swapy.current.destroy();
-                swapy.current = null;
-            }
-        };
-    }, [isEditing]);
+        setIsMounted(true);
+    }, []);
 
     const floorData = React.useMemo(() => {
         if (!chartData || chartData.length === 0) return {};
@@ -239,11 +196,15 @@ const Batiments = () => {
         return groupedByMeasurement;
     }, [chartData, selectedBuildings]);
 
+    if (!isMounted) {
+        return null; // Or loading state
+    }
+
     return (
         <div className="w-full space-y-4 flex flex-col justify-start lg:justify-center  pt-8 md:pt-0 mx-auto items-center md:mt-10 xl:mt-0">
             <div className="flex justify-between items-center w-full">
-            {isEditing ?
-            <motion.button
+            {isEditing ? (
+                <motion.button
                     initial={{ backgroundColor: "#171717", color: "#fff" }}
                     whileHover={{ backgroundColor: "#fff", color: "#000" }}
                     transition={{ duration: 0.2 }}
@@ -252,18 +213,9 @@ const Batiments = () => {
                 >
                     Quitter le mode édition
                 </motion.button>
-                : 
-                // <motion.button
-                //     initial={{ backgroundColor: "#171717", color: "#fff" }}
-                //     whileHover={{ backgroundColor: "#fff", color: "#000" }}
-                //     transition={{ duration: 0.2 }}
-                //     className="px-4 py-2 rounded"
-                //     onClick={() => setIsEditing(!isEditing)}
-                // >
-                //     <Blocks className="h-4 w-4 stroke-[2.25px]" />
-                // </motion.button>
+            ) : (
                 <></>
-                }
+            )}
                 <AnimatePresence>
                     {isEditing && (
                         <motion.button
@@ -281,8 +233,8 @@ const Batiments = () => {
                 </AnimatePresence>
             </div>
             <div className="w-full h-full lg:h-1/2 flex flex-col lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0"  >
-                <div className="sm:w-full lg:w-1/3 bg-neutral-800 rounded-md border" data-swapy-slot="a">
-                    <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-0 3xl:space-y-4" data-swapy-item="a"  >
+                <div className="sm:w-full lg:w-1/3 bg-neutral-800 rounded-md border">
+                    <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-0 3xl:space-y-4">
                         <h1 className="text-white text-2xl font-bold mb-3">Analyse des bâtiments</h1>
                         <div className="relative w-full space-y-4">
                             <Score score={efficiencyScore} />
@@ -324,9 +276,6 @@ const Batiments = () => {
                         isFullscreen
                             ? "fixed md:absolute w-full -top-4 left-0 md:-top-6 md:-left-4 h-screen z-50 m-0 overflow-hidden"
                             : "w-full lg:w-2/3"
-
-
-
                     )}
                     initial={false}
                     animate={isFullscreen ? {
@@ -375,10 +324,9 @@ const Batiments = () => {
                 </div>
                 <div className="w-full lg:w-2/3 h-full flex flex-col pt-4 lg:pt-0 lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
                     <div className={cn(
-                        "w-full lg:w-1/2 bg-neutral-900 rounded-md",
-                        isEditing ? "cursor-move" : ""
-                    )} data-swapy-slot="c">
-                        <div className="h-72 md:h-96 lg:h-full" data-swapy-item="c">
+                        "w-full lg:w-1/2 bg-neutral-900 rounded-md"
+                    )}>
+                        <div className="h-72 md:h-96 lg:h-full">
                             <div className="w-full h-full bg-neutral-900 rounded-md relative">
                                 <BatimentgraphTable 
                                     floorData={floorData} 
@@ -388,10 +336,9 @@ const Batiments = () => {
                         </div>
                     </div>
                     <div className={cn(
-                        "w-full lg:w-1/2 bg-neutral-900 rounded-md",
-                        isEditing ? "cursor-move" : ""
-                    )} data-swapy-slot="d">
-                        <div className="h-72 md:h-96 lg:h-full" data-swapy-item="d">
+                        "w-full lg:w-1/2 bg-neutral-900 rounded-md"
+                    )}>
+                        <div className="h-72 md:h-96 lg:h-full">
                             <div className="w-full h-full bg-neutral-900 rounded-md overflow-hidden border">
                                 <Batimentgraph4 />
                             </div>

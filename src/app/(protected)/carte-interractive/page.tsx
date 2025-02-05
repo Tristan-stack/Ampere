@@ -1,15 +1,9 @@
-// Temporairement désactivé
-export default function CarteInterractive() {
-    return null
-}
-
-/*
 "use client"
 
-import NetworkGraph from "@/components/network-graph";
-import { useEffect, useState } from "react";
-import { BarLoader
-} from "react-spinners";
+import dynamic from 'next/dynamic';
+import React, { useEffect, useState } from "react";
+
+const NetworkGraph = dynamic(() => import('@/components/network-graph'), { ssr: false });
 
 const CarteInterractive = () => {
   interface Node {
@@ -29,73 +23,61 @@ const CarteInterractive = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const buildGraphData = async () => {
-      try {
-        const deviceKeys = [
-          '4f887d23-3cf2-4d1c-8ae8-0f0bea45cf09',
-          '510478e8-dbfe-40d1-8d2f-18562e4fb128',
-          '14375bc7-eb4f-4cac-88f8-ae6be2dde5cd',
-          'ca8bf525-9259-4cfa-9ebe-856b4356895e',
-          '3b36f5d7-8abd-4e79-8154-72ccb92b9273',
-          '5ef1fc4b-0bfd-4b13-a174-835d154a0744',
-          '566fbe08-44fa-442a-9fb8-1eadf8f66da1',
-          '131be744-6676-47c2-9d8d-c6b503c7220b',
-          '22e195a1-30ca-4d2b-a533-0be1b4e93f23',
-          '31cea110-6514-4cd2-8edf-add92b13bf17',
-          '306e5d7a-fa63-4f86-b117-aa0da4830a80'
-        ];
+    const buildGraphData = () => {
+      const deviceKeys = [
+        '4f887d23-3cf2-4d1c-8ae8-0f0bea45cf09',
+        '510478e8-dbfe-40d1-8d2f-18562e4fb128',
+        '14375bc7-eb4f-4cac-88f8-ae6be2dde5cd',
+        'ca8bf525-9259-4cfa-9ebe-856b4356895e',
+        '3b36f5d7-8abd-4e79-8154-72ccb92b9273',
+        '5ef1fc4b-0bfd-4b13-a174-835d154a0744',
+        '566fbe08-44fa-442a-9fb8-1eadf8f66da1',
+        '131be744-6676-47c2-9d8d-c6b503c7220b',
+        '22e195a1-30ca-4d2b-a533-0be1b4e93f23',
+        '31cea110-6514-4cd2-8edf-add92b13bf17',
+        '306e5d7a-fa63-4f86-b117-aa0da4830a80'
+      ];
 
-        const results = await Promise.all(
-          deviceKeys.map(key =>
-            fetch('/api/getDeviceDataByKey', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ device_key: key }),
-            }).then(res => res.json())
-          )
-        );
+      const results = deviceKeys.map((key, index) => ({
+        values: Array(10).fill(0).map(() => Math.random() * 1000),
+        timestamps: Array(10).fill(0).map((_, i) => new Date(Date.now() - i * 3600000).toISOString())
+      }));
 
-        const buildingConsumption = { A: 0, B: 0, C: 0 };
-        const deviceNodes = results.map((data: any, index: number) => {
-          const deviceKey = deviceKeys[index];
-          if (!deviceKey) {
-            throw new Error(`Device key at index ${index} is undefined`);
-          }
-          const deviceInfo = getDeviceInfoFromKey(deviceKey);
-          const consumption = calculateConsumption(data.values, data.timestamps);
-          buildingConsumption[deviceInfo.building] += consumption;
-          return {
-            id: deviceInfo.name,
-            group: getBuildingGroup(deviceInfo.building),
-            consumption,
-            floor: deviceInfo.floor
-          };
-        });
+      const buildingConsumption = { A: 0, B: 0, C: 0 };
+      const deviceNodes = results.map((data, index) => {
+        const deviceKey = deviceKeys[index];
+        if (!deviceKey) return null;
+        const deviceInfo = getDeviceInfoFromKey(deviceKey);
+        const consumption = calculateConsumption(data.values, data.timestamps);
+        buildingConsumption[deviceInfo.building] += consumption;
+        return {
+          id: deviceInfo.name,
+          group: getBuildingGroup(deviceInfo.building),
+          consumption,
+          floor: deviceInfo.floor
+        };
+      });
 
-        const nodes = [
-          { id: "Bâtiment A", group: 1, consumption: buildingConsumption.A },
-          { id: "Bâtiment B", group: 2, consumption: buildingConsumption.B },
-          { id: "Bâtiment C", group: 3, consumption: buildingConsumption.C },
-          ...deviceNodes
-        ];
+      const nodes = [
+        { id: "Bâtiment A", group: 1, consumption: buildingConsumption.A },
+        { id: "Bâtiment B", group: 2, consumption: buildingConsumption.B },
+        { id: "Bâtiment C", group: 3, consumption: buildingConsumption.C },
+        ...deviceNodes.filter(node => node !== null) as Node[]
+      ];
 
-        const links = [
-          { source: "Bâtiment A", target: "Bâtiment B", value: 1 },
-          { source: "Bâtiment B", target: "Bâtiment C", value: 1 },
-          { source: "Bâtiment C", target: "Bâtiment A", value: 1 },
-          ...deviceNodes.map(node => ({
-            source: `Bâtiment ${node.id.charAt(0)}`,
-            target: node.id,
-            value: 0.5
-          }))
-        ];
+      const links = [
+        { source: "Bâtiment A", target: "Bâtiment B", value: 1 },
+        { source: "Bâtiment B", target: "Bâtiment C", value: 1 },
+        { source: "Bâtiment C", target: "Bâtiment A", value: 1 },
+        ...deviceNodes.filter(node => node !== null).map(node => ({
+          source: `Bâtiment ${node!.id.charAt(0)}`,
+          target: node!.id,
+          value: 0.5
+        }))
+      ];
 
-        setGraphData({ nodes, links });
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des données :', error);
-        setIsLoading(false);
-      }
+      setGraphData({ nodes, links });
+      setIsLoading(false);
     };
 
     buildGraphData();
@@ -140,15 +122,9 @@ const CarteInterractive = () => {
 
   return (
     <>
-      {isLoading ? (
-        <div className="flex items-center justify-center h-full w-full">
-          <BarLoader color='#f3f3f3' height={4} width={200} className='drop-shadow-[0_0_10px_rgba(243,243,243,1)]' />                                            
-        </div>
-      ) : (
-        <NetworkGraph data={graphData} />
-      )}
+      {!isLoading && <NetworkGraph data={graphData} />}
     </>
   );
 };
-*/
 
+export default CarteInterractive;
