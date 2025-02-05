@@ -763,6 +763,8 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
   }, [prepareChartData, brushStartIndex, brushEndIndex]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     setIsResizing(true);
     if (resizeTimeoutRef.current) {
       clearTimeout(resizeTimeoutRef.current);
@@ -770,14 +772,14 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
 
     resizeTimeoutRef.current = setTimeout(() => {
       setIsResizing(false);
-    }, 150); 
+    }, 150);
 
     return () => {
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
       }
     };
-  }, [isExpanded]); // Se déclenche quand le graphique est redimensionné
+  }, [isExpanded]);
 
   const handleBrushChange = (brushData: any) => {
     if (!prepareChartData.length) return;
@@ -798,8 +800,10 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     }
   }, [total, onTotalChange]);
 
+
   if (!isExpanded) {
     return (
+
       <div className="w-full h-full ">
         {!isResizing && (
           <motion.div

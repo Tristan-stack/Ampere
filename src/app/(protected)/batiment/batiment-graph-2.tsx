@@ -148,6 +148,7 @@ interface MinMaxPoint {
 }
 
 export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props) {
+  const [chartData, setChartData] = useState<any[]>([]);
   // Déplacer les hooks ici
   const [prevTotal, setPrevTotal] = useState(0);
   const [prevMax, setPrevMax] = useState(0);
@@ -507,10 +508,37 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
     setPrevMax(total.maxConsumption);
     setPrevMin(total.minConsumption);
   }, [total]);
+
   // Fonction pour trier les données par date
   const sortDataByDate = (data: any[]) => {
     return data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
+
+  const processChartData = React.useCallback((data: any[]) => {
+    const allDates = new Set<string>();
+    const dataByDate: { [key: string]: any } = {};
+
+    data.forEach(item => {
+      allDates.add(item.date);
+      if (!dataByDate[item.date]) {
+        dataByDate[item.date] = { date: item.date, totalConsumption: 0 };
+      }
+      dataByDate[item.date].totalConsumption += item.totalConsumption;
+    });
+
+    return Array.from(allDates).sort().map(date => dataByDate[date]);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    if (!aggregatedData) return;
+    const allData = Object.values(aggregatedData).flat();
+    const sortedData = sortDataByDate(allData);
+    
+    const processedData = processChartData(sortedData);
+    setChartData(processedData);
+  }, [aggregatedData, chartOptions.timeInterval]);
 
   return (
     <motion.div

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChartLine, Grid2x2 } from "lucide-react";
@@ -229,7 +229,9 @@ const Batimentgraph4: React.FC = () => {
   }, []);
 
   // Mettre à jour l'intervalle automatiquement
-  React.useEffect(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const optimalInterval = determineOptimalInterval(panelData);
     setTimeInterval(optimalInterval);
   }, [panelData, determineOptimalInterval]);

@@ -110,6 +110,8 @@ const AmpyWeather: React.FC<AmypWeatherProps> = ({ score }) => {
 
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+
         const fetchWeatherData = async () => {
             try {
                 const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8156&longitude=7.7905&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,cloud_cover,visibility&past_days=7');

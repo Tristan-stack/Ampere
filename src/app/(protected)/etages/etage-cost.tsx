@@ -46,6 +46,8 @@ export const EtageCost: React.FC<EtageCostProps> = ({
     };
 
     React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+        
         setIsResizing(true);
         const timer = setTimeout(() => {
             setIsResizing(false);

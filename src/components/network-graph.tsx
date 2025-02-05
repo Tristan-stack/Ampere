@@ -33,6 +33,8 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+        
         if (!data || !svgRef.current) return;
 
         d3.select(svgRef.current).selectAll("*").remove();
