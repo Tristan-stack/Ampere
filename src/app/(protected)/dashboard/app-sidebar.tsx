@@ -31,26 +31,12 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useSidebar } from "@/components/ui/sidebar"
 import { ChatInterface } from "@/components/chat/chat-interface"
 import ColorPicker from "@/components/colors"
+import { useData } from '../context/DataContext'
+import { usePathname } from 'next/navigation'
 
 
 const mainItems = [
-  {
-    title: "Tableau de bord",
-    url: "/dashboard",
-    icon: LayoutGrid,
-    hasChildren: false
-  },
-  {
-    title: "Analyse",
-    url: "",
-    icon: BarChart,
-    hasChildren: true,
-    children: [
-      { title: "Puissance active", url: "/analyse/puissance" },
-      { title: "Consomation", url: "/analyse/consomation" },
-      { title: "Production", url: "/analyse/production" },
-    ]
-  },
+  
   {
     title: "Bâtiments",
     url: "/batiment",
@@ -85,6 +71,8 @@ export function AppSidebar() {
   const { user } = useUser();
   const [isHovered, setIsHovered] = React.useState(false);
   const [userRole, setUserRole] = React.useState<string>("étudiant");
+  const { isEditing, setIsEditing } = useData();
+  const pathname = usePathname()
 
   React.useEffect(() => {
     const fetchUserRole = async () => {
@@ -144,15 +132,7 @@ export function AppSidebar() {
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <SidebarMenuSub>
-                              {item.children && item.children.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.title}>
-                                  <SidebarMenuSubButton asChild>
-                                    <Link href={subItem.url} className="hover:bg-zinc-400/10 rounded-md">
-                                      {subItem.title}
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
+                              
                             </SidebarMenuSub>
                           </CollapsibleContent>
                         </Collapsible>
@@ -196,11 +176,11 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <Separator className="my-2 group-data-[state=collapsed]:hidden" />
+            <Separator className="my-2 mt-16 group-data-[state=collapsed]:hidden" />
             <SidebarGroup className="flex-1 py-0 overflow-hidden">
               <SidebarGroupLabel className="py-0 text-neutral-400">Assistant IA</SidebarGroupLabel>
               <SidebarGroupContent className="py-0 h-full overflow-hidden">
-                <div className="h-96 group-data-[state=collapsed]:hidden hidden 3xl:block pb-2">
+                <div className="h-full -mb-2 group-data-[state=collapsed]:hidden hidden 3xl:block pb-2">
                   <ChatInterface />
                 </div>
                 <SidebarMenu className="3xl:hidden group-data-[state=collapsed]:3xl:block">
@@ -243,9 +223,15 @@ export function AppSidebar() {
             <SidebarMenuButton tooltip={"Notifications"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
               <Bell className="size-4 stroke-[2.25px]" />
             </SidebarMenuButton>
-            <SidebarMenuButton tooltip={"Editer l'affichage"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">
-              <Blocks className="h-4 w-4 stroke-[2.25px]" />
-            </SidebarMenuButton>
+            {pathname === '/batiment' && (
+              <SidebarMenuButton 
+                tooltip={"Editer l'affichage"} 
+                className="hover:bg-zinc-400/10 rounded-md w-fit text-xs"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <Blocks className="h-4 w-4 stroke-[2.25px]" />
+              </SidebarMenuButton>
+            )}
             <Popover>
               <PopoverTrigger asChild>
                 <SidebarMenuButton tooltip={"Thème de couleurs"} className="hover:bg-zinc-400/10 rounded-md w-fit text-xs">

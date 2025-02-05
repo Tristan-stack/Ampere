@@ -44,13 +44,14 @@ const Batiments = () => {
         aggregatedData,
         selectedBuildings,
         setSelectedBuildings,
-        efficiencyScore
+        efficiencyScore,
+        isEditing,
+        setIsEditing
     } = useData();
     const { user } = useUser();
     const swapy = useRef<ReturnType<typeof createSwapy> | null>(null);
     const container = useRef<HTMLDivElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
     const [configLoading, setConfigLoading] = useState(true);
     const [config, setConfig] = useState<string[] | null>(null);
 
@@ -170,40 +171,38 @@ const Batiments = () => {
 
     // Modifions également la fonction de sauvegarde pour appliquer la configuration immédiatement
     const handleSaveConfig = async () => {
-        if (user?.primaryEmailAddress?.emailAddress) {
-            const currentConfig = getSwapyConfig();
-            try {
-                await fetch("/api/saveBatimentConfig", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        config: currentConfig,
-                        userEmail: user.primaryEmailAddress.emailAddress,
-                    }),
-                });
+        if (!user?.primaryEmailAddress?.emailAddress || !swapy.current) return;
 
-                // Sauvegardons localement et appliquons la configuration
-                saveConfigToLocal(currentConfig);
-                setConfig(currentConfig);
-                setSwapyConfig(currentConfig);
+        const currentConfig = getSwapyConfig();
+        try {
+            await fetch("/api/saveBatimentConfig", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    config: currentConfig,
+                    userEmail: user.primaryEmailAddress.emailAddress,
+                }),
+            });
 
-                toast('Configuration sauvegardée avec succès!', {
-                    position: "top-right",
-                    autoClose: 5000,
-                    theme: "dark",
-                    transition: Bounce,
-                });
-                setIsEditing(false);
-            } catch (error) {
-                console.error("Erreur lors de la sauvegarde :", error);
-                toast.error('Erreur lors de la sauvegarde de la configuration', {
-                    position: "top-right",
-                    autoClose: 5000,
-                    theme: "dark",
-                });
-            }
+            saveConfigToLocal(currentConfig);
+            setConfig(currentConfig);
+
+            toast('Configuration sauvegardée avec succès!', {
+                position: "top-right",
+                autoClose: 5000,
+                theme: "dark",
+                transition: Bounce,
+            });
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Erreur lors de la sauvegarde :", error);
+            toast.error('Erreur lors de la sauvegarde de la configuration', {
+                position: "top-right",
+                autoClose: 5000,
+                theme: "dark",
+            });
         }
     };
 
@@ -214,17 +213,20 @@ const Batiments = () => {
         }
     }, [config, configLoading]);
 
+    // Modifions l'effet qui gère swapy
     useEffect(() => {
-        if (!configLoading && container.current) {
+        if (isEditing && container.current) {
             swapy.current = createSwapy(container.current, {});
-            swapy.current.enable(isEditing);
+            swapy.current.enable(true);
         }
 
         return () => {
-            swapy.current?.destroy();
-            swapy.current = null;
+            if (swapy.current) {
+                swapy.current.destroy();
+                swapy.current = null;
+            }
         };
-    }, [configLoading, isEditing]);
+    }, [isEditing]);
 
     const floorData = React.useMemo(() => {
         if (!chartData || chartData.length === 0) return {};
@@ -250,15 +252,28 @@ const Batiments = () => {
     return (
         <div className="w-full space-y-4 flex flex-col justify-start lg:justify-center  pt-8 md:pt-0 mx-auto items-center md:mt-10 xl:mt-0">
             <div className="flex justify-between items-center w-full">
-                <motion.button
+            {isEditing ?
+            <motion.button
                     initial={{ backgroundColor: "#171717", color: "#fff" }}
                     whileHover={{ backgroundColor: "#fff", color: "#000" }}
                     transition={{ duration: 0.2 }}
                     className="px-4 py-2 rounded"
                     onClick={() => setIsEditing(!isEditing)}
                 >
-                    {isEditing ? "Quitter le mode édition" : <Blocks className="h-4 w-4 stroke-[2.25px]" />}
+                    Quitter le mode édition
                 </motion.button>
+                : 
+                // <motion.button
+                //     initial={{ backgroundColor: "#171717", color: "#fff" }}
+                //     whileHover={{ backgroundColor: "#fff", color: "#000" }}
+                //     transition={{ duration: 0.2 }}
+                //     className="px-4 py-2 rounded"
+                //     onClick={() => setIsEditing(!isEditing)}
+                // >
+                //     <Blocks className="h-4 w-4 stroke-[2.25px]" />
+                // </motion.button>
+                <></>
+                }
                 <AnimatePresence>
                     {isEditing && (
                         <motion.button
@@ -369,7 +384,10 @@ const Batiments = () => {
                     </div>
                 </div>
                 <div className="w-full lg:w-2/3 h-full flex flex-col pt-4 lg:pt-0 lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0">
-                    <div className="w-full lg:w-1/2 bg-neutral-900 rounded-md" data-swapy-slot="c">
+                    <div className={cn(
+                        "w-full lg:w-1/2 bg-neutral-900 rounded-md",
+                        isEditing ? "cursor-move" : ""
+                    )} data-swapy-slot="c">
                         <div className="h-72 md:h-96 lg:h-full" data-swapy-item="c">
                             <div className="w-full h-full bg-neutral-900 rounded-md relative">
                                 <BatimentgraphTable 
@@ -379,7 +397,10 @@ const Batiments = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 bg-neutral-900 rounded-md" data-swapy-slot="d">
+                    <div className={cn(
+                        "w-full lg:w-1/2 bg-neutral-900 rounded-md",
+                        isEditing ? "cursor-move" : ""
+                    )} data-swapy-slot="d">
                         <div className="h-72 md:h-96 lg:h-full" data-swapy-item="d">
                             <div className="w-full h-full bg-neutral-900 rounded-md overflow-hidden border">
                                 <Batimentgraph4 />

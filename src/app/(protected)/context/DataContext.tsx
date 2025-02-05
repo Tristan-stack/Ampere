@@ -22,7 +22,7 @@ type PanelInfo = {
   }>;
 };
 
-type DataContextType = {
+export type DataContextType = {
   chartData: ConsumptionData[];
   filteredData: ConsumptionData[];
   aggregatedData: {
@@ -43,6 +43,8 @@ type DataContextType = {
   deviceName: string;
   efficiencyScore: number;
   panelData: PanelInfo[];
+  isEditing: boolean;
+  setIsEditing: (value: boolean) => void;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -208,6 +210,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [efficiencyScore, setEfficiencyScore] = useState<number>(5);
   const [panelData, setPanelData] = useState<PanelInfo[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
 
   const getCookie = (name: string) => {
     const nameEQ = name + "=";
@@ -450,6 +453,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       deviceName: '',
       efficiencyScore: Math.max(0, Math.min(10, efficiencyScore)),
       panelData,
+      isEditing,
+      setIsEditing,
     }}>
       {children}
     </DataContext.Provider>
