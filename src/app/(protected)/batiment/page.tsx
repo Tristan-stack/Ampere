@@ -292,7 +292,7 @@ const Batiments = () => {
             </div>
             <div className="w-full h-full lg:h-1/2 flex flex-col lg:flex-row space-x-0 lg:space-x-4 space-y-4 lg:space-y-0"  >
                 <div className="sm:w-full lg:w-1/3 bg-neutral-800 rounded-md border" data-swapy-slot="a">
-                    <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-4" data-swapy-item="a"  >
+                    <div className="w-full h-full bg-neutral-900 rounded-md p-4 overflow-hidden flex flex-col items-start justify-start space-y-0 3xl:space-y-4" data-swapy-item="a"  >
                         <h1 className="text-white text-2xl font-bold mb-3">Analyse des bâtiments</h1>
                         <div className="relative w-full space-y-4">
                             <Score score={efficiencyScore} />
