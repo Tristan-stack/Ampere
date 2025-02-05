@@ -16,7 +16,6 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "react-toastify";
 
-// Add to component state
 type ConsumptionData = {
   id: string;
   date: string;
@@ -51,7 +50,6 @@ const useOptimizedChartData = (rawData: any[]) => {
   return React.useMemo(() => {
     if (!rawData || rawData.length === 0) return [];
 
-    // Réduire la fréquence des points si nécessaire
     const maxPoints = 500;
     if (rawData.length > maxPoints) {
       const step = Math.ceil(rawData.length / maxPoints);
@@ -62,7 +60,6 @@ const useOptimizedChartData = (rawData: any[]) => {
   }, [rawData]);
 };
 
-// Créer un composant séparé pour les mesures
 const MeasurementButton = React.memo(({
   measurementId,
   isSelected,
@@ -201,8 +198,6 @@ const Etages = () => {
       }];
     }
 
-    // Log des mesures sélectionnées
-    // console.log('Mesures sélectionnées:', newSelectedMeasurements);
 
     // Mettre à jour l'état local
     setSelectedMeasurements(newSelectedMeasurements);

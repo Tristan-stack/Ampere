@@ -21,7 +21,7 @@ interface EtageCostProps {
 }
 
 export const EtageCost: React.FC<EtageCostProps> = ({
-    totalConsumption, // Cette valeur est maintenant l'énergie totale correcte
+    totalConsumption, 
     pricePerKwh,
     onPriceChange,
     isExpanded,
