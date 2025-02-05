@@ -43,7 +43,6 @@ const SidebarLayout = ({ children }: Props) => {
             if (isTablet) {
                 // Set to false by default on tablet
                 setCookie('sidebar:state', 'false', 7);
-                // You might want to trigger any necessary UI updates here
             } else if (isTablet === false) {
                 // Set default state for non-tablet devices
                 setCookie('sidebar:state', 'true', 7);

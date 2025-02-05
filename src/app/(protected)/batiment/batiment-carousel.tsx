@@ -9,7 +9,6 @@ export function BatimentCarousel() {
   );
 }
 
-// Small utility to highlight the content of specific section of a testimonial content
 export const Highlight = ({
   children,
   className,

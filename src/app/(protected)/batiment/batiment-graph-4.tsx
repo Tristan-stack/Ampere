@@ -26,12 +26,10 @@ const calculateTotalPower = (panels: PanelInfo[]) => {
 
   panels.forEach(panel => {
     if (panel.productionData && panel.productionData.length > 0) {
-      // Ajouter la dernière valeur de puissance de chaque panneau
       const lastMeasure = panel.productionData[panel.productionData.length - 1];
       totalPower += lastMeasure?.value || 0;
     }
   });
-
 
   return Number(totalPower.toFixed(1));
 };
@@ -45,7 +43,7 @@ const calculatePanelEnergy = (panel: PanelInfo) => {
         const currentTime = new Date(measure.date).getTime();
         const previousTime = new Date(panel.productionData![index - 1]?.date ?? measure.date).getTime();
         const timeInterval = (currentTime - previousTime) / (1000 * 60 * 60); // en heures
-        
+
         const avgPower = (measure.value + (panel.productionData![index - 1]?.value ?? 0)) / 2;
         totalEnergy += avgPower * timeInterval;
       }
@@ -55,7 +53,7 @@ const calculatePanelEnergy = (panel: PanelInfo) => {
   return Number(totalEnergy.toFixed(3));
 };
 
-const countPanelsByStatus = (panels: PanelInfo[]) => 
+const countPanelsByStatus = (panels: PanelInfo[]) =>
   panels.reduce((acc, panel) => ({
     ...acc,
     [panel.status]: (acc[panel.status] || 0) + 1
@@ -73,7 +71,7 @@ const calculatePanelPower = (panel: PanelInfo) => {
 const PanelSummary: React.FC<{ panels: PanelInfo[] }> = ({ panels }) => {
   const totalPower = calculateTotalPower(panels);
   const statusCount = countPanelsByStatus(panels);
-  
+
   return (
     <div className="bg-background/20 w-full p-2 px-4 3xl:p-4 rounded-xl mb-2">
       <div className="grid grid-cols-2 gap-4">
@@ -240,15 +238,13 @@ const Batimentgraph4: React.FC = () => {
     const allDates = new Set<string>();
     const dataByPanel: { [key: string]: { date: string; value: number }[] } = {};
 
-    // Agréger les données pour chaque panneau
     data.forEach(panel => {
       if (panel.productionData) {
-        // Convertir les valeurs de W en kW avant l'agrégation
         const normalizedData = panel.productionData.map(item => ({
           date: item.date,
-          value: item.value > 100000 ? item.value / 1000 : item.value // Si la valeur est anormalement élevée, la diviser par 1000
+          value: item.value > 100000 ? item.value / 1000 : item.value
         }));
-        
+
         const aggregatedPanelData = aggregateDataByInterval(normalizedData, timeInterval);
         aggregatedPanelData.forEach(item => {
           allDates.add(item.date);
@@ -257,7 +253,6 @@ const Batimentgraph4: React.FC = () => {
       }
     });
 
-    // Créer les points de données pour le graphique
     const sortedDates = Array.from(allDates).sort();
     return sortedDates.map(date => {
       const point: any = { date };
@@ -274,13 +269,13 @@ const Batimentgraph4: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       className="relative w-full h-full p-2 rounded-lg"
     >
       <div
         className="absolute top-1 z-10 right-1"
       >
-       <Button
+        <Button
           variant="ghost"
           size="sm"
           onClick={toggleDisplay}

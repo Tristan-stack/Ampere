@@ -35,7 +35,6 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
     useEffect(() => {
         if (!data || !svgRef.current) return;
 
-        // Clear existing SVG content
         d3.select(svgRef.current).selectAll("*").remove();
 
         const container = svgRef.current?.parentElement;
@@ -47,8 +46,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
 
         const links = data.links.map(d => ({ ...d }));
         const nodes = data.nodes.map(d => ({ ...d }));
-
-        // Define a scale for node sizes based on consumption
+        
         const consumptionValues = nodes.map(node => node.consumption);
         const sizeScale = d3.scaleLinear()
             .domain([Math.min(...consumptionValues), Math.max(...consumptionValues)])
