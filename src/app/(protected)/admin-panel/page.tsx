@@ -9,10 +9,14 @@ import { User } from "./columns"
 import { withRoleCheck } from "@/components/auth/with-role-check"
 // import Spotlight from "./spotlight"
 
-
 function AdminPanel() {
     const [users, setUsers] = useState<User[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isMounted, setIsMounted] = useState(false)
+
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
 
     const fetchUsers = async () => {
         try {
@@ -27,8 +31,14 @@ function AdminPanel() {
     }
 
     useEffect(() => {
-        fetchUsers()
-    }, [])
+        if (isMounted) {
+            fetchUsers()
+        }
+    }, [isMounted])
+
+    if (!isMounted) {
+        return null
+    }
 
     return (
         <div className="container mx-auto py-10">

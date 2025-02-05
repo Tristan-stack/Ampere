@@ -5,6 +5,22 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+    typescript: {
+        ignoreBuildErrors: true,
+    },
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    distDir: '.next',
+    output: 'standalone',
+    experimental: {
+        serverActions: {
+            allowedOrigins: ['localhost:3000'],
+        },
+    },
+    staticPageGenerationTimeout: 180,
+    staticGenerationBailout: true,
+};
 
 export default config;

@@ -8,7 +8,6 @@ export const ChatMessages = () => {
         const weatherContext = {
             currentWeather: weatherData[weatherData.length - 1],
             dailyAverages: calculateDailyAverages(weatherData),
-            // Vous pouvez ajouter d'autres informations météo pertinentes ici
         };
 
         // Envoyer le message avec le contexte météo
@@ -20,8 +19,5 @@ export const ChatMessages = () => {
                 weatherContext
             })
         });
-        // ... reste de votre logique de gestion des messages
     };
-
-    // ... reste du composant
 }; 

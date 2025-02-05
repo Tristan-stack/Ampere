@@ -39,7 +39,7 @@ export default function Page() {
 
             <div
                 className="absolute bottom-10 left-0 font-bold text-neutral-900 opacity-30 whitespace-nowrap select-none pointer-events-none"
-                style={{ 
+                style={{
                     fontSize: '25vw',
                     width: '100%',
                     textAlign: 'center',
@@ -74,7 +74,7 @@ export default function Page() {
                 </motion.div>
             </div>
 
-            <motion.div 
+            <motion.div
                 className="relative list-none"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -90,7 +90,7 @@ export default function Page() {
                     />
                     <Card className="relative overflow-hidden border-0.75 dark:shadow-[0px_0px_27px_0px_#2D2D2D]">
                         <CardContent className="grid p-0 md:grid-cols-2">
-                            {isClient && <SignUp />}
+                            {isClient && <SignUp afterSignUpUrl="/sync-user" />}
                             <div className="flex flex-col justify-center p-10 gap-12 bg-neutral-950/30">
                                 <div className="space-y-6">
                                     <h2 className="text-4xl font-bold text-neutral-300 tracking-tight">
@@ -102,7 +102,7 @@ export default function Page() {
                                         IUT de Haguenau
                                     </p>
                                 </div>
-                                
+
                                 <div className="space-y-8">
                                     <div>
                                         <p className="text-xs text-neutral-400 uppercase tracking-[0.2em]">
@@ -115,7 +115,7 @@ export default function Page() {
                                             Analyses
                                         </p>
                                     </div>
-                                    
+
                                     <div>
                                         <p className="text-[10px] text-neutral-500 tracking-wider">
                                             Version 1.0.0
@@ -129,7 +129,7 @@ export default function Page() {
             </motion.div>
 
             <div className="flex flex-col absolute bottom-8 gap-2">
-                <motion.p 
+                <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.8 }}

@@ -455,6 +455,16 @@ const Etages = () => {
     }
   };
 
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <div className="w-full md:w-full h-full flex flex-col lg:flex-row items-center justify-start md:justify-center gap-4 md:mt-16 xl:mt-0">
       {/* Colonne de gauche - Contrôles */}
