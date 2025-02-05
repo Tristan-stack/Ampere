@@ -1,3 +1,9 @@
+// Temporairement désactivé
+export default function CarteInterractive() {
+    return null
+}
+
+/*
 "use client"
 
 import NetworkGraph from "@/components/network-graph";
@@ -144,6 +150,5 @@ const CarteInterractive = () => {
     </>
   );
 };
-
-export default CarteInterractive;
+*/
 
