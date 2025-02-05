@@ -1,6 +1,6 @@
 'use client'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from './dashboard/app-sidebar'
+import { AppSidebar } from '@/app/(protected)/app-sidebar'
 import React, { useEffect, useState } from "react";
 import GradientButton from "@/components/calendar-button";
 import SidePanel from "@/components/side-panel";
