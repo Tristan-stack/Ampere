@@ -83,7 +83,6 @@ interface ChartOptions {
 const W_TO_KWH = 1 / 1000; // Conversion W vers kWh (diviser par 1000)
 const KWH_TO_MWH = 1 / 1000; // Conversion kWh vers MWh (diviser par 1000) 
 
-// Remplacer les constantes d'émission actuelles par :
 const EMISSION_COEFFICIENTS = {
   charbon: 0.986, // t CO2/MWh
   fioul: 0.777,   // t CO2/MWh
@@ -93,14 +92,13 @@ const EMISSION_COEFFICIENTS = {
   dechets: 0.494  // t CO2/MWh (déchets ménagers)
 } as const;
 
-// Mix énergétique moyen en France (à ajuster selon les données réelles)
 const ENERGY_MIX = {
-  charbon: 0.01,    // 1%
-  fioul: 0.01,      // 1%
-  gazTAC: 0.02,     // 2%
-  gazCC: 0.06,      // 6%
-  gazAutre: 0.02,   // 2%
-  dechets: 0.02     // 2%
+  charbon: 0.01,    
+  fioul: 0.01,      
+  gazTAC: 0.02,     
+  gazCC: 0.06,      
+  gazAutre: 0.02,  
+  dechets: 0.02    
 } as const;
 
 // Fonction pour calculer le coefficient moyen d'émission
@@ -112,7 +110,6 @@ const calculateAverageCO2Coefficient = () => {
   return coefficient * 1000; // Conversion en kg CO2/MWh
 };
 
-// Modifier la fonction aggregateDataByInterval pour réduire le nombre de points
 const aggregateDataByInterval = (data: any[], interval: string) => {
   const aggregatedData: { [key: string]: { total: number, count: number } } = {};
 
@@ -192,7 +189,6 @@ const adjustColorSaturation = (baseColor: string, index: number, total: number) 
 };
 
 const getMeasureColor = (building: keyof typeof buildingColors, measureId: string, data: any) => {
-  // Trouver toutes les mesures du même bâtiment
   const buildingMeasures = Object.keys(data).filter(key => key.split('-')[1] === building);
   const measureIndex = buildingMeasures.indexOf(measureId);
 
@@ -224,7 +220,6 @@ const determineOptimalInterval = (data: any[]): "5min" | "15min" | "30min" | "1h
   const daysDifference = timeSpanMs / (1000 * 60 * 60 * 24);
   const pointCount = data.length;
 
-  // Ajuster les seuils pour réduire le nombre de points
   if (pointCount > 500) {
     if (daysDifference > 60) return "1m";
     if (daysDifference > 14) return "1d";
@@ -292,7 +287,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
       data: result,
       interval: optimalInterval
     };
-  }, [floorData]); // Ne dépend que des données d'entrée
+  }, [floorData]); 
 
   // Utiliser l'intervalle optimal calculé
   useEffect(() => {
@@ -768,18 +763,14 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
   }, [prepareChartData, brushStartIndex, brushEndIndex]);
 
   useEffect(() => {
-    // Masquer le contenu pendant le redimensionnement
     setIsResizing(true);
-
-    // Clear le timeout existant
     if (resizeTimeoutRef.current) {
       clearTimeout(resizeTimeoutRef.current);
     }
 
-    // Réafficher le contenu après un court délai
     resizeTimeoutRef.current = setTimeout(() => {
       setIsResizing(false);
-    }, 150); // Ajustez ce délai selon vos besoins
+    }, 150); 
 
     return () => {
       if (resizeTimeoutRef.current) {
@@ -788,7 +779,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
     };
   }, [isExpanded]); // Se déclenche quand le graphique est redimensionné
 
-  // Simplifier la fonction handleBrushChange
   const handleBrushChange = (brushData: any) => {
     if (!prepareChartData.length) return;
 
@@ -1200,8 +1190,6 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                     height={50}
                     stroke="hsl(var(--border))"
                     fill="rgba(0, 0, 0, 0.4)"
-                    startIndex={brushStartIndex}
-                    endIndex={brushEndIndex}
                     onChange={handleBrushChange}
                     tickFormatter={(value) => new Date(value).toLocaleDateString()}
                     travellerWidth={10}
