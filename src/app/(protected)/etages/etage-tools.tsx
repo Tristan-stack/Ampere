@@ -34,7 +34,7 @@ interface Alert {
     threshold: number;
     building: string;
     isActive: boolean;
-    lastTriggered?: number;
+    lastTriggered?: number | null;
     measureId?: string;
     measureName?: string;
 }

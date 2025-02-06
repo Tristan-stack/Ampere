@@ -80,9 +80,9 @@ export function ChatInterface() {
 
     const getRandomLoadingMessage = (): string => {
         const availableMessages = loadingMessages.filter(msg => msg !== lastLoadingMessage)
-        if (availableMessages.length === 0) return loadingMessages[0]
+        if (availableMessages.length === 0) return loadingMessages[0] || ''
         const randomIndex = Math.floor(Math.random() * availableMessages.length)
-        const message = availableMessages[randomIndex] ?? loadingMessages[0]
+        const message = availableMessages[randomIndex] || loadingMessages[0] || ''
         setLastLoadingMessage(message)
         return message
     }

@@ -6,6 +6,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { ToastContainer, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { WeatherProvider } from '@/app/(protected)/context/WeatherContext';
+import { ClientProvider } from '@/components/ClientProvider';
 
 export const metadata: Metadata = {
   title: "EcoTrack",
@@ -18,27 +19,29 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <WeatherProvider>
-        <html lang="en" className={`${GeistSans.variable} dark`}>
-          <body>
-            <TRPCReactProvider>{children}</TRPCReactProvider>
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick={false}
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="dark"
-              transition={Bounce}
-              progressClassName="toast-progress"
-            />
-          </body>
-        </html>
-      </WeatherProvider>
+      <ClientProvider>
+        <WeatherProvider>
+          <html lang="en" className={`${GeistSans.variable} dark`}>
+            <body>
+              <TRPCReactProvider>{children}</TRPCReactProvider>
+              <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick={false}
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+                transition={Bounce}
+                progressClassName="toast-progress"
+              />
+            </body>
+          </html>
+        </WeatherProvider>
+      </ClientProvider>
     </ClerkProvider>
   );
 }

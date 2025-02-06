@@ -171,8 +171,12 @@ export function DataTable<TData, TValue>({
                     <PaginationContent className="-mt-6">
                         <PaginationItem>
                             <PaginationPrevious
-                                onClick={() => table.previousPage()}
-                                disabled={!table.getCanPreviousPage()}
+                                onClick={() => {
+                                    if (table.getCanPreviousPage()) {
+                                        table.previousPage()
+                                    }
+                                }}
+                                className={!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : ""}
                             />
                         </PaginationItem>
                         {Array.from({ length: table.getPageCount() }, (_, i) => (
@@ -187,8 +191,12 @@ export function DataTable<TData, TValue>({
                         ))}
                         <PaginationItem>
                             <PaginationNext
-                                onClick={() => table.nextPage()}
-                                disabled={!table.getCanNextPage()}
+                                onClick={() => {
+                                    if (table.getCanNextPage()) {
+                                        table.nextPage()
+                                    }
+                                }}
+                                className={!table.getCanNextPage() ? "pointer-events-none opacity-50" : ""}
                             />
                         </PaginationItem>
                     </PaginationContent>

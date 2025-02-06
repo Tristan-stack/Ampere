@@ -722,50 +722,38 @@ export function Batimentgraph2({ aggregatedData, loading }: Batimentgraph2Props)
                         dataKey={`consumption${building}`}
                         stroke={buildingColors[building as keyof typeof buildingColors]}
                         strokeWidth={2}
-                        dot={(props) => {
-                          const isMinPoint = selectedPoints.includes('min') &&
-                            props.payload.date === findMinMaxPoints.minPoint.date &&
-                            (chartOptions.displayMode === "combined" 
-                              ? props.dataKey === "totalConsumption"
-                              : findMinMaxPoints.minPoint.building === building);
+                        dot={(props: any) => {
+                          // Vérifier que les coordonnées sont valides
+                          if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
+                              isNaN(props.cx) || isNaN(props.cy) || 
+                              props.value === undefined || props.payload?.date === undefined) {
+                            return <circle cx={0} cy={0} r={0} fill="none" />;
+                          }
 
-                          const isMaxPoint = selectedPoints.includes('max') &&
-                            props.payload.date === findMinMaxPoints.maxPoint.date &&
-                            (chartOptions.displayMode === "combined" 
-                              ? props.dataKey === "totalConsumption"
-                              : findMinMaxPoints.maxPoint.building === building);
+                          const isMinPoint = selectedPoints.includes('min') && 
+                            props.payload.date === findMinMaxPoints.minPoint.date && 
+                            Math.abs(props.value - findMinMaxPoints.minPoint.value) < 0.01;
+                          
+                          const isMaxPoint = selectedPoints.includes('max') && 
+                            props.payload.date === findMinMaxPoints.maxPoint.date && 
+                            Math.abs(props.value - findMinMaxPoints.maxPoint.value) < 0.01;
 
-                          if (!isMinPoint && !isMaxPoint) return false;
+                          // N'afficher que les points min/max quand ils sont sélectionnés
+                          if (!isMinPoint && !isMaxPoint) {
+                            return <circle cx={0} cy={0} r={0} fill="none" />;
+                          }
 
-                          const pointType = isMinPoint ? 'min' : 'max';
-                          const value = props.payload[props.dataKey];
-                          const uniqueKey = `${building}-${props.payload.date}-${pointType}`;
-
+                          // Afficher un point plus gros pour les min/max sélectionnés
                           return (
-                            <g key={uniqueKey}>
-                              <circle
-                                cx={props.cx}
-                                cy={props.cy}
-                                r={6}
-                                fill="white"
-                                stroke={buildingColors[building as keyof typeof buildingColors]}
-                                strokeWidth={3}
-                              />
-                              <text
-                                x={props.cx + 15}
-                                y={props.cy + 4}
-                                textAnchor="start"
-                                fill="white"
-                                fontSize="12"
-                                fontWeight="normal"
-                                stroke={buildingColors[building as keyof typeof buildingColors]}
-                                strokeWidth={3}
-                                paintOrder="stroke"
-                              >
-                                {`${pointType.toUpperCase()} (${Math.round(value)}W)`}
-                              </text>
-                            </g>
-                          ) as any;
+                            <circle
+                              cx={props.cx}
+                              cy={props.cy}
+                              r={6}
+                              fill={isMaxPoint ? "red" : "blue"}
+                              stroke="white"
+                              strokeWidth={2}
+                            />
+                          );
                         }}
                         name={`Bâtiment ${building}`}
                         animationDuration={750}
