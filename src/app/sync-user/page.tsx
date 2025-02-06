@@ -1,36 +1,45 @@
 import { db } from "@/server/db";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { notFound, redirect } from "next/navigation";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 const SyncUser = async () => {
-    const { userId } = await auth();
-    if (!userId) {
-        throw new Error('User not found');
-    }
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    if (!user.emailAddresses[0]?.emailAddress) {
-        notFound();
-    }
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            throw new Error('Utilisateur non authentifié');
+        }
 
-    await db.user.upsert({
-        where: {
-            emailAddress: user.emailAddresses[0]?.emailAddress ?? ""
-        },
-        update: {
-            imageUrl: user.imageUrl,
-            firstName: user.firstName ?? "",
-            lastName: user.lastName ?? "",
-        },
-        create: {
-            emailAddress: user.emailAddresses[0]?.emailAddress ?? "",
-            imageUrl: user.imageUrl,
-            firstName: user.firstName ?? "",
-            lastName: user.lastName ?? "",
-        },
-    });
+        const user = await currentUser();
+        if (!user || !user.emailAddresses[0]?.emailAddress) {
+            throw new Error('Adresse email non trouvée');
+        }
 
-    return redirect("/dashboard");
+        const emailAddress = user.emailAddresses[0].emailAddress;
+
+        await db.user.upsert({
+            where: {
+                emailAddress: emailAddress
+            },
+            update: {
+                imageUrl: user.imageUrl,
+                firstName: user.firstName ?? "",
+                lastName: user.lastName ?? "",
+            },
+            create: {
+                emailAddress: emailAddress,
+                imageUrl: user.imageUrl,
+                firstName: user.firstName ?? "",
+                lastName: user.lastName ?? "",
+                credits: 350, // Valeur par défaut
+                role: "étudiant" // Valeur par défaut
+            },
+        });
+
+        return redirect("/batiment");
+    } catch (error) {
+        console.error("Erreur lors de la synchronisation de l'utilisateur:", error);
+        throw error;
+    }
 };
 
 export default SyncUser;

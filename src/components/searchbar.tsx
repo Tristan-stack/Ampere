@@ -13,10 +13,8 @@ import {
     CommandList,
 } from "@/components/ui/command"
 import { useSidebar, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
-import { GraphConso } from "@/app/(protected)/dashboard/graph/graph-conso"
 import { Batimentgraph2 } from "@/app/(protected)/batiment/batiment-graph-2"
 import { EtageGraph2 } from "@/app/(protected)/etages/etage-graph-2"
-import { RadialChart } from "@/app/(protected)/dashboard/graph/radial-chart"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 const pages = [

@@ -41,6 +41,7 @@ const chartConfig = {
 interface EtageGraph2Props {
   floorData: {
     [key: string]: Array<{
+      [x: string]: any;
       date: string;
       building: string;
       floor: string;
@@ -450,7 +451,7 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
               if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
                   isNaN(props.cx) || isNaN(props.cy) || 
                   props.value === undefined || props.payload?.date === undefined) {
-                return null;
+                return <circle cx={0} cy={0} r={0} fill="none" />;
               }
 
               const isMinPoint = selectedPoints.includes('min') && 
@@ -461,98 +462,10 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                 props.payload.date === findMinMaxPoints.maxPoint.date && 
                 Math.abs(props.value - findMinMaxPoints.maxPoint.value) < 0.01;
 
-              if (isMinPoint || isMaxPoint) {
-                // Récupérer la couleur de la ligne correspondante
-                const pointBuilding = isMaxPoint ? findMinMaxPoints.maxPoint.building : findMinMaxPoints.minPoint.building;
-                const pointColor = getMeasureColor(
-                  pointBuilding.split('-')[1] as keyof typeof buildingColors,
-                  pointBuilding,
-                  processedData.data
-                );
-
-                return (
-                  <g>
-                    {/* Cercle d'animation */}
-                    <circle
-                      cx={props.cx}
-                      cy={props.cy}
-                      r={12}
-                      fill={pointColor}
-                      opacity={0.2}
-                    >
-                      <animate
-                        attributeName="r"
-                        from="8"
-                        to="12"
-                        dur="1.5s"
-                        repeatCount="indefinite"
-                      />
-                      <animate
-                        attributeName="opacity"
-                        from="0.6"
-                        to="0"
-                        dur="1.5s"
-                        repeatCount="indefinite"
-                      />
-                    </circle>
-                    {/* Point principal */}
-                    <circle
-                      cx={props.cx}
-                      cy={props.cy}
-                      r={6}
-                      fill={pointColor}
-                      stroke="white"
-                      strokeWidth={2}
-                    />
-                  </g>
-                );
+              if (!isMinPoint && !isMaxPoint) {
+                return <circle cx={0} cy={0} r={0} fill="none" />;
               }
-              return null;
-            }}
-            isAnimationActive={false}
-            connectNulls
-          />
-        );
-      });
-    }
 
-    // Rendu normal des lignes
-    return Object.entries(processedData.data).map(([key, data]) => {
-      const parts = key.split("-");
-      const building = parts[1] as keyof typeof buildingColors;
-      const lineColor = getMeasureColor(building, key, processedData.data);
-      
-      const measureData = Object.values(floorData)
-        .flat()
-        .find(item => item.id.startsWith(parts[0]));
-
-      const displayName = `${measureData?.name}`;
-
-      return (
-        <Line
-          key={key}
-          type={chartOptions.curveType}
-          dataKey={key}
-          stroke={lineColor}
-          strokeWidth={2}
-          name={displayName}
-          dot={(props: any) => {
-            // Vérifier que les coordonnées sont valides
-            if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
-                isNaN(props.cx) || isNaN(props.cy) || 
-                props.value === undefined || props.payload?.date === undefined) {
-              return null;
-            }
-
-            const isMinPoint = selectedPoints.includes('min') && 
-              props.payload.date === findMinMaxPoints.minPoint.date && 
-              Math.abs(props.value - findMinMaxPoints.minPoint.value) < 0.01;
-            
-            const isMaxPoint = selectedPoints.includes('max') && 
-              props.payload.date === findMinMaxPoints.maxPoint.date && 
-              Math.abs(props.value - findMinMaxPoints.maxPoint.value) < 0.01;
-
-            if (isMinPoint || isMaxPoint) {
               // Récupérer la couleur de la ligne correspondante
               const pointBuilding = isMaxPoint ? findMinMaxPoints.maxPoint.building : findMinMaxPoints.minPoint.building;
               const pointColor = getMeasureColor(
@@ -597,8 +510,98 @@ export const EtageGraph2: React.FC<EtageGraph2Props> = ({ floorData, isExpanded,
                   />
                 </g>
               );
+            }}
+            isAnimationActive={false}
+            connectNulls
+          />
+        );
+      });
+    }
+
+    // Rendu normal des lignes
+    return Object.entries(processedData.data).map(([key, data]) => {
+      const parts = key.split("-");
+      const building = parts[1] as keyof typeof buildingColors;
+      const lineColor = getMeasureColor(building, key, processedData.data);
+      
+      const measureData = Object.values(floorData)
+        .flat()
+        .find(item => item.id.startsWith(parts[0]));
+
+      const displayName = `${measureData?.name}`;
+
+      return (
+        <Line
+          key={key}
+          type={chartOptions.curveType}
+          dataKey={key}
+          stroke={lineColor}
+          strokeWidth={2}
+          name={displayName}
+          dot={(props: any) => {
+            // Vérifier que les coordonnées sont valides
+            if (typeof props.cx !== 'number' || typeof props.cy !== 'number' || 
+                isNaN(props.cx) || isNaN(props.cy) || 
+                props.value === undefined || props.payload?.date === undefined) {
+              return <circle cx={0} cy={0} r={0} fill="none" />;
             }
-            return null;
+
+            const isMinPoint = selectedPoints.includes('min') && 
+              props.payload.date === findMinMaxPoints.minPoint.date && 
+              Math.abs(props.value - findMinMaxPoints.minPoint.value) < 0.01;
+            
+            const isMaxPoint = selectedPoints.includes('max') && 
+              props.payload.date === findMinMaxPoints.maxPoint.date && 
+              Math.abs(props.value - findMinMaxPoints.maxPoint.value) < 0.01;
+
+            if (!isMinPoint && !isMaxPoint) {
+              return <circle cx={0} cy={0} r={0} fill="none" />;
+            }
+
+            // Récupérer la couleur de la ligne correspondante
+            const pointBuilding = isMaxPoint ? findMinMaxPoints.maxPoint.building : findMinMaxPoints.minPoint.building;
+            const pointColor = getMeasureColor(
+              pointBuilding.split('-')[1] as keyof typeof buildingColors,
+              pointBuilding,
+              processedData.data
+            );
+
+            return (
+              <g>
+                {/* Cercle d'animation */}
+                <circle
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={12}
+                  fill={pointColor}
+                  opacity={0.2}
+                >
+                  <animate
+                    attributeName="r"
+                    from="8"
+                    to="12"
+                    dur="1.5s"
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    from="0.6"
+                    to="0"
+                    dur="1.5s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+                {/* Point principal */}
+                <circle
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={6}
+                  fill={pointColor}
+                  stroke="white"
+                  strokeWidth={2}
+                />
+              </g>
+            );
           }}
           isAnimationActive={false}
           connectNulls

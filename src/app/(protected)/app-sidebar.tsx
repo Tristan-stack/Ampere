@@ -31,7 +31,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useSidebar } from "@/components/ui/sidebar"
 import { ChatInterface } from "@/components/chat/chat-interface"
 import ColorPicker from "@/components/colors"
-import { useData } from '../context/DataContext'
+import { useData } from '@/app/(protected)/context/DataContext'
 import { usePathname } from 'next/navigation'
 
 

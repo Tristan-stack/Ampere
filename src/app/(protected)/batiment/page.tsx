@@ -31,7 +31,6 @@ const calculateEfficiencyScore = (data: ConsumptionData[]) => {
         return 500; // Score neutre si pas de données
     }
 
-    // Votre logique de calcul ici
     return 310;
 };
 
@@ -125,20 +124,15 @@ const Batiments = () => {
         return null;
     };
 
-    // Modifions l'effet qui charge la configuration
     useEffect(() => {
         const fetchBatimentConfig = async () => {
             if (user?.primaryEmailAddress?.emailAddress) {
                 try {
-                    // D'abord, essayons de charger depuis le localStorage
                     const localConfig = loadConfigFromLocal();
                     if (localConfig) {
                         setConfig(localConfig);
-                        // Appliquons la configuration immédiatement
                         setSwapyConfig(localConfig);
                     }
-
-                    // Ensuite, vérifions la configuration sur le serveur
                     const response = await fetch("/api/getBatimentConfig", {
                         method: "POST",
                         headers: {
@@ -153,7 +147,6 @@ const Batiments = () => {
                     if (data.config) {
                         setConfig(data.config);
                         saveConfigToLocal(data.config);
-                        // Appliquons la configuration du serveur si elle existe
                         setSwapyConfig(data.config);
                     }
                 } catch (error) {
@@ -169,7 +162,6 @@ const Batiments = () => {
         fetchBatimentConfig();
     }, [user]);
 
-    // Modifions également la fonction de sauvegarde pour appliquer la configuration immédiatement
     const handleSaveConfig = async () => {
         if (!user?.primaryEmailAddress?.emailAddress || !swapy.current) return;
 
@@ -206,14 +198,12 @@ const Batiments = () => {
         }
     };
 
-    // Ajoutons un effet pour appliquer la configuration lorsqu'elle change
     useEffect(() => {
         if (config && !configLoading) {
             setSwapyConfig(config);
         }
     }, [config, configLoading]);
 
-    // Modifions l'effet qui gère swapy
     useEffect(() => {
         if (isEditing && container.current) {
             swapy.current = createSwapy(container.current, {});
